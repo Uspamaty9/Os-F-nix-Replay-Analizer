@@ -53,9 +53,11 @@ jobs:
               for t in grass hockey; do
                 get "public/offline/tiles/${t}tile.png" "https://raw.githubusercontent.com/haxball-stadium-editor/haxball-stadium-editor.github.io/v2.11/${t}tile.png" || true
               done
-              npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3
-              npm run build 2>&1 | tail -15 | tee -a "$ROOT/out/report.txt"
-              [ -d build ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
+              npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
+              [ -d node_modules/@fontsource/open-sans ] || npm install --legacy-peer-deps --no-audit --no-fund --save @fontsource/open-sans@5 @fontsource/roboto@5 material-icons@1 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
+              npm run build > "$ROOT/build.log" 2>&1; BST=$?
+              tail -15 "$ROOT/build.log" | tee -a "$ROOT/out/report.txt"
+              [ $BST -eq 0 ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               # Prueba en navegador real (viewport de celular)
               (cd build && python3 -m http.server 8123 > /dev/null 2>&1 &) ; sleep 2
               NODE_PATH="$RUNNER_TEMP/pw/node_modules" node "$ROOT/.github/scripts/verify-web.cjs" http://localhost:8123/ "$ROOT/out" "$ROOT/tests" 2>&1 | tail -60 | tee -a "$ROOT/out/report.txt"
@@ -81,8 +83,8 @@ jobs:
           git config user.email "actions@github.com"
           git checkout --orphan apks
           git rm -rf -q .
-          git clean -fdq
+          git clean -fdxq
           cp "$RUNNER_TEMP"/res/* . 2>/dev/null || true
-          git add -A
+          git add -f -- '*.apk' '*.txt' '*.png' 2>/dev/null || true
           git commit -q -m "Resultados de compilación" || true
           git push --force origin apks
