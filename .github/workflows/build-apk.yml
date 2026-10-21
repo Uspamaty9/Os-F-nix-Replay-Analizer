@@ -25,52 +25,64 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "platforms;android-35" "build-tools;34.0.0" "build-tools;35.0.0"
       - name: Compilar cada ZIP
         run: |
-          set -e
           export CI=false
           ROOT="$PWD"
           mkdir -p out
+          npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright-core@1.48 > /dev/null 2>&1 || true
           for z in ./*.zip; do
             n=$(basename "$z" .zip)
-            echo "=== $n ==="
+            echo "=== $n ===" | tee -a out/report.txt
             rm -rf work && mkdir work
             unzip -q "$z" -d work
             S=$(find work -name settings.gradle -not -path '*/node_modules/*' | head -1)
             P=$(find work -name package.json -not -path '*/node_modules/*' | head -1)
             if [ -n "$S" ]; then
-              echo "Proyecto Android"
-              (cd "$(dirname "$S")" && gradle assembleDebug --stacktrace)
+              echo "Proyecto Android" | tee -a out/report.txt
+              (cd "$(dirname "$S")" && gradle assembleDebug --stacktrace) || { echo "FALLO gradle $n" | tee -a out/report.txt; continue; }
               cp "$(find work -name app-debug.apk | head -1)" "out/$n.apk"
             elif [ -n "$P" ]; then
-              echo "Proyecto web (React): se envuelve con Capacitor"
+              echo "Proyecto web (React): se envuelve con Capacitor" | tee -a out/report.txt
               cd "$(dirname "$P")"
-              npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-              npm run build
-              npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+              # Recursos que la app original descarga de internet: se empaquetan dentro de la app
+              mkdir -p public/offline/tiles
+              get() { out="$1"; shift; for u in "$@"; do if curl -fsSL --retry 3 -m 180 -o "$out" "$u" && [ -s "$out" ]; then echo "OK $out <- $u" | tee -a "$ROOT/out/report.txt"; return 0; fi; done; echo "NO SE PUDO DESCARGAR $out" | tee -a "$ROOT/out/report.txt"; rm -f "$out"; return 1; }
+              get public/offline/res.dat https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/res.dat https://haxball-replay-analyzer.github.io/pliki/res.dat https://www.haxball.com/res.dat || true
+              get public/offline/geo.json https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/geo.json https://haxball-replay-analyzer.github.io/pliki/geo.json || true
+              get public/offline/host.json https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/host.json || true
+              echo '{"content":""}' > public/offline/notice.json
+              for t in grass hockey; do
+                get "public/offline/tiles/${t}tile.png" "https://raw.githubusercontent.com/haxball-stadium-editor/haxball-stadium-editor.github.io/v2.11/${t}tile.png" || true
+              done
+              npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3
+              npm run build 2>&1 | tail -15 | tee -a "$ROOT/out/report.txt"
+              [ -d build ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
+              # Prueba en navegador real (viewport de celular)
+              (cd build && python3 -m http.server 8123 > /dev/null 2>&1 &) ; sleep 2
+              NODE_PATH="$RUNNER_TEMP/pw/node_modules" node "$ROOT/.github/scripts/verify-web.cjs" http://localhost:8123/ "$ROOT/out" "$ROOT/tests" 2>&1 | tail -60 | tee -a "$ROOT/out/report.txt"
+              pkill -f "http.server 8123" || true
+              npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
               npx cap init "Os Fenix Motor" com.osfenix.replayanalyzer.motor --web-dir build
               npx cap add android
               npx cap sync android
-              (cd android && gradle assembleDebug --stacktrace)
+              (cd android && gradle assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               cp android/app/build/outputs/apk/debug/app-debug.apk "$ROOT/out/$n.apk"
               cd "$ROOT"
             else
-              echo "Sin proyecto reconocible: $z"
+              echo "Sin proyecto reconocible: $z" | tee -a out/report.txt
             fi
           done
           ls -la out
-      - uses: actions/upload-artifact@v4
-        with:
-          name: APKs
-          path: out/*.apk
-      - name: Guardar APK en la rama apks
+      - name: Guardar resultados en la rama apks
+        if: always()
         run: |
-          mkdir -p "$RUNNER_TEMP/apks"
-          cp out/*.apk "$RUNNER_TEMP/apks/"
+          mkdir -p "$RUNNER_TEMP/res"
+          cp out/* "$RUNNER_TEMP/res/" 2>/dev/null || true
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git checkout --orphan apks
           git rm -rf -q .
           git clean -fdq
-          cp "$RUNNER_TEMP"/apks/*.apk .
-          git add *.apk
-          git commit -q -m "APK compilados"
+          cp "$RUNNER_TEMP"/res/* . 2>/dev/null || true
+          git add -A
+          git commit -q -m "Resultados de compilación" || true
           git push --force origin apks
