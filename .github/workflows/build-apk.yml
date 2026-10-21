@@ -31,6 +31,7 @@ jobs:
         run: |
           export CI=false
           ROOT="$PWD"
+          export FENIX_KEYSTORE="$ROOT/.github/keys/debug.keystore"
           mkdir -p out
           npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright-core@1.48 > /dev/null 2>&1 || true
           for z in ./*.zip; do
@@ -42,7 +43,7 @@ jobs:
             P=$(find work -name package.json -not -path '*/node_modules/*' | head -1)
             if [ -n "$S" ]; then
               echo "Proyecto Android" | tee -a out/report.txt
-              (cd "$(dirname "$S")" && gradle assembleDebug --stacktrace) || { echo "FALLO gradle $n" | tee -a out/report.txt; continue; }
+              (cd "$(dirname "$S")" && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle $n" | tee -a out/report.txt; continue; }
               cp "$(find work -name app-debug.apk | head -1)" "out/$n.apk"
             elif [ -n "$P" ]; then
               echo "Proyecto web (React): se envuelve con Capacitor" | tee -a out/report.txt
@@ -79,7 +80,7 @@ jobs:
               npx cap init "Os Fenix Motor" com.osfenix.replayanalyzer.motor --web-dir build
               npx cap add android
               npx cap sync android
-              (cd android && gradle assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
+              (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               cp android/app/build/outputs/apk/debug/app-debug.apk "$ROOT/out/$n.apk"
               cd "$ROOT"
             else
