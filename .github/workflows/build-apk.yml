@@ -46,7 +46,7 @@ jobs:
               npm ci --legacy-peer-deps || npm install --legacy-peer-deps
               npm run build
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-              npx cap init "Os Fenix Replay Analyzer" com.osfenix.replayanalyzer --web-dir build
+              npx cap init "Os Fenix Motor" com.osfenix.replayanalyzer.motor --web-dir build
               npx cap add android
               npx cap sync android
               (cd android && gradle assembleDebug --stacktrace)
