@@ -18,13 +18,19 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
-      - name: Descomprimir y compilar
+      - name: Compilar cada ZIP
         run: |
-          unzip -q ./*.zip -d proj
-          DIR=$(dirname "$(find proj -name settings.gradle | head -1)")
-          cd "$DIR"
-          gradle assembleDebug --stacktrace
+          mkdir -p out
+          for z in ./*.zip; do
+            n=$(basename "$z" .zip)
+            rm -rf work && mkdir work
+            unzip -q "$z" -d work
+            S=$(find work -name settings.gradle | head -1)
+            if [ -z "$S" ]; then echo "Sin proyecto Android: $z"; continue; fi
+            (cd "$(dirname "$S")" && gradle assembleDebug --stacktrace)
+            cp "$(find work -name app-debug.apk | head -1)" "out/$n.apk"
+          done
       - uses: actions/upload-artifact@v4
         with:
-          name: Os-Fenix-Replay-Analyzer-APK
-          path: proj/**/app-debug.apk
+          name: APKs
+          path: out/*.apk
