@@ -55,6 +55,7 @@ jobs:
               done
               npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
               [ -d node_modules/@fontsource/open-sans ] || npm install --legacy-peer-deps --no-audit --no-fund --save @fontsource/open-sans@5 @fontsource/roboto@5 material-icons@1 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
+              { echo "--- diag fuentes ---"; ls node_modules/@fontsource 2>&1; ls node_modules/@fontsource/open-sans 2>&1 | head -12; grep -m1 '"version"' node_modules/@fontsource/open-sans/package.json; ls node_modules/material-icons/iconfont 2>&1 | head -5; } 2>&1 | tee -a "$ROOT/out/report.txt"
               npm run build > "$ROOT/build.log" 2>&1 && BST=0 || BST=$?
               tail -15 "$ROOT/build.log" | tee -a "$ROOT/out/report.txt"
               [ $BST -eq 0 ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
