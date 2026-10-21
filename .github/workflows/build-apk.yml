@@ -53,9 +53,17 @@ jobs:
               for t in grass hockey; do
                 get "public/offline/tiles/${t}tile.png" "https://raw.githubusercontent.com/haxball-stadium-editor/haxball-stadium-editor.github.io/v2.11/${t}tile.png" || true
               done
-              npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
-              [ -d node_modules/@fontsource/open-sans ] || npm install --legacy-peer-deps --no-audit --no-fund --save @fontsource/open-sans@5 @fontsource/roboto@5 material-icons@1 2>&1 | tail -8 | tee -a "$ROOT/out/report.txt"
-              { echo "--- diag fuentes ---"; ls node_modules/@fontsource 2>&1; ls node_modules/@fontsource/open-sans 2>&1 | head -12; grep -m1 '"version"' node_modules/@fontsource/open-sans/package.json; ls node_modules/material-icons/iconfont 2>&1 | head -5; } 2>&1 | tee -a "$ROOT/out/report.txt"
+              npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3 | tee -a "$ROOT/out/report.txt"
+              # Fuentes locales (sin Google Fonts)
+              npm install --no-save --legacy-peer-deps --no-audit --no-fund @fontsource/open-sans@5 @fontsource/roboto@5 material-icons@1 2>&1 | tail -2
+              mkdir -p public/fonts
+              cp node_modules/@fontsource/open-sans/files/open-sans-latin-{400,600,700}-normal.woff2 public/fonts/
+              cp node_modules/@fontsource/roboto/files/roboto-latin-{300,400,700}-normal.woff2 public/fonts/
+              cp node_modules/material-icons/iconfont/material-icons.woff2 public/fonts/
+              { for w in 400 600 700; do echo "@font-face{font-family:'Open Sans';font-weight:$w;font-display:swap;src:url(open-sans-latin-$w-normal.woff2) format('woff2')}"; done
+                for w in 300 400 700; do echo "@font-face{font-family:'Roboto';font-weight:$w;font-display:swap;src:url(roboto-latin-$w-normal.woff2) format('woff2')}"; done
+                echo "@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(material-icons.woff2) format('woff2')}"; } > public/fonts/fonts.css
+              ls public/fonts | tee -a "$ROOT/out/report.txt"
               npm run build > "$ROOT/build.log" 2>&1 && BST=0 || BST=$?
               tail -15 "$ROOT/build.log" | tee -a "$ROOT/out/report.txt"
               [ $BST -eq 0 ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
