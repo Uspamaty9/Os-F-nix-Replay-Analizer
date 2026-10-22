@@ -121,4 +121,7 @@ jobs:
           cp "$RUNNER_TEMP"/res/* . 2>/dev/null || true
           git add -f -- '*.apk' '*.txt' '*.png' 2>/dev/null || true
           git commit -q -m "Resultados de compilación" || true
-          git push --force origin apks
+          git status --short | head -5 > "$RUNNER_TEMP/st.txt"
+          git push --force origin apks 2> "$RUNNER_TEMP/push.err"; RC=$?
+          echo "::error::PUSH rc=$RC $(tr '\n' ' ' < "$RUNNER_TEMP/push.err" | head -c 600) STATUS $(tr '\n' ' ' < "$RUNNER_TEMP/st.txt") REPORT $(tail -6 "$RUNNER_TEMP/res/report.txt" | tr '\n' ' ' | head -c 700)"
+          exit $RC
