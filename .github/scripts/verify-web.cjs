@@ -138,7 +138,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       const snapB = await snap();
       await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(700);
       const snapC = await snap();
-      T('F2 Al cambiar Historial/Favoritos no se mueve nada', JSON.stringify(snapA) === JSON.stringify(snapB) && JSON.stringify(snapA) === JSON.stringify(snapC), JSON.stringify([snapA[0], snapB[0]]));
+      T('F2 Al cambiar Historial/Favoritos no se mueve nada', JSON.stringify(snapA) === JSON.stringify(snapB) && JSON.stringify(snapA) === JSON.stringify(snapC), JSON.stringify([snapA, snapB, snapC]));
       const n1 = await page.locator('.fh-item').count();
       T('H1 La repetición importada aparece en el historial', n1 === 1, n1 + ' elemento(s)');
       await page.click('.fh-rename'); await page.waitForTimeout(200);
