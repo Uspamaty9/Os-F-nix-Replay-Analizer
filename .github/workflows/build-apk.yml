@@ -81,7 +81,6 @@ jobs:
               npx cap add android
               # Icono de la app: el escudo (solo se recorta el margen transparente; no se altera)
               RES=android/app/src/main/res
-              (command -v magick || command -v convert) >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick) >/dev/null 2>&1 || true
               IM=$(command -v magick || command -v convert || true)
               if [ -n "$IM" ]; then
                 rm -rf "$RES/mipmap-anydpi-v26"
