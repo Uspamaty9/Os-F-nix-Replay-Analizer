@@ -132,7 +132,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       // ===== Historial, renombrar, reabrir y botones =====
       await page.click('#button_leave'); await page.waitForTimeout(1800);
       await page.screenshot({ path: path.join(outDir, 'shot-8-inicio-historial.png') });
-      const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
+      const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll','.fenix-home'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
       const snapA = await snap();
       await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
       const snapB = await snap();
