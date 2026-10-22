@@ -128,6 +128,31 @@ const [,, url, outDir, sampleDir] = process.argv;
       T('10 Girar a horizontal: la cancha se reajusta', sl && sl.zoom === 1 && sl.W > 0, 'canvas ' + Math.round(cl.w) + 'x' + Math.round(cl.h) + ' kFit=' + sl.kFit);
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
+
+      // ===== Historial, renombrar, reabrir y botones =====
+      await page.click('#button_leave'); await page.waitForTimeout(1800);
+      await page.screenshot({ path: path.join(outDir, 'shot-8-inicio-historial.png') });
+      const n1 = await page.locator('.fh-item').count();
+      T('H1 La repetición importada aparece en el historial', n1 === 1, n1 + ' elemento(s)');
+      await page.click('.fh-rename'); await page.waitForTimeout(200);
+      await page.fill('.fh-edit input', 'Final vs Rivales');
+      await page.screenshot({ path: path.join(outDir, 'shot-9-renombrar.png') });
+      await page.click('.fh-ok'); await page.waitForTimeout(500);
+      const nm = await page.evaluate(() => (document.querySelector('.fh-name') || {}).textContent);
+      T('H2 Cambiar el nombre de la repetición', nm === 'Final vs Rivales', 'nombre: ' + nm);
+      await page.click('.fh-open'); await page.waitForTimeout(12000);
+      const reopened = await page.evaluate(() => { const t = document.querySelector('[data-hook=time]'); const c = document.querySelector('.game-state-view canvas'); const r = c && c.getBoundingClientRect(); return !!(t && r && r.width > 100 && window.__fenixView && window.__fenixView.k > 0); });
+      T('H3 Abrir una repetición desde el historial', reopened);
+      await page.screenshot({ path: path.join(outDir, 'shot-10-reabierta.png') });
+      const tiles = await page.evaluate(() => Array.from(document.querySelectorAll('.bottom-section .buttons button')).filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [b.textContent.trim(), Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }));
+      log('Botones (texto,x,y,ancho,alto): ' + JSON.stringify(tiles));
+      T('B1 Menú/Ajustes/Estadísticas dentro de la pantalla y táctiles (≥44px)', tiles.length >= 3 && tiles.every(b => b[1] >= 0 && b[1] + b[3] <= 391 && b[4] >= 44));
+      const bar2 = await rectOf('.game-state-view .bar');
+      log('Marcador: ' + JSON.stringify(bar2));
+      T('M1 Marcador compacto y centrado arriba', bar2 && bar2.w < 300 && Math.abs((bar2.x + bar2.w / 2) - 195) < 6, 'ancho ' + Math.round(bar2.w));
+      await page.click('#button_staty'); await page.waitForTimeout(2500);
+      await page.screenshot({ path: path.join(outDir, 'shot-11-estadisticas.png') });
+      log('Texto en estadísticas: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 200).replace(/\s+/g, ' '));
     } catch (e) { log('ERROR en pruebas: ' + String(e.message).slice(0, 300)); }
   }
   log('--- PETICIONES EXTERNAS (' + external.size + ') ---'); [...external].forEach(s => log(s));

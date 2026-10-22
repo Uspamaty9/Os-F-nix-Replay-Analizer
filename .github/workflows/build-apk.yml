@@ -77,8 +77,24 @@ jobs:
               NODE_PATH="$RUNNER_TEMP/pw/node_modules" node "$ROOT/.github/scripts/verify-web.cjs" http://localhost:8123/ "$ROOT/out" "$ROOT/tests" 2>&1 | tail -60 | tee -a "$ROOT/out/report.txt"
               pkill -f "http.server 8123" || true
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
-              npx cap init "Os Fenix Motor" com.osfenix.replayanalyzer.motor --web-dir build
+              printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
               npx cap add android
+              # Icono de la app: el escudo (solo se recorta el margen transparente; no se altera)
+              RES=android/app/src/main/res
+              IM=$(command -v magick || command -v convert || true)
+              if [ -n "$IM" ]; then
+                rm -rf "$RES/mipmap-anydpi-v26"
+                for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+                  d=${pair%%:*}; px=${pair##*:}; inner=$((px*80/100))
+                  $IM public/brand/escudo.png -trim +repage -resize ${inner}x${inner} -background '#111111' -gravity center -extent ${px}x${px} "$RES/mipmap-$d/ic_launcher.png"
+                  cp "$RES/mipmap-$d/ic_launcher.png" "$RES/mipmap-$d/ic_launcher_round.png"
+                  cp "$RES/mipmap-$d/ic_launcher.png" "$RES/mipmap-$d/ic_launcher_foreground.png"
+                done
+                echo "Icono del escudo aplicado" | tee -a "$ROOT/out/report.txt"
+              else
+                echo "Sin ImageMagick: icono por defecto" | tee -a "$ROOT/out/report.txt"
+              fi
+              sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Os Fênix</string>|' "$RES/values/strings.xml"
               npx cap sync android
               (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               cp android/app/build/outputs/apk/debug/app-debug.apk "$ROOT/out/$n.apk"
