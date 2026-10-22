@@ -87,16 +87,18 @@ jobs:
               npx cap add android
               # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res
-              rm -rf "$RES/mipmap-anydpi-v26"
-              pip install --quiet --break-system-packages pillow 2>&1 | tail -1
-              python3 "android-native/make_icons.py" public/brand/app.png "$RES" 2>&1 | tee -a "$ROOT/out/report.txt"
-              # Plugin nativo: lista automaticamente los .hbr2 del celular
-              PKGDIR=android/app/src/main/java/com/osfenix/replayanalyzer/motor
-              mkdir -p "$PKGDIR"
-              cp "android-native/HbrScanner.java" "android-native/MainActivity.java" "$PKGDIR/"
-              MAN=android/app/src/main/AndroidManifest.xml
-              sed -i 's#<application#<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <application android:requestLegacyExternalStorage="true"#' "$MAN"
-              echo "Plugin HbrScanner y permisos agregados" | tee -a "$ROOT/out/report.txt"
+              if [ -f android-native/make_icons.py ] && [ -f public/brand/app.png ]; then
+                rm -rf "$RES/mipmap-anydpi-v26"
+                pip install --quiet --break-system-packages pillow 2>&1 | tail -1
+                python3 android-native/make_icons.py public/brand/app.png "$RES" 2>&1 | tee -a "$ROOT/out/report.txt"
+                # Plugin nativo: lista automaticamente los .hbr2 del celular
+                PKGDIR=android/app/src/main/java/com/osfenix/replayanalyzer/motor
+                mkdir -p "$PKGDIR"
+                cp android-native/HbrScanner.java android-native/MainActivity.java "$PKGDIR/"
+                MAN=android/app/src/main/AndroidManifest.xml
+                sed -i 's#<application#<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <application android:requestLegacyExternalStorage="true"#' "$MAN"
+                echo "Icono y plugin HbrScanner aplicados" | tee -a "$ROOT/out/report.txt"
+              fi
               sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Os Fênix</string>|' "$RES/values/strings.xml"
               npx cap sync android
               (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
@@ -119,7 +121,7 @@ jobs:
           git rm -rf -q .
           git clean -fdxq
           cp "$RUNNER_TEMP"/res/* . 2>/dev/null || true
-          git add -f -- '*.apk' '*.txt' '*.png' 2>/dev/null || true
+          for g in '*.apk' '*.txt' '*.png'; do git add -f -- "$g" 2>/dev/null || true; done
           git commit -q -m "Resultados de compilación" || true
           git status --short | head -5 > "$RUNNER_TEMP/st.txt"
           git push --force origin apks 2> "$RUNNER_TEMP/push.err"; RC=$?
