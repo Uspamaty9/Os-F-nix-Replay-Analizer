@@ -132,6 +132,13 @@ const [,, url, outDir, sampleDir] = process.argv;
       // ===== Historial, renombrar, reabrir y botones =====
       await page.click('#button_leave'); await page.waitForTimeout(1800);
       await page.screenshot({ path: path.join(outDir, 'shot-8-inicio-historial.png') });
+      const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
+      const before = await snap();
+      await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
+      const during = await snap();
+      await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(700);
+      const after = await snap();
+      T('F2 Al cambiar Historial/Favoritos no se mueve nada', JSON.stringify(before) === JSON.stringify(during) && JSON.stringify(before) === JSON.stringify(after), JSON.stringify([before[0], during[0]]));
       const n1 = await page.locator('.fh-item').count();
       T('H1 La repetición importada aparece en el historial', n1 === 1, n1 + ' elemento(s)');
       await page.click('.fh-rename'); await page.waitForTimeout(200);
