@@ -60,12 +60,16 @@ jobs:
               done
               npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3 | tee -a "$ROOT/out/report.txt"
               # Fuentes locales (sin Google Fonts)
-              npm install --no-save --legacy-peer-deps --no-audit --no-fund @fontsource/open-sans@5 @fontsource/roboto@5 material-icons@1 2>&1 | tail -2
+              npm install --no-save --legacy-peer-deps --no-audit --no-fund @fontsource/open-sans@5 @fontsource/roboto@5 @fontsource/oswald@5 @fontsource/poppins@5 material-icons@1 2>&1 | tail -2
               mkdir -p public/fonts
               cp node_modules/@fontsource/open-sans/files/open-sans-latin-{400,600,700}-normal.woff2 public/fonts/
               cp node_modules/@fontsource/roboto/files/roboto-latin-{300,400,700}-normal.woff2 public/fonts/
+              cp node_modules/@fontsource/oswald/files/oswald-latin-{500,600,700}-normal.woff2 public/fonts/
+              cp node_modules/@fontsource/poppins/files/poppins-latin-{400,500,600,700}-normal.woff2 public/fonts/
               cp node_modules/material-icons/iconfont/material-icons.woff2 public/fonts/
               { for w in 400 600 700; do echo "@font-face{font-family:'Open Sans';font-weight:$w;font-display:swap;src:url(open-sans-latin-$w-normal.woff2) format('woff2')}"; done
+                for w in 500 600 700; do echo "@font-face{font-family:'Oswald';font-weight:$w;font-display:swap;src:url(oswald-latin-$w-normal.woff2) format('woff2')}"; done
+                for w in 400 500 600 700; do echo "@font-face{font-family:'Poppins';font-weight:$w;font-display:swap;src:url(poppins-latin-$w-normal.woff2) format('woff2')}"; done
                 for w in 300 400 700; do echo "@font-face{font-family:'Roboto';font-weight:$w;font-display:swap;src:url(roboto-latin-$w-normal.woff2) format('woff2')}"; done
                 echo "@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(material-icons.woff2) format('woff2')}"; } > public/fonts/fonts.css
               ls public/fonts | tee -a "$ROOT/out/report.txt"
@@ -79,21 +83,18 @@ jobs:
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
               printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
               npx cap add android
-              # Icono de la app: el escudo (solo se recorta el margen transparente; no se altera)
+              # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res
-              IM=$(command -v magick || command -v convert || true)
-              if [ -n "$IM" ]; then
-                rm -rf "$RES/mipmap-anydpi-v26"
-                for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-                  d=${pair%%:*}; px=${pair##*:}; inner=$((px*80/100))
-                  $IM public/brand/escudo.png -trim +repage -resize ${inner}x${inner} -background '#111111' -gravity center -extent ${px}x${px} "$RES/mipmap-$d/ic_launcher.png"
-                  cp "$RES/mipmap-$d/ic_launcher.png" "$RES/mipmap-$d/ic_launcher_round.png"
-                  cp "$RES/mipmap-$d/ic_launcher.png" "$RES/mipmap-$d/ic_launcher_foreground.png"
-                done
-                echo "Icono del escudo aplicado" | tee -a "$ROOT/out/report.txt"
-              else
-                echo "Sin ImageMagick: icono por defecto" | tee -a "$ROOT/out/report.txt"
-              fi
+              rm -rf "$RES/mipmap-anydpi-v26"
+              pip install --quiet --break-system-packages pillow 2>&1 | tail -1
+              python3 "android-native/make_icons.py" public/brand/app.png "$RES" 2>&1 | tee -a "$ROOT/out/report.txt"
+              # Plugin nativo: lista automaticamente los .hbr2 del celular
+              PKGDIR=android/app/src/main/java/com/osfenix/replayanalyzer/motor
+              mkdir -p "$PKGDIR"
+              cp "android-native/HbrScanner.java" "android-native/MainActivity.java" "$PKGDIR/"
+              MAN=android/app/src/main/AndroidManifest.xml
+              sed -i 's#<application#<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <application android:requestLegacyExternalStorage="true"#' "$MAN"
+              echo "Plugin HbrScanner y permisos agregados" | tee -a "$ROOT/out/report.txt"
               sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Os Fênix</string>|' "$RES/values/strings.xml"
               npx cap sync android
               (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
