@@ -146,6 +146,8 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.screenshot({ path: path.join(outDir, 'shot-10-reabierta.png') });
       const tiles = await page.evaluate(() => Array.from(document.querySelectorAll('.bottom-section .buttons button')).filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [b.textContent.trim(), Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }));
       log('Botones (texto,x,y,ancho,alto): ' + JSON.stringify(tiles));
+      const lay = await page.evaluate(() => ['.bottom-section','.bottom-section .buttons','.chatbox-view','.chatbox-view .log','.replay-controls-view'].map(q => { const e = document.querySelector(q); if (!e) return [q, null]; const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return [q, Math.round(r.y), Math.round(r.height), cs.paddingBottom, cs.marginTop, cs.flex]; }));
+      log('Layout inferior: ' + JSON.stringify(lay));
       T('B1 Menú/Ajustes/Estadísticas dentro de la pantalla y táctiles (≥44px)', tiles.length >= 3 && tiles.every(b => b[1] >= 0 && b[1] + b[3] <= 391 && b[4] >= 44));
       const bar2 = await rectOf('.game-state-view .bar');
       log('Marcador: ' + JSON.stringify(bar2));
