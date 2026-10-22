@@ -31,6 +31,8 @@ jobs:
         run: |
           export CI=false
           ROOT="$PWD"
+          mkdir -p out
+          trap 'echo "ERR linea $LINENO: $BASH_COMMAND" >> "$ROOT/out/report.txt"' ERR
           export FENIX_KEYSTORE="$ROOT/.github/keys/debug.keystore"
           mkdir -p out
           npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright-core@1.48 > /dev/null 2>&1 || true
@@ -108,6 +110,7 @@ jobs:
       - name: Guardar resultados en la rama apks
         if: always()
         run: |
+          set +e
           mkdir -p "$RUNNER_TEMP/res"
           cp out/* "$RUNNER_TEMP/res/" 2>/dev/null || true
           git config user.name "github-actions"
