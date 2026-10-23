@@ -182,15 +182,25 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('S2 Tocar jugadores en la cancha: se sigue al último tocado', false, String(err).slice(0, 200)); }
       // ===== Pantalla despejada para grabar =====
       try {
-        await page.click('.fenix-clean-btn'); await page.waitForTimeout(600);
-        const hidden = await page.evaluate(() => ['.game-view > .bottom-section', '.replay-controls-view', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean-btn'].every(q => { const e = document.querySelector(q); return !e || getComputedStyle(e).display === 'none'; }));
+        const isPlaying = () => page.evaluate(() => document.body.classList.contains('fenix-playing'));
+        const was = await isPlaying();
+        if (was) { await page.click('#play_button'); await page.waitForTimeout(500); }
+        await page.click('.fenix-clean-btn'); await page.waitForTimeout(700);
+        const disp = (q) => page.evaluate((q) => { const e = document.querySelector(q); return !e || getComputedStyle(e).display === 'none'; }, q);
+        const hidden = (await Promise.all(['.game-view > .bottom-section', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean-btn', '.game-state-view .bar-container'].map(disp))).every(Boolean);
+        const ctrlPaused = !(await disp('.replay-controls-view'));
         await page.screenshot({ path: path.join(outDir, 'shot-13-despejada.png') });
-        const cv = await page.evaluate(() => { const r = document.querySelector('.game-state-view canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
-        for (let i = 0; i < 3; i++) { await page.mouse.click(cv.x, cv.y); await page.waitForTimeout(150); }
+        await page.click('#play_button'); await page.waitForTimeout(600);
+        const ctrlPlaying = !(await disp('.replay-controls-view'));
+        await page.screenshot({ path: path.join(outDir, 'shot-14-despejada-reproduciendo.png') });
+        const cv = await page.evaluate(() => { const r = document.querySelector('.game-state-view canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 3 }; });
+        for (let i = 0; i < 2; i++) { await page.mouse.click(cv.x, cv.y); await page.waitForTimeout(150); }
         await page.waitForTimeout(500);
-        const back = await page.evaluate(() => !document.body.classList.contains('fenix-despejado') && getComputedStyle(document.querySelector('.replay-controls-view')).display !== 'none');
-        T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', hidden && back, JSON.stringify({ hidden, back }));
-      } catch (err) { T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', false, String(err).slice(0, 200)); }
+        const back = await page.evaluate(() => !document.body.classList.contains('fenix-despejado'));
+        const sb = !(await disp('.game-state-view .bar-container'));
+        if (!(await isPlaying()) && was) { await page.click('#play_button'); await page.waitForTimeout(400); }
+        T('C1 Pantalla despejada: oculta marcador y botones, barra solo en pausa, 2 toques salen', hidden && ctrlPaused && !ctrlPlaying && back && sb, JSON.stringify({ hidden, ctrlPaused, ctrlPlaying, back, sb }));
+      } catch (err) { T('C1 Pantalla despejada', false, String(err).slice(0, 200)); }
       // ===== Simetría del chat y botón de zoom =====
       try {
         const gaps = await page.evaluate(() => {
@@ -235,6 +245,10 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.screenshot({ path: path.join(outDir, 'shot-6-horizontal.png') });
       const cl = await rectOf('canvas');
       T('10 Girar a horizontal: la cancha se reajusta', sl && sl.zoom === 1 && sl.W > 0, 'canvas ' + Math.round(cl.w) + 'x' + Math.round(cl.h) + ' kFit=' + sl.kFit);
+      try {
+        const lg = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const c = g('.game-state-view'), rc = g('.replay-controls-view'), eye = g('.fenix-clean-btn'); const btns = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).map(b => b.getBoundingClientRect()); const ov = eye && btns.some(b => !(eye.right <= b.left || eye.left >= b.right || eye.bottom <= b.top || eye.top >= b.bottom)); return { hueco: c && rc ? Math.round(rc.top - c.bottom) : null, ojoChoca: ov, ojoAbajo: eye && rc ? eye.bottom <= rc.top + 1 : null }; });
+        T('L1 Horizontal: línea dorada pegada a la cancha y ojo sin chocar', lg.hueco !== null && Math.abs(lg.hueco) <= 3 && lg.ojoChoca === false && lg.ojoAbajo, JSON.stringify(lg));
+      } catch (err) { T('L1 Horizontal', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
