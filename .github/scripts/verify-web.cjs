@@ -182,13 +182,13 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('S2 Tocar jugadores en la cancha: se sigue al último tocado', false, String(err).slice(0, 200)); }
       // ===== Pantalla despejada para grabar =====
       try {
-        await page.click('.fenix-clean'); await page.waitForTimeout(600);
-        const hidden = await page.evaluate(() => ['.game-view > .bottom-section', '.replay-controls-view', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean'].every(q => { const e = document.querySelector(q); return !e || getComputedStyle(e).display === 'none'; }));
+        await page.click('.fenix-clean-btn'); await page.waitForTimeout(600);
+        const hidden = await page.evaluate(() => ['.game-view > .bottom-section', '.replay-controls-view', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean-btn'].every(q => { const e = document.querySelector(q); return !e || getComputedStyle(e).display === 'none'; }));
         await page.screenshot({ path: path.join(outDir, 'shot-13-despejada.png') });
         const cv = await page.evaluate(() => { const r = document.querySelector('.game-state-view canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
         for (let i = 0; i < 3; i++) { await page.mouse.click(cv.x, cv.y); await page.waitForTimeout(150); }
         await page.waitForTimeout(500);
-        const back = await page.evaluate(() => !document.body.classList.contains('fenix-clean') && getComputedStyle(document.querySelector('.replay-controls-view')).display !== 'none');
+        const back = await page.evaluate(() => !document.body.classList.contains('fenix-despejado') && getComputedStyle(document.querySelector('.replay-controls-view')).display !== 'none');
         T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', hidden && back, JSON.stringify({ hidden, back }));
       } catch (err) { T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
