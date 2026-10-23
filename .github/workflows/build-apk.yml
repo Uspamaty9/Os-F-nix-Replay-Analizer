@@ -98,6 +98,12 @@ jobs:
                 echo "Icono y plugin HbrScanner aplicados" | tee -a "$ROOT/out/report.txt"
               fi
               sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Replay Analizer Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Replay Analizer Os Fênix</string>|' "$RES/values/strings.xml"
+              # Tema: usar tambien la zona de la camara (recorte) en pantalla completa
+              STY="$RES/values/styles.xml"
+              if [ -f "$STY" ]; then
+                sed -i 's|\(<style name="AppTheme.NoActionBar"[^>]*>\)|\1\n        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>|' "$STY"
+                echo "--- styles.xml ---" | tee -a "$ROOT/out/report.txt"; cat "$STY" | tee -a "$ROOT/out/report.txt"
+              fi
               npx cap sync android
               (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               cp android/app/build/outputs/apk/debug/app-debug.apk "$ROOT/out/$n.apk"

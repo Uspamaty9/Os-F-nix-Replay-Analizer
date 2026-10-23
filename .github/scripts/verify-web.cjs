@@ -217,6 +217,8 @@ const [,, url, outDir, sampleDir] = process.argv;
           zr.push(await page.evaluate(() => window.__fenixView.zoom));
         }
         const pos = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const c = g('.game-state-view canvas'), a = g('.fenix-clean-btn'), s = g('.fenix-star'); return { ojoIzq: a && c ? a.left - c.left < 20 && a.top - c.top < 20 : false, starDer: s && c ? c.right - s.right < 20 && s.top - c.top < 20 : false }; });
+        const edg = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const eye = g('.fenix-clean-btn'), st = g('.fenix-star'), fit = g('.fenix-fit'), ctr = g('.replay-controls-view'), lb = g('#button_leave'), mb = g('.game-view > .bottom-section .buttons button'); return { ojoL: Math.round(eye.left), ojoT: Math.round(eye.top), starR: Math.round(innerWidth - st.right), fitR: Math.round(innerWidth - fit.right), leaveB: Math.round(innerHeight - lb.bottom), leaveR: Math.round(innerWidth - lb.right), menuL: Math.round(mb.left) }; });
+        T('B1 Márgenes cómodos en los bordes (vertical)', edg.ojoL >= 12 && edg.ojoT >= 12 && edg.starR >= 12 && edg.fitR >= 12 && edg.leaveB >= 10 && edg.leaveR >= 12 && edg.menuL >= 12, JSON.stringify(edg));
         T('Z1 El botón de zoom siempre vuelve a 1.0×', zr.every(z => z === 1), JSON.stringify(zr));
         T('P1 Ojo arriba-izquierda y favoritos arriba-derecha', pos.ojoIzq && pos.starDer, JSON.stringify(pos));
         await page.evaluate(() => window.__fenixSetFollow(0));
@@ -253,10 +255,31 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.evaluate(() => { document.documentElement.style.setProperty('--sal', '32px'); document.documentElement.style.setProperty('--sar', '0px'); });
         await page.waitForTimeout(800);
         await page.screenshot({ path: path.join(outDir, 'shot-16-recorte.png') });
-        const ins = await page.evaluate(() => { const L = q => { const e = document.querySelector(q); return e ? Math.round(e.getBoundingClientRect().left) : null; }; const R = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const bs = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).map(b => b.getBoundingClientRect()); const h = bs.map(b => Math.round(b.height)), w = bs.map(b => Math.round(b.width)); const gaps = bs.slice(1).map((b, i) => Math.round(b.top - bs[i].bottom)); return { canvas: L('.game-state-view canvas'), ctrl: L('.replay-controls-view button'), menu: L('.game-view > .bottom-section .buttons button'), ojo: L('.fenix-clean-btn'), h, w, gaps, borde: getComputedStyle(document.querySelector('.replay-controls-view')).borderTopWidth, btnH: Math.round(R('#play_button').height) }; });
-        T('N1 Recorte de cámara respetado y botones laterales parejos', ins.ctrl >= 31 && ins.menu >= 31 && ins.ojo >= 31 && ins.h.every(v => v === 44) && ins.w.every(v => v === 52) && ins.gaps.every(g => g >= 8) && ins.borde === '1px' && ins.btnH <= 40, JSON.stringify(ins));
+        const ins = await page.evaluate(() => { const L = q => { const e = document.querySelector(q); return e ? Math.round(e.getBoundingClientRect().left) : null; }; const R = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const bs = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).filter(b => b.offsetWidth > 0).map(b => b.getBoundingClientRect()); const h = bs.map(b => Math.round(b.height)), w = bs.map(b => Math.round(b.width)); const gaps = bs.slice(1).map((b, i) => Math.round(b.top - bs[i].bottom)); return { canvas: L('.game-state-view canvas'), ctrl: L('.replay-controls-view button'), menu: L('.game-view > .bottom-section .buttons button'), ojo: L('.fenix-clean-btn'), h, w, gaps, borde: getComputedStyle(document.querySelector('.replay-controls-view')).borderTopWidth, btnH: Math.round(R('#play_button').height) }; });
+        T('N1 Recorte de cámara respetado y botones laterales parejos', ins.ctrl >= 45 && ins.menu >= 45 && ins.ojo >= 45 && ins.canvas <= 2 && ins.h.every(v => v === 44) && ins.w.every(v => v === 52) && ins.gaps.every(g => g >= 8) && ins.borde === '1px' && ins.btnH <= 40, JSON.stringify(ins));
         await page.evaluate(() => { document.documentElement.style.removeProperty('--sal'); });
       } catch (err) { T('N1 Recorte', false, String(err).slice(0, 200)); }
+      for (const vp of [{ width: 844, height: 390, n: 'horizontal' }, { width: 390, height: 844, n: 'vertical' }]) {
+        try {
+          await page.setViewportSize({ width: vp.width, height: vp.height }); await page.waitForTimeout(800);
+          await page.click('#button_staty'); await page.waitForTimeout(1800);
+          const stt = await page.evaluate(() => { const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const ov = (a, b) => a && b && !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom); const p = r('#game-stats'), sel = r('#game-stats .title select'), cl = r('#game-stats > button'), dl = Array.from(document.querySelectorAll('#game-stats .title button')).map(b => b.getBoundingClientRect()); return { panelL: Math.round(p.left), panelT: Math.round(p.top), panelR: Math.round(innerWidth - p.right), panelB: Math.round(innerHeight - p.bottom), cierraChoca: ov(cl, sel) || dl.some(d => ov(cl, d)), cols: getComputedStyle(document.querySelector('#game-stats')).display }; });
+          await page.screenshot({ path: path.join(outDir, 'shot-17-stats-' + vp.n + '.png') });
+          T('E2 Estadísticas ordenadas (' + vp.n + ')', stt.panelL >= 8 && stt.panelT >= 8 && stt.panelR >= 8 && stt.panelB >= 8 && !stt.cierraChoca, JSON.stringify(stt));
+          await page.click('#game-stats > button'); await page.waitForTimeout(900);
+        } catch (err) { T('E2 Estadísticas (' + vp.n + ')', false, String(err).slice(0, 200)); }
+      }
+      try {
+        await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(800);
+        await page.click('#settings_button'); await page.waitForTimeout(900);
+        const hid = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).display === 'none');
+        await page.screenshot({ path: path.join(outDir, 'shot-18-ajustes-horizontal.png') });
+        T('E3 Horizontal: con Ajustes abierto los botones laterales no se superponen', hid, String(hid));
+        await page.click('.settings-view >> text=Close'); await page.waitForTimeout(800);
+        const back2 = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).display !== 'none');
+        T('E3b Al cerrar Ajustes vuelven los botones', back2, String(back2));
+        await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(400);
+      } catch (err) { T('E3 Ajustes horizontal', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
