@@ -102,6 +102,24 @@ const [,, url, outDir, sampleDir] = process.argv;
       T('7 Pausar/reanudar sin perder el zoom', s5.zoom === 3, 'zoom=' + s5.zoom);
       log('Tiempo antes/después de reproducir: ' + t0 + ' → ' + t1);
       T('13 La repetición avanza (reloj cambia al reproducir)', t0 !== t1);
+      // ===== Seguimiento de jugador: elegir uno, luego otro (abriendo Ajustes dos veces) =====
+      try {
+        const live0 = await page.evaluate(() => (window.__fenixLive || []).map(p => p.id));
+        const opts = await page.evaluate(() => Array.from(document.querySelectorAll('#selectPlayerToFollow option')).map(o => o.value));
+        const ids = live0.filter(id => opts.includes(String(id)) && id !== 0).slice(0, 2);
+        log('Seguimiento: jugadores en juego ' + JSON.stringify(live0) + ' opciones ' + JSON.stringify(opts));
+        const results = [];
+        for (const id of ids) {
+          await page.click('#settings_button'); await page.waitForTimeout(600);
+          await page.click('#video_button'); await page.waitForTimeout(300);
+          await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
+          const chk = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return { f, l }; }, id);
+          results.push(!!(chk.l && chk.f && String(chk.f.id) === String(id) && Math.abs(chk.f.x - chk.l.x) < 0.01 && Math.abs(chk.f.y - chk.l.y) < 0.01));
+          await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
+        }
+        T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', ids.length === 2 && results.every(Boolean), JSON.stringify({ ids, results }));
+        await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
+      } catch (err) { T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
       const tb = await rectOf('.timebar');
       const before = await st();
