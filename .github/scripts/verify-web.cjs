@@ -119,6 +119,33 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', ids.length === 2 && results.every(Boolean), JSON.stringify({ ids, results }));
         await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
       } catch (err) { T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', false, String(err).slice(0, 200)); }
+      // ===== Reabrir Ajustes SIN pulsar "Video" (el diálogo recuerda la pestaña) y elegir jugadores =====
+      try {
+        const res3 = [];
+        for (let n = 0; n < 3; n++) {
+          const id = await page.evaluate((n) => { const l = (window.__fenixLive || []).map(p => p.id); return l[n % l.length]; }, n);
+          await page.click('#settings_button'); await page.waitForTimeout(600);
+          await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
+          const ok = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return !!(l && f && String(f.id) === String(id) && Math.abs(f.x - l.x) < 0.01); }, id);
+          res3.push(ok);
+          await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
+        }
+        T('S3 Ajustes reabierto sin tocar "Video": cada jugador elegido se sigue', res3.every(Boolean), JSON.stringify(res3));
+      } catch (err) { T('S3 Ajustes reabierto sin tocar "Video": cada jugador elegido se sigue', false, String(err).slice(0, 200)); }
+      // ===== Panel propio "Seguir jugador" =====
+      try {
+        const res4 = [];
+        for (let n = 0; n < 3; n++) {
+          const id = await page.evaluate((n) => { const l = (window.__fenixLive || []).map(p => p.id); return l[(n + 1) % l.length]; }, n);
+          await page.click('.fenix-follow'); await page.waitForTimeout(600);
+          await page.click('.fenix-follow-panel .ff-item[data-id="' + id + '"]'); await page.waitForTimeout(700);
+          const ok = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return !!(l && f && String(f.id) === String(id) && Math.abs(f.x - l.x) < 0.01); }, id);
+          res4.push(ok);
+        }
+        await page.screenshot({ path: path.join(outDir, 'shot-12-seguir.png') });
+        T('S4 Panel "Seguir jugador": cada jugador elegido se sigue', res4.every(Boolean), JSON.stringify(res4));
+        await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
+      } catch (err) { T('S4 Panel "Seguir jugador": cada jugador elegido se sigue', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
         const outcomes = [];
