@@ -158,6 +158,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
+        await page.click('.fenix-fit'); await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0)); await page.waitForTimeout(500);
         const outcomes = [];
         for (let n = 0; n < 3; n++) {
           const target = await page.evaluate(() => {
@@ -179,6 +180,17 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('S2 Tocar jugadores en la cancha: se sigue al último tocado', outcomes.filter(o => o === true).length >= 2, JSON.stringify(outcomes));
         await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
       } catch (err) { T('S2 Tocar jugadores en la cancha: se sigue al último tocado', false, String(err).slice(0, 200)); }
+      // ===== Pantalla despejada para grabar =====
+      try {
+        await page.click('.fenix-clean'); await page.waitForTimeout(600);
+        const hidden = await page.evaluate(() => ['.game-view > .bottom-section', '.replay-controls-view', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean'].every(q => { const e = document.querySelector(q); return !e || getComputedStyle(e).display === 'none'; }));
+        await page.screenshot({ path: path.join(outDir, 'shot-13-despejada.png') });
+        const cv = await page.evaluate(() => { const r = document.querySelector('.game-state-view canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+        for (let i = 0; i < 3; i++) { await page.mouse.click(cv.x, cv.y); await page.waitForTimeout(150); }
+        await page.waitForTimeout(500);
+        const back = await page.evaluate(() => !document.body.classList.contains('fenix-clean') && getComputedStyle(document.querySelector('.replay-controls-view')).display !== 'none');
+        T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', hidden && back, JSON.stringify({ hidden, back }));
+      } catch (err) { T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
       const tb = await rectOf('.timebar');
       const before = await st();
