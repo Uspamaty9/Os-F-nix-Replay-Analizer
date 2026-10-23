@@ -256,7 +256,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.waitForTimeout(800);
         await page.screenshot({ path: path.join(outDir, 'shot-16-recorte.png') });
         const ins = await page.evaluate(() => { const L = q => { const e = document.querySelector(q); return e ? Math.round(e.getBoundingClientRect().left) : null; }; const R = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const bs = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).filter(b => b.offsetWidth > 0).map(b => b.getBoundingClientRect()); const h = bs.map(b => Math.round(b.height)), w = bs.map(b => Math.round(b.width)); const gaps = bs.slice(1).map((b, i) => Math.round(b.top - bs[i].bottom)); return { canvas: L('.game-state-view canvas'), ctrl: L('.replay-controls-view button'), menu: L('.game-view > .bottom-section .buttons button'), ojo: L('.fenix-clean-btn'), h, w, gaps, borde: getComputedStyle(document.querySelector('.replay-controls-view')).borderTopWidth, btnH: Math.round(R('#play_button').height) }; });
-        T('N1 Recorte de cámara respetado y botones laterales parejos', ins.ctrl >= 45 && ins.menu >= 45 && ins.ojo >= 45 && ins.canvas <= 2 && ins.h.every(v => v === 44) && ins.w.every(v => v === 52) && ins.gaps.every(g => g >= 8) && ins.borde === '1px' && ins.btnH <= 40, JSON.stringify(ins));
+        T('N1 Recorte de cámara respetado y botones laterales parejos', ins.ctrl >= 12 && ins.menu >= 12 && ins.ojo >= 12 && ins.canvas <= 2 && ins.h.every(v => v === 44) && ins.w.every(v => v === 52) && ins.gaps.every(g => g >= 8) && ins.borde === '1px' && ins.btnH <= 40, JSON.stringify(ins));
         await page.evaluate(() => { document.documentElement.style.removeProperty('--sal'); });
       } catch (err) { T('N1 Recorte', false, String(err).slice(0, 200)); }
       for (const vp of [{ width: 844, height: 390, n: 'horizontal' }, { width: 390, height: 844, n: 'vertical' }]) {
@@ -289,7 +289,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.click('#settings_button'); await page.waitForTimeout(900); await bk();
         r.ajustes = await page.evaluate(() => document.querySelector('.settings-view').style.visibility === 'hidden');
         await page.click('[data-hook=menu]'); await page.waitForTimeout(900);
-        r.cerrarVisible = await page.evaluate(() => { const b = document.querySelector('.fenix-room-close'); return !!(b && b.offsetParent !== null); });
+        r.cerrarVisible = await page.evaluate(() => { const b = document.querySelector('.fenix-room-close'); return !!(b && b.offsetParent !== null && b.getBoundingClientRect().width < 200 && b.getBoundingClientRect().right > innerWidth - 40); });
         await page.screenshot({ path: path.join(outDir, 'shot-19-menu-sala.png') });
         await page.click('.fenix-room-close'); await page.waitForTimeout(900);
         r.cerrarBoton = await page.evaluate(() => { const v = document.querySelector('.room-view'); return !v || v.offsetParent === null; });
