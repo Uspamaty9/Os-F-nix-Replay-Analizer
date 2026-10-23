@@ -249,12 +249,27 @@ const [,, url, outDir, sampleDir] = process.argv;
         const lg = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const c = g('.game-state-view'), rc = g('.replay-controls-view'), eye = g('.fenix-clean-btn'); const btns = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).map(b => b.getBoundingClientRect()); const ov = eye && btns.some(b => !(eye.right <= b.left || eye.left >= b.right || eye.bottom <= b.top || eye.top >= b.bottom)); return { hueco: c && rc ? Math.round(rc.top - c.bottom) : null, ojoChoca: ov, ojoAbajo: eye && rc ? eye.bottom <= rc.top + 1 : null }; });
         T('L1 Horizontal: línea dorada pegada a la cancha y ojo sin chocar', lg.hueco !== null && Math.abs(lg.hueco) <= 3 && lg.ojoChoca === false && lg.ojoAbajo, JSON.stringify(lg));
       } catch (err) { T('L1 Horizontal', false, String(err).slice(0, 200)); }
+      try {
+        await page.evaluate(() => { document.documentElement.style.setProperty('--sal', '32px'); document.documentElement.style.setProperty('--sar', '0px'); });
+        await page.waitForTimeout(800);
+        await page.screenshot({ path: path.join(outDir, 'shot-16-recorte.png') });
+        const ins = await page.evaluate(() => { const L = q => { const e = document.querySelector(q); return e ? Math.round(e.getBoundingClientRect().left) : null; }; const R = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const bs = Array.from(document.querySelectorAll('.game-view > .bottom-section .buttons button')).map(b => b.getBoundingClientRect()); const h = bs.map(b => Math.round(b.height)), w = bs.map(b => Math.round(b.width)); const gaps = bs.slice(1).map((b, i) => Math.round(b.top - bs[i].bottom)); return { canvas: L('.game-state-view canvas'), ctrl: L('.replay-controls-view button'), menu: L('.game-view > .bottom-section .buttons button'), ojo: L('.fenix-clean-btn'), h, w, gaps, borde: getComputedStyle(document.querySelector('.replay-controls-view')).borderTopWidth, btnH: Math.round(R('#play_button').height) }; });
+        T('N1 Recorte de cámara respetado y botones laterales parejos', ins.ctrl >= 31 && ins.menu >= 31 && ins.ojo >= 31 && ins.h.every(v => v === 44) && ins.w.every(v => v === 52) && ins.gaps.every(g => g >= 8) && ins.borde === '1px' && ins.btnH <= 40, JSON.stringify(ins));
+        await page.evaluate(() => { document.documentElement.style.removeProperty('--sal'); });
+      } catch (err) { T('N1 Recorte', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
       // ===== Historial, renombrar, reabrir y botones =====
       await page.click('#button_leave'); await page.waitForTimeout(1800);
       await page.screenshot({ path: path.join(outDir, 'shot-8-inicio-historial.png') });
+      try {
+        await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(900);
+        await page.screenshot({ path: path.join(outDir, 'shot-15-inicio-horizontal.png') });
+        const ov = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear'), tabs = Array.from(document.querySelectorAll('.fh-tabs button')).map(b => b.getBoundingClientRect()); const hit = tabs.some(t => !(g.right <= t.left || g.left >= t.right || g.bottom <= t.top || g.top >= t.bottom)); return { choca: hit, gearLeft: Math.round(g.left) }; });
+        T('E1 Horizontal: engranaje no se superpone a Favoritos', ov.choca === false, JSON.stringify(ov));
+        await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
+      } catch (err) { T('E1 Engranaje horizontal', false, String(err).slice(0, 200)); }
       const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll','.fenix-home'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
       const snapA = await snap();
       await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
