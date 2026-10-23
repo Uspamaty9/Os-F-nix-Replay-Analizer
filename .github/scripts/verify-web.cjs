@@ -146,6 +146,16 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('S4 Panel "Seguir jugador": cada jugador elegido se sigue', res4.every(Boolean), JSON.stringify(res4));
         await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
       } catch (err) { T('S4 Panel "Seguir jugador": cada jugador elegido se sigue', false, String(err).slice(0, 200)); }
+      // ===== Seguir a la pelota y modo libre =====
+      try {
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="ball"]'); await page.waitForTimeout(700);
+        const ballOk = await page.evaluate(() => { const f = window.__fenixFollow, b = window.__fenixBall; return !!(f && b && f.mode === 'pelota' && Math.abs(f.x - b.x) < 0.01 && Math.abs(f.y - b.y) < 0.01); });
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
+        const freeOk = await page.evaluate(() => window.__fenixFollow && window.__fenixFollow.mode === 'libre');
+        T('S5 Seguir a la pelota y modo libre', ballOk && freeOk, JSON.stringify({ ballOk, freeOk }));
+      } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
         const outcomes = [];
@@ -209,6 +219,11 @@ const [,, url, outDir, sampleDir] = process.argv;
       const n1 = await page.locator('.fh-item').count();
       T('H1 La repetición importada aparece en el historial', n1 === 1, n1 + ' elemento(s)');
       await page.click('.fh-rename'); await page.waitForTimeout(200);
+      await page.locator('.fh-edit input').fill('');
+      await page.locator('.fh-edit input').pressSequentially('hola', { delay: 80 });
+      const typed = await page.locator('.fh-edit input').inputValue();
+      const boxTop = await page.evaluate(() => Math.round(document.querySelector('.fh-rename-box').getBoundingClientRect().bottom));
+      T('H4 Al escribir el nombre sale en orden (hola) y la ventana queda arriba', typed === 'hola' && boxTop < 400, typed + ' / borde inferior ' + boxTop);
       await page.fill('.fh-edit input', 'Final vs Rivales');
       await page.screenshot({ path: path.join(outDir, 'shot-9-renombrar.png') });
       await page.click('.fh-ok'); await page.waitForTimeout(500);
