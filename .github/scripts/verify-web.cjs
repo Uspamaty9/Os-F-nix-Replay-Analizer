@@ -272,11 +272,11 @@ const [,, url, outDir, sampleDir] = process.argv;
       try {
         await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(800);
         await page.click('#settings_button'); await page.waitForTimeout(900);
-        const hid = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).display === 'none');
+        const hid = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).visibility === 'hidden');
         await page.screenshot({ path: path.join(outDir, 'shot-18-ajustes-horizontal.png') });
         T('E3 Horizontal: con Ajustes abierto los botones laterales no se superponen', hid, String(hid));
         await page.click('.settings-view >> text=Close'); await page.waitForTimeout(1500);
-        const back2 = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).display !== 'none');
+        const back2 = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).visibility === 'visible' && document.querySelector('.settings-view').style.visibility === 'hidden');
         const dg = await page.evaluate(() => JSON.stringify({ stats: !!document.getElementById('game-stats'), sv: (document.querySelector('.settings-view') || { style: {} }).style.visibility, cls: document.body.className, rv: !!(document.querySelector('.room-view') && document.querySelector('.room-view').offsetParent) }));
         T('E3b Al cerrar Ajustes vuelven los botones', back2, String(back2) + ' ' + dg);
         await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(400);
