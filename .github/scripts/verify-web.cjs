@@ -191,6 +191,26 @@ const [,, url, outDir, sampleDir] = process.argv;
         const back = await page.evaluate(() => !document.body.classList.contains('fenix-despejado') && getComputedStyle(document.querySelector('.replay-controls-view')).display !== 'none');
         T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', hidden && back, JSON.stringify({ hidden, back }));
       } catch (err) { T('C1 Pantalla despejada oculta todo y 3 toques la desactivan', false, String(err).slice(0, 200)); }
+      // ===== Simetría del chat y botón de zoom =====
+      try {
+        const gaps = await page.evaluate(() => {
+          const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; };
+          const bt = r('.game-view > .bottom-section > .buttons'), ch = r('.chatbox-view'), rc = r('.replay-controls-view');
+          return bt && ch && rc ? { arriba: Math.round(ch.top - bt.bottom), abajo: Math.round(rc.top - ch.bottom) } : null;
+        });
+        T('G1 Espacio simétrico entre menús-chat y chat-controles', !!gaps && Math.abs(gaps.arriba - gaps.abajo) <= 3, JSON.stringify(gaps));
+        const zr = [];
+        for (const follow of [0, 'ball', 0]) {
+          await page.evaluate((f) => { window.__fenixSetFollow(f); window.__fenixView.zoom = 3; }, follow);
+          await page.waitForTimeout(300);
+          await page.click('.fenix-fit'); await page.waitForTimeout(300);
+          zr.push(await page.evaluate(() => window.__fenixView.zoom));
+        }
+        const pos = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const c = g('.game-state-view canvas'), a = g('.fenix-clean-btn'), s = g('.fenix-star'); return { ojoIzq: a && c ? a.left - c.left < 20 && a.top - c.top < 20 : false, starDer: s && c ? c.right - s.right < 20 && s.top - c.top < 20 : false }; });
+        T('Z1 El botón de zoom siempre vuelve a 1.0×', zr.every(z => z === 1), JSON.stringify(zr));
+        T('P1 Ojo arriba-izquierda y favoritos arriba-derecha', pos.ojoIzq && pos.starDer, JSON.stringify(pos));
+        await page.evaluate(() => window.__fenixSetFollow(0));
+      } catch (err) { T('G1/Z1/P1 disposición', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
       const tb = await rectOf('.timebar');
       const before = await st();
