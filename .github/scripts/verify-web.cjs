@@ -105,14 +105,13 @@ const [,, url, outDir, sampleDir] = process.argv;
       // ===== Seguimiento de jugador: elegir uno, luego otro (abriendo Ajustes dos veces) =====
       try {
         const live0 = await page.evaluate(() => (window.__fenixLive || []).map(p => p.id));
-        const opts = await page.evaluate(() => Array.from(document.querySelectorAll('#selectPlayerToFollow option')).map(o => o.value));
-        const ids = live0.filter(id => opts.includes(String(id)) && id !== 0).slice(0, 2);
-        log('Seguimiento: jugadores en juego ' + JSON.stringify(live0) + ' opciones ' + JSON.stringify(opts));
+        const ids = live0.filter(id => id !== 0).slice(0, 2);
+        log('Seguimiento: jugadores en juego ' + JSON.stringify(live0));
         const results = [];
         for (const id of ids) {
           await page.click('#settings_button'); await page.waitForTimeout(600);
           await page.click('#video_button'); await page.waitForTimeout(300);
-          await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
+          const optsNow = await page.locator('#selectPlayerToFollow:visible option').evaluateAll(os => os.map(o => o.value)); log('opciones: ' + JSON.stringify(optsNow)); await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
           const chk = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return { f, l }; }, id);
           results.push(!!(chk.l && chk.f && String(chk.f.id) === String(id) && Math.abs(chk.f.x - chk.l.x) < 0.01 && Math.abs(chk.f.y - chk.l.y) < 0.01));
           await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
