@@ -280,6 +280,23 @@ const [,, url, outDir, sampleDir] = process.argv;
         const dg = await page.evaluate(() => JSON.stringify({ stats: !!document.getElementById('game-stats'), sv: (document.querySelector('.settings-view') || { style: {} }).style.visibility, cls: document.body.className, rv: !!(document.querySelector('.room-view') && document.querySelector('.room-view').offsetParent) }));
         T('E3b Al cerrar Ajustes vuelven los botones', back2, String(back2) + ' ' + dg);
         await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(400);
+
+      try {
+        const bk = (ms = 1200) => page.evaluate(() => window.__fenixBack()).then(() => page.waitForTimeout(ms));
+        const r = {};
+        await page.click('#button_staty'); await page.waitForTimeout(1500); await bk();
+        r.stats = await page.evaluate(() => !document.getElementById('game-stats'));
+        await page.click('#settings_button'); await page.waitForTimeout(900); await bk();
+        r.ajustes = await page.evaluate(() => document.querySelector('.settings-view').style.visibility === 'hidden');
+        await page.click('[data-hook=menu]'); await page.waitForTimeout(900);
+        r.cerrarVisible = await page.evaluate(() => { const b = document.querySelector('.fenix-room-close'); return !!(b && b.offsetParent !== null); });
+        await page.screenshot({ path: path.join(outDir, 'shot-19-menu-sala.png') });
+        await page.click('.fenix-room-close'); await page.waitForTimeout(900);
+        r.cerrarBoton = await page.evaluate(() => { const v = document.querySelector('.room-view'); return !v || v.offsetParent === null; });
+        await page.click('[data-hook=menu]'); await page.waitForTimeout(900); await bk();
+        r.menuAtras = await page.evaluate(() => { const v = document.querySelector('.room-view'); return !v || v.offsetParent === null; });
+        T('K1 Botón atrás cierra Estadísticas, Ajustes y Menú; el Menú tiene botón Cerrar', Object.values(r).every(Boolean), JSON.stringify(r));
+      } catch (err) { T('K1 Botón atrás', false, String(err).slice(0, 200)); }
       } catch (err) { T('E3 Ajustes horizontal', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
@@ -292,6 +309,19 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.screenshot({ path: path.join(outDir, 'shot-15-inicio-horizontal.png') });
         const ov = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear'), tabs = Array.from(document.querySelectorAll('.fh-tabs button')).map(b => b.getBoundingClientRect()); const hit = tabs.some(t => !(g.right <= t.left || g.left >= t.right || g.bottom <= t.top || g.top >= t.bottom)); return { choca: hit, gearLeft: Math.round(g.left) }; });
         T('E1 Horizontal: engranaje no se superpone a Favoritos', ov.choca === false, JSON.stringify(ov));
+        const rc = () => page.evaluate(() => ['.fh-logo', '.fh-import', '.fh-tabs button:nth-child(1)', '.fh-tabs button:nth-child(2)'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }));
+        const h1 = await rc();
+        await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
+        const h2 = await rc();
+        await page.screenshot({ path: path.join(outDir, 'shot-20-favoritos-horizontal.png') });
+        await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(500);
+        T('E4 Horizontal: Historial y Favoritos no mueven nada', JSON.stringify(h1) === JSON.stringify(h2), JSON.stringify([h1, h2]));
+        await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(500);
+        const dlg1 = await page.evaluate(() => !!document.querySelector('.fenix-exit-overlay'));
+        await page.screenshot({ path: path.join(outDir, 'shot-21-salir.png') });
+        await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(600);
+        const dlg2 = await page.evaluate(() => !document.querySelector('.fenix-exit-overlay'));
+        T('K2 En el inicio, atrás pregunta si salir y otro atrás lo cierra', dlg1 && dlg2, JSON.stringify({ dlg1, dlg2 }));
         await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       } catch (err) { T('E1 Engranaje horizontal', false, String(err).slice(0, 200)); }
       const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll','.fenix-home'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
