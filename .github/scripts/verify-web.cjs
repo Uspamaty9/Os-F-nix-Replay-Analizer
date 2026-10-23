@@ -119,6 +119,29 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', ids.length === 2 && results.every(Boolean), JSON.stringify({ ids, results }));
         await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
       } catch (err) { T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', false, String(err).slice(0, 200)); }
+      // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
+      try {
+        const outcomes = [];
+        for (let n = 0; n < 3; n++) {
+          const target = await page.evaluate(() => {
+            const fv = window.__fenixView, c = document.querySelector('.game-state-view canvas'), r = c.getBoundingClientRect();
+            const sx = r.width / c.width, cur = window.__fenixFollow ? window.__fenixFollow.id : 0;
+            for (const d of (window.__fenixLive || [])) {
+              if (String(d.id) === String(cur)) continue;
+              const px = (d.x - fv.camX) * fv.k + fv.W / 2, py = (d.y - fv.camY) * fv.k + (fv.H + fv.h) / 2;
+              const cx = r.left + px * sx, cy = r.top + py * sx;
+              if (cx > r.left + 20 && cx < r.right - 20 && cy > r.top + 70 && cy < r.bottom - 20) return { id: d.id, cx, cy };
+            }
+            return null;
+          });
+          if (!target) { outcomes.push('sin objetivo'); continue; }
+          await page.mouse.click(target.cx, target.cy); await page.waitForTimeout(500);
+          const got = await page.evaluate(() => window.__fenixFollow && window.__fenixFollow.id);
+          outcomes.push(String(got) === String(target.id));
+        }
+        T('S2 Tocar jugadores en la cancha: se sigue al último tocado', outcomes.filter(o => o === true).length >= 2, JSON.stringify(outcomes));
+        await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
+      } catch (err) { T('S2 Tocar jugadores en la cancha: se sigue al último tocado', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
       const tb = await rectOf('.timebar');
       const before = await st();
