@@ -110,8 +110,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const results = [];
         for (const id of ids) {
           await page.click('#settings_button'); await page.waitForTimeout(600);
-          await page.click('#video_button'); await page.waitForTimeout(300);
-          const optsNow = await page.locator('#selectPlayerToFollow:visible option').evaluateAll(os => os.map(o => o.value)); log('opciones: ' + JSON.stringify(optsNow)); await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
+          const optsNow = await page.locator('#selectPlayerToFollow option').evaluateAll(os => os.map(o => o.value)); log('opciones: ' + JSON.stringify(optsNow)); await page.locator('#selectPlayerToFollow').selectOption(String(id), { force: true }); await page.waitForTimeout(500);
           const chk = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return { f, l }; }, id);
           results.push(!!(chk.l && chk.f && String(chk.f.id) === String(id) && Math.abs(chk.f.x - chk.l.x) < 0.01 && Math.abs(chk.f.y - chk.l.y) < 0.01));
           await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
@@ -125,7 +124,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         for (let n = 0; n < 3; n++) {
           const id = await page.evaluate((n) => { const l = (window.__fenixLive || []).map(p => p.id); return l[n % l.length]; }, n);
           await page.click('#settings_button'); await page.waitForTimeout(600);
-          await page.locator('#selectPlayerToFollow:visible').selectOption(String(id)); await page.waitForTimeout(500);
+          await page.locator('#selectPlayerToFollow').selectOption(String(id), { force: true }); await page.waitForTimeout(500);
           const ok = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return !!(l && f && String(f.id) === String(id) && Math.abs(f.x - l.x) < 0.01); }, id);
           res3.push(ok);
           await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
