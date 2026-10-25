@@ -302,7 +302,19 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
       // ===== Historial, renombrar, reabrir y botones =====
-      await page.click('#button_leave'); await page.waitForTimeout(1800);
+      try {
+        await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(500);
+        await page.click('#button_leave'); await page.waitForTimeout(500);
+        const askLeave = await page.evaluate(() => !!document.querySelector('.fenix-exit-overlay'));
+        await page.screenshot({ path: path.join(outDir, 'shot-22-salir-repeticion.png') });
+        await page.click('.fenix-exit-overlay .fe-cancel'); await page.waitForTimeout(500);
+        const stillIn = await page.evaluate(() => { const h = document.querySelector('.fenix-home').getBoundingClientRect(); return h.left < -50 || h.left > innerWidth / 2; });
+        await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(500);
+        const askBack = await page.evaluate(() => !!document.querySelector('.fenix-exit-overlay'));
+        await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(500);
+        T('K3 Salir de la repetición pide confirmación (Leave y botón atrás)', askLeave && stillIn && askBack, JSON.stringify({ askLeave, stillIn, askBack }));
+      } catch (err) { T('K3 Confirmar salir', false, String(err).slice(0, 200)); }
+      await page.click('#button_leave'); await page.waitForTimeout(500); await page.click('.fenix-exit-overlay .fe-ok'); await page.waitForTimeout(1800);
       await page.screenshot({ path: path.join(outDir, 'shot-8-inicio-historial.png') });
       try {
         await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(900);
