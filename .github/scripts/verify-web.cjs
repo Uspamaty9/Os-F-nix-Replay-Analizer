@@ -320,6 +320,8 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(900);
         await page.screenshot({ path: path.join(outDir, 'shot-15-inicio-horizontal.png') });
         const ov = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear'), tabs = Array.from(document.querySelectorAll('.fh-tabs button')).map(b => b.getBoundingClientRect()); const hit = tabs.some(t => !(g.right <= t.left || g.left >= t.right || g.bottom <= t.top || g.top >= t.bottom)); return { choca: hit, gearLeft: Math.round(g.left) }; });
+        const ex1 = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear:not(.fh-exit)'), e = r('.fh-exit'); return { choca: !(g.right <= e.left || g.left >= e.right), exitLeft: Math.round(e.left) }; });
+        T('X1 Botón de salir del inicio no choca con el engranaje', ex1.choca === false, JSON.stringify(ex1));
         T('E1 Horizontal: engranaje no se superpone a Favoritos', ov.choca === false, JSON.stringify(ov));
         const rc = () => page.evaluate(() => ['.fh-logo', '.fh-import', '.fh-tabs button:nth-child(1)', '.fh-tabs button:nth-child(2)'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }));
         const h1 = await rc();
