@@ -358,6 +358,19 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.click('.fh-ok'); await page.waitForTimeout(500);
       const nm = await page.evaluate(() => (document.querySelector('.fh-name') || {}).textContent);
       T('H2 Cambiar el nombre de la repetición', nm === 'Final vs Rivales', 'nombre: ' + nm);
+      try {
+        await page.click('.fh-star'); await page.waitForTimeout(300);
+        await page.click('.fh-delete'); await page.waitForTimeout(300);
+        await page.click('.fh-danger'); await page.waitForTimeout(700);
+        const inHist = await page.locator('.fh-item').count();
+        await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(600);
+        const inFav = await page.locator('.fh-item').count();
+        const hgt = await page.evaluate(() => Math.round(document.querySelector('.fh-item').getBoundingClientRect().height));
+        await page.click('.fh-star'); await page.waitForTimeout(600);
+        await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(600);
+        const back = await page.locator('.fh-item').count();
+        T('D1 Borrar del historial una repetición favorita la deja solo en Favoritos', inHist === 0 && inFav === 1 && back === 1, JSON.stringify({ inHist, inFav, back, hgt }));
+      } catch (err) { T('D1 Borrar favorita', false, String(err).slice(0, 200)); }
       await page.click('.fh-open'); await page.waitForTimeout(12000);
       const reopened = await page.evaluate(() => { const t = document.querySelector('[data-hook=time]'); const c = document.querySelector('.game-state-view canvas'); const r = c && c.getBoundingClientRect(); return !!(t && r && r.width > 100 && window.__fenixView && window.__fenixView.k > 0); });
       T('H3 Abrir una repetición desde el historial', reopened);
