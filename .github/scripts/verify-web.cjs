@@ -113,7 +113,7 @@ const [,, url, outDir, sampleDir] = process.argv;
           const optsNow = await page.locator('#selectPlayerToFollow option').evaluateAll(os => os.map(o => o.value)); log('opciones: ' + JSON.stringify(optsNow)); await page.locator('#selectPlayerToFollow').selectOption(String(id), { force: true }); await page.waitForTimeout(500);
           const chk = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return { f, l }; }, id);
           results.push(!!(chk.l && chk.f && String(chk.f.id) === String(id) && Math.abs(chk.f.x - chk.l.x) < 0.01 && Math.abs(chk.f.y - chk.l.y) < 0.01));
-          await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
+          await page.click('.settings-view [data-hook=close]'); await page.waitForTimeout(600);
         }
         T('S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido', ids.length === 2 && results.every(Boolean), JSON.stringify({ ids, results }));
         await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0));
@@ -127,7 +127,7 @@ const [,, url, outDir, sampleDir] = process.argv;
           await page.locator('#selectPlayerToFollow').selectOption(String(id), { force: true }); await page.waitForTimeout(500);
           const ok = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return !!(l && f && String(f.id) === String(id) && Math.abs(f.x - l.x) < 0.01); }, id);
           res3.push(ok);
-          await page.click('.settings-view >> text=Close'); await page.waitForTimeout(600);
+          await page.click('.settings-view [data-hook=close]'); await page.waitForTimeout(600);
         }
         T('S3 Ajustes reabierto sin tocar "Video": cada jugador elegido se sigue', res3.every(Boolean), JSON.stringify(res3));
       } catch (err) { T('S3 Ajustes reabierto sin tocar "Video": cada jugador elegido se sigue', false, String(err).slice(0, 200)); }
@@ -274,7 +274,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const hid = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).visibility === 'hidden');
         await page.screenshot({ path: path.join(outDir, 'shot-18-ajustes-horizontal.png') });
         T('E3 Horizontal: con Ajustes abierto los botones laterales no se superponen', hid, String(hid));
-        await page.click('.settings-view >> text=Close'); await page.waitForTimeout(1500);
+        await page.click('.settings-view [data-hook=close]'); await page.waitForTimeout(1500);
         const back2 = await page.evaluate(() => getComputedStyle(document.querySelector('.game-view > .bottom-section')).visibility === 'visible' && document.querySelector('.settings-view').style.visibility === 'hidden');
         const dg = await page.evaluate(() => JSON.stringify({ stats: !!document.getElementById('game-stats'), sv: (document.querySelector('.settings-view') || { style: {} }).style.visibility, cls: document.body.className, rv: !!(document.querySelector('.room-view') && document.querySelector('.room-view').offsetParent) }));
         T('E3b Al cerrar Ajustes vuelven los botones', back2, String(back2) + ' ' + dg);
