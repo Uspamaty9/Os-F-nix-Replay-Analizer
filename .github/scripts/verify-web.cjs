@@ -190,7 +190,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const hidden = (await Promise.all(['.game-view > .bottom-section', '.fenix-fit', '.fenix-star', '.fenix-follow', '.fenix-clean-btn', '.game-state-view .bar-container'].map(disp))).every(Boolean);
         const ctrlPaused = !(await disp('.replay-controls-view'));
         await page.screenshot({ path: path.join(outDir, 'shot-13-despejada.png') });
-        await page.click('#play_button'); await page.waitForTimeout(600);
+        await page.click('#play_button'); await page.waitForTimeout(3300); // cuenta regresiva 3-2-1
         const ctrlPlaying = !(await disp('.replay-controls-view'));
         await page.screenshot({ path: path.join(outDir, 'shot-14-despejada-reproduciendo.png') });
         const cv = await page.evaluate(() => { const r = document.querySelector('.game-state-view canvas').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 3 }; });
