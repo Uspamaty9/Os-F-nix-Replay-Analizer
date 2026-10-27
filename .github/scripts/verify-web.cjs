@@ -8,6 +8,7 @@ const [,, url, outDir, sampleDir] = process.argv;
   const log = (s) => { console.log(s); lines.push(s); };
   const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
   const page = await ctx.newPage();
   const external = new Set(), failed = [], okLocal = [], errors = [];
   page.on('request', r => { const u = new URL(r.url()); if (!['localhost', '127.0.0.1'].includes(u.hostname) && u.protocol.startsWith('http')) external.add(r.method() + ' ' + r.url().slice(0, 140)); });
@@ -389,6 +390,33 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.screenshot({ path: path.join(outDir, 'shot-11-estadisticas.png') });
       log('Texto en estadísticas: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 200).replace(/\s+/g, ' '));
     } catch (e) { log('ERROR en pruebas: ' + String(e.message).slice(0, 300)); }
+  }
+  const TG = (name, ok, extra) => log('PRUEBA ' + (ok ? 'APROBADA' : 'FALLIDA') + ' · ' + name + (extra ? ' · ' + extra : ''));
+  // G1: la guía de bienvenida aparece la primera vez y no vuelve a salir
+  try {
+    const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+    const p2 = await c2.newPage();
+    await p2.goto(url, { waitUntil: 'load' });
+    await p2.waitForSelector('.fenix-guide.show', { timeout: 9000 });
+    await p2.screenshot({ path: path.join(outDir, 'shot-23-guia.png') });
+    await p2.click('.fenix-guide .fg-next'); await p2.click('.fenix-guide .fg-next'); await p2.click('.fenix-guide .fg-next');
+    await p2.waitForTimeout(600);
+    const gone = await p2.evaluate(() => !document.querySelector('.fenix-guide') && localStorage.getItem('fenix-guide') === '1');
+    TG('G1 Guía de bienvenida (aparece y se cierra)', gone);
+    await c2.close();
+  } catch (e) { log('PRUEBA FALLIDA · G1 Guía · ' + String(e.message).slice(0, 160)); }
+  // G5: otros tamaños de pantalla sin desbordes
+  for (const vp of [{ n: 'chico', w: 360, h: 640 }, { n: 'tablet-v', w: 768, h: 1024 }, { n: 'tablet-h', w: 1024, h: 768 }]) {
+    try {
+      const c3 = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+      await c3.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
+      const p3 = await c3.newPage();
+      await p3.goto(url, { waitUntil: 'load' }); await p3.waitForTimeout(4500);
+      const r3 = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth - innerWidth, out: Array.from(document.querySelectorAll('button')).filter(b => b.offsetParent).filter(b => { const r = b.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).length }));
+      await p3.screenshot({ path: path.join(outDir, 'shot-24-' + vp.n + '.png') });
+      TG('G5 Pantalla ' + vp.n + ' (' + vp.w + 'x' + vp.h + ') sin desbordes', r3.over <= 1 && r3.out === 0, JSON.stringify(r3));
+      await c3.close();
+    } catch (e) { log('PRUEBA FALLIDA · G5 ' + vp.n + ' · ' + String(e.message).slice(0, 160)); }
   }
   log('--- PETICIONES EXTERNAS (' + external.size + ') ---'); [...external].forEach(s => log(s));
   log('--- PETICIONES FALLIDAS (' + failed.length + ') ---'); failed.slice(0, 20).forEach(s => log(s));

@@ -110,6 +110,9 @@ jobs:
                 sed -i 's|<application|<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />\n    <application|' "$MAN"
                 echo "--- manifest ---" | tee -a "$ROOT/out/report.txt"; grep -n "uses-permission" "$MAN" | tee -a "$ROOT/out/report.txt"
               fi
+              if [ -f "$MAN" ] && ! grep -q 'permission.VIBRATE' "$MAN"; then
+                sed -i 's|<application|<uses-permission android:name="android.permission.VIBRATE" />\n    <application|' "$MAN"
+              fi
               npx cap sync android
               (cd android && gradle -I "$ROOT/.github/keys/signing.init.gradle" assembleDebug --stacktrace) || { echo "FALLO gradle capacitor $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               cp android/app/build/outputs/apk/debug/app-debug.apk "$ROOT/out/$n.apk"
