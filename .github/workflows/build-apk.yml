@@ -75,7 +75,7 @@ jobs:
                 for w in 300 400 700; do echo "@font-face{font-family:'Roboto';font-weight:$w;font-display:swap;src:url(roboto-latin-$w-normal.woff2) format('woff2')}"; done
                 echo "@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(material-icons.woff2) format('woff2')}"; } > public/fonts/fonts.css
               ls public/fonts | tee -a "$ROOT/out/report.txt"
-              npm run build > "$ROOT/build.log" 2>&1 && BST=0 || BST=$?
+              GENERATE_SOURCEMAP=false npm run build > "$ROOT/build.log" 2>&1 && BST=0 || BST=$?
               tail -15 "$ROOT/build.log" | tee -a "$ROOT/out/report.txt"
               [ $BST -eq 0 ] || { echo "FALLO npm build $n" | tee -a "$ROOT/out/report.txt"; cd "$ROOT"; continue; }
               # Prueba en navegador real (viewport de celular)

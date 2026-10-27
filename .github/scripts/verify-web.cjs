@@ -386,6 +386,19 @@ const [,, url, outDir, sampleDir] = process.argv;
       const bar2 = await rectOf('.game-state-view .bar');
       log('Marcador: ' + JSON.stringify(bar2));
       T('M1 Marcador compacto y centrado arriba', bar2 && bar2.w < 300 && Math.abs((bar2.x + bar2.w / 2) - 195) < 6, 'ancho ' + Math.round(bar2.w));
+      try {
+        await page.click('[data-hook=spd]'); await page.waitForTimeout(300);
+        const pop = await page.evaluate(() => !!document.querySelector('.fenix-speed-pop'));
+        await page.screenshot({ path: path.join(outDir, 'shot-25-velocidad.png') });
+        await page.click('.fenix-speed-pop button[data-i="4"]'); await page.waitForTimeout(300);
+        const sp = await page.evaluate(() => ({ t: document.querySelector('[data-hook=spd]').textContent, s: localStorage.getItem('fenix-speed') }));
+        await page.click('[data-hook=spd]'); await page.waitForTimeout(200); await page.click('.fenix-speed-pop button[data-i="2"]'); await page.waitForTimeout(200);
+        T('B3 Velocidad directa y recordada', pop && /3/.test(sp.t) && sp.s === '4', JSON.stringify(sp));
+        const ch = await page.evaluate(async () => { const b = document.querySelector('.fenix-chat-toggle'); if (!b) return 'sin boton'; b.click(); await new Promise(r => setTimeout(r, 400)); const off = document.body.classList.contains('fenix-nochat'); b.click(); await new Promise(r => setTimeout(r, 400)); return off && !document.body.classList.contains('fenix-nochat') ? 'ok' : 'falla'; });
+        T('B4 Chat se oculta y se muestra', ch === 'ok', ch);
+        const mk = await page.evaluate(() => document.querySelectorAll('.timebar .marker.k1, .timebar .marker.k2').length);
+        T('B2 Marcadores de gol en la barra', mk > 0, String(mk));
+      } catch (e) { log('PRUEBA FALLIDA · B (velocidad/chat) · ' + String(e.message).slice(0, 160)); }
       await page.click('#button_staty'); await page.waitForTimeout(2500);
       await page.screenshot({ path: path.join(outDir, 'shot-11-estadisticas.png') });
       log('Texto en estadísticas: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 200).replace(/\s+/g, ' '));
