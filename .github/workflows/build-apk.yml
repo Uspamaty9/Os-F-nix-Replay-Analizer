@@ -83,7 +83,7 @@ jobs:
               NODE_PATH="$RUNNER_TEMP/pw/node_modules" node "$ROOT/.github/scripts/verify-web.cjs" http://localhost:8123/ "$ROOT/out" "$ROOT/tests" 2>&1 | tail -60 | tee -a "$ROOT/out/report.txt"
               pkill -f "http.server 8123" || true
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
-              printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Replay Analizer Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
+              printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Replay Analyzer Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
               npx cap add android
               # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res
@@ -97,7 +97,7 @@ jobs:
                 cp android-native/HbrScanner.java android-native/MainActivity.java "$PKGDIR/"
                 echo "Icono y plugin HbrScanner aplicados" | tee -a "$ROOT/out/report.txt"
               fi
-              sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Replay Analizer Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Replay Analizer Os Fênix</string>|' "$RES/values/strings.xml"
+              sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Replay Analyzer Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Replay Analyzer Os Fênix</string>|' "$RES/values/strings.xml"
               # Tema: usar tambien la zona de la camara (recorte) en pantalla completa
               STY="$RES/values/styles.xml"
               if [ -f "$STY" ]; then
