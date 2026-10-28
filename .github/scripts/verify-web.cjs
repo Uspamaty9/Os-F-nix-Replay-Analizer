@@ -28,7 +28,9 @@ const [,, url, outDir, sampleDir] = process.argv;
   for (const f of samples.slice(0, 2)) {
     try {
       await page.setInputFiles('#replayfile', path.join(sampleDir, f));
-      await page.waitForTimeout(12000);
+      await page.waitForTimeout(700);
+      try { await page.screenshot({ path: path.join(outDir, 'shot-28-analizando-' + f.replace(/\W/g, '') + '.png') }); } catch (e) { }
+      await page.waitForTimeout(11300);
       await page.screenshot({ path: path.join(outDir, 'shot-2-replay-' + f.replace(/\W/g, '_') + '.png') });
       log('Replay cargado: ' + f + ' | texto: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 300).replace(/\s+/g, ' '));
     } catch (e) { log('Fallo al cargar ' + f + ': ' + e.message.slice(0, 200)); }
