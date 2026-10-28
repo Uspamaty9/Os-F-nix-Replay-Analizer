@@ -9,6 +9,7 @@ const [,, url, outDir, sampleDir] = process.argv;
   const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
   await ctx.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
+  await ctx.addInitScript(() => { setInterval(() => { const o = document.querySelector('.fenix-tap-overlay'); if (o) o.click(); }, 250); });
   const page = await ctx.newPage();
   const external = new Set(), failed = [], okLocal = [], errors = [];
   page.on('request', r => { const u = new URL(r.url()); if (!['localhost', '127.0.0.1'].includes(u.hostname) && u.protocol.startsWith('http')) external.add(r.method() + ' ' + r.url().slice(0, 140)); });
@@ -420,6 +421,25 @@ const [,, url, outDir, sampleDir] = process.argv;
     TG('G1 Guía de bienvenida (aparece y se cierra)', gone);
     await c2.close();
   } catch (e) { log('PRUEBA FALLIDA · G1 Guía · ' + String(e.message).slice(0, 160)); }
+  // W1: "Analizando" dura al menos 5 s y hay que tocar la pantalla para pasar a la repetición
+  try {
+    const c4 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+    await c4.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
+    const p4 = await c4.newPage();
+    await p4.goto(url, { waitUntil: 'load' }); await p4.waitForTimeout(3500);
+    if (samples.length) {
+      await p4.setInputFiles('#replayfile', path.join(sampleDir, samples[0]));
+      await p4.waitForTimeout(2500);
+      const early = await p4.evaluate(() => !!document.querySelector('.fenix-tap-overlay'));
+      await p4.waitForSelector('.fenix-tap-overlay', { timeout: 40000 });
+      await p4.screenshot({ path: path.join(outDir, 'shot-29-toca-para-continuar.png') });
+      const hidden = await p4.evaluate(() => { const c = document.querySelector('.replay-controls-view'); return !c || c.getBoundingClientRect().left > 100; });
+      await p4.click('.fenix-tap-overlay'); await p4.waitForTimeout(1500);
+      const shown = await p4.evaluate(() => { const c = document.querySelector('.replay-controls-view'); return !!c && c.getBoundingClientRect().left < 50 && !document.querySelector('.fenix-tap-overlay'); });
+      TG('W1 Analizando espera 5 s y pide tocar para entrar', !early && hidden && shown, JSON.stringify({ early, hidden, shown }));
+    }
+    await c4.close();
+  } catch (e) { log('PRUEBA FALLIDA · W1 · ' + String(e.message).slice(0, 160)); }
   // G5: otros tamaños de pantalla sin desbordes
   for (const vp of [{ n: 'chico', w: 360, h: 640 }, { n: 'tablet-v', w: 768, h: 1024 }, { n: 'tablet-h', w: 1024, h: 768 }]) {
     try {
