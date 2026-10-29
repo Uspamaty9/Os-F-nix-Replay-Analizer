@@ -341,6 +341,10 @@ const [,, url, outDir, sampleDir] = process.argv;
           await page.waitForTimeout(300);
           const gone2 = await page.evaluate(() => !document.querySelector('.fs-overlay') && !document.querySelector('.fenix-leaving'));
           T('H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido', gone1 && gone2, JSON.stringify({ gone1, gone2 }));
+          let maxOv = 0;
+          for (let k = 0; k < 8; k++) { await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(30); maxOv = Math.max(maxOv, await page.evaluate(() => document.querySelectorAll('.fs-overlay').length)); await page.click('.fs-close'); await page.waitForTimeout(30); }
+          await page.waitForTimeout(300);
+          T('H2 Abrir/cerrar ajustes muy rapido nunca deja dos paneles superpuestos', maxOv <= 1 && await page.evaluate(() => !document.querySelector('.fs-overlay')), JSON.stringify({ maxOv }));
         } catch (err) { T('H1 Cierre de ajustes', false, String(err).slice(0, 200)); }
         await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(500);
         const dlg1 = await page.evaluate(() => !!document.querySelector('.fenix-exit-overlay'));
