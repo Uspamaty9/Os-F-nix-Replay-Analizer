@@ -333,6 +333,15 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.screenshot({ path: path.join(outDir, 'shot-20-favoritos-horizontal.png') });
         await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(500);
         T('E4 Horizontal: Historial y Favoritos no mueven nada', JSON.stringify(h1) === JSON.stringify(h2), JSON.stringify([h1, h2]));
+        try {
+          await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(500);
+          await page.click('.fs-close'); await page.waitForTimeout(220);
+          const gone1 = await page.evaluate(() => !document.querySelector('.fs-overlay'));
+          for (let k = 0; k < 4; k++) { await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(120); await page.click('.fs-close'); await page.waitForTimeout(60); }
+          await page.waitForTimeout(300);
+          const gone2 = await page.evaluate(() => !document.querySelector('.fs-overlay') && !document.querySelector('.fenix-leaving'));
+          T('H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido', gone1 && gone2, JSON.stringify({ gone1, gone2 }));
+        } catch (err) { T('H1 Cierre de ajustes', false, String(err).slice(0, 200)); }
         await page.evaluate(() => window.__fenixBack()); await page.waitForTimeout(500);
         const dlg1 = await page.evaluate(() => !!document.querySelector('.fenix-exit-overlay'));
         await page.screenshot({ path: path.join(outDir, 'shot-21-salir.png') });
