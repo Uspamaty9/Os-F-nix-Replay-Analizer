@@ -200,6 +200,13 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.click('.fenix-chat-toggle'); await page.waitForTimeout(600);
         T('C2 Sin chat no queda hueco entre botones y barra de reproduccion', gap >= 0 && gap <= 24, 'hueco=' + gap + 'px');
       } catch (err) { T('C2 Sin chat', false, String(err).slice(0, 200)); }
+      try {
+        const posA = await page.evaluate(() => { const t = document.querySelector('.fenix-chat-toggle').getBoundingClientRect(), c = document.querySelector('.chatbox-view').getBoundingClientRect(); return Math.round(t.top - c.top); });
+        await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('fenix-settings') || '{}'); st.chatClear = true; localStorage.setItem('fenix-settings', JSON.stringify(st)); });
+        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(500); await page.click('.fenix-chat-toggle'); await page.waitForTimeout(600);
+        const posB = await page.evaluate(() => { const t = document.querySelector('.fenix-chat-toggle').getBoundingClientRect(), c = document.querySelector('.chatbox-view').getBoundingClientRect(); return Math.round(t.top - c.top); });
+        T('C3 La flecha del chat queda siempre a la misma altura de la linea', Math.abs(posA - posB) <= 2, JSON.stringify({ posA, posB }));
+      } catch (err) { T('C3 Flecha del chat', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
         await page.click('.fenix-fit'); await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0)); await page.waitForTimeout(500);
