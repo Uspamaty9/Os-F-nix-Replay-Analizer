@@ -71,6 +71,9 @@ const [,, url, outDir, sampleDir] = process.argv;
         const d = await dl;
         const okSize = d ? (await d.createReadStream().then(r => new Promise(res => { let n = 0; r.on('data', c => n += c.length); r.on('end', () => res(n)); }))) : 0;
         T('R1 Grabar partido: opciones, cuenta regresiva, despejado, boton arriba y archivo de video', hasRec && sheet && cnt && onRec && recVis && !!d && okSize > 1000, JSON.stringify({ hasRec, sheet, cnt, recVis, onRec, file: d ? d.suggestedFilename() : null, bytes: okSize }));
+        await page.waitForTimeout(800);
+        await page.evaluate(() => { const pi = document.querySelector('[data-hook=playicon]'); if (pi && pi.innerHTML.indexOf('<rect') > -1) document.getElementById('play_button').click(); });
+        await page.waitForTimeout(400);
       } catch (err) { T('R1 Grabar partido', false, String(err).slice(0, 200)); }
       const cx = cr.x + cr.w / 2, cy = cr.y + cr.h / 2;
       // 2) separar dos dedos
