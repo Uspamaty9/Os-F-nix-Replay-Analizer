@@ -193,6 +193,13 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
         T('S6 Camara automatica estilo TV', autoOk, JSON.stringify({ autoOk }));
       } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
+      try {
+        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(700);
+        const gap = await page.evaluate(() => { const b = document.querySelector('.game-view > .bottom-section > .buttons').getBoundingClientRect(), c = document.querySelector('.replay-controls-view').getBoundingClientRect(); return Math.round(c.top - b.bottom); });
+        await page.screenshot({ path: path.join(outDir, 'shot-34-sin-chat.png') });
+        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(600);
+        T('C2 Sin chat no queda hueco entre botones y barra de reproduccion', gap >= 0 && gap <= 24, 'hueco=' + gap + 'px');
+      } catch (err) { T('C2 Sin chat', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
         await page.click('.fenix-fit'); await page.evaluate(() => window.__fenixSetFollow && window.__fenixSetFollow(0)); await page.waitForTimeout(500);
