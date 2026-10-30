@@ -50,6 +50,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       const s0 = await st();
       log('Estado inicial: ' + JSON.stringify(s0));
       T('1 Cancha completa al abrir (zoom 1, escala de ajuste)', s0 && s0.zoom === 1 && Math.abs(s0.k - s0.kFit) < 1e-6);
+      try { log('CHAT-LAYOUT: ' + JSON.stringify(await page.evaluate(() => { const o = {}; ['.game-view > .bottom-section', '.game-view > .bottom-section > .buttons', '.fenix-chat-toggle', '.chatbox-view', '.chatbox-view .log', '.chatbox-view .log p:last-child', '.replay-controls-view', 'canvas'].forEach(q => { const e = document.querySelector(q); if (e) { const r = e.getBoundingClientRect(); o[q] = [Math.round(r.top), Math.round(r.bottom), Math.round(r.height)]; } }); return o; }))); } catch (e) { }
       const bar = await rectOf('.bar'); const ctr = await rectOf('.replay-controls-view');
       log('Marcador: ' + JSON.stringify(bar) + ' | Controles: ' + JSON.stringify(ctr));
       T('Marcador dentro de la pantalla', bar && bar.x >= -1 && bar.x + bar.w <= 391);
@@ -184,6 +185,13 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
         const freeOk = await page.evaluate(() => window.__fenixFollow && window.__fenixFollow.mode === 'libre');
         T('S5 Seguir a la pelota y modo libre', ballOk && freeOk, JSON.stringify({ ballOk, freeOk }));
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="auto"]'); await page.waitForTimeout(900);
+        const autoOk = await page.evaluate(() => { const f = window.__fenixFollow; return !!(f && f.mode === 'automatica' && isFinite(f.x) && isFinite(f.y)); });
+        await page.screenshot({ path: path.join(outDir, 'shot-33-camara-auto.png') });
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
+        T('S6 Camara automatica estilo TV', autoOk, JSON.stringify({ autoOk }));
       } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
       // ===== Tocar jugadores en la cancha para seguirlos (varias veces, siempre gana el último) =====
       try {
