@@ -54,6 +54,17 @@ const [,, url, outDir, sampleDir] = process.argv;
       log('Marcador: ' + JSON.stringify(bar) + ' | Controles: ' + JSON.stringify(ctr));
       T('Marcador dentro de la pantalla', bar && bar.x >= -1 && bar.x + bar.w <= 391);
       T('Controles dentro de la pantalla', ctr && ctr.x >= -1 && ctr.x + ctr.w <= 391 && ctr.y + ctr.h <= 845);
+      try {
+        const hasRec = await page.evaluate(() => !!document.querySelector('.fenix-rec'));
+        const dl = page.waitForEvent('download', { timeout: 9000 }).catch(() => null);
+        await page.click('.fenix-rec'); await page.waitForTimeout(2500);
+        const onRec = await page.evaluate(() => document.querySelector('.fenix-rec').classList.contains('on'));
+        await page.screenshot({ path: path.join(outDir, 'shot-30-grabando.png') });
+        await page.click('.fenix-rec');
+        const d = await dl;
+        const okSize = d ? (await d.createReadStream().then(r => new Promise(res => { let n = 0; r.on('data', c => n += c.length); r.on('end', () => res(n)); }))) : 0;
+        T('R1 Grabar partido: boton, grabacion y archivo de video', hasRec && onRec && !!d && okSize > 1000, JSON.stringify({ hasRec, onRec, file: d ? d.suggestedFilename() : null, bytes: okSize }));
+      } catch (err) { T('R1 Grabar partido', false, String(err).slice(0, 200)); }
       const cx = cr.x + cr.w / 2, cy = cr.y + cr.h / 2;
       // 2) separar dos dedos
       await touch('touchStart', [[cx - 30, cy], [cx + 30, cy]]);
