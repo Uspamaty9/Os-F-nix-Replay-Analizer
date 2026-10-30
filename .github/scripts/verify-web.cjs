@@ -57,13 +57,20 @@ const [,, url, outDir, sampleDir] = process.argv;
       try {
         const hasRec = await page.evaluate(() => !!document.querySelector('.fenix-rec'));
         const dl = page.waitForEvent('download', { timeout: 9000 }).catch(() => null);
-        await page.click('.fenix-rec'); await page.waitForTimeout(2500);
+        await page.click('.fenix-rec'); await page.waitForTimeout(400);
+        const sheet = await page.evaluate(() => !!document.querySelector('.fenix-rec-overlay .frs-opt[data-o=v]') && !!document.querySelector('.fenix-rec-overlay .frs-opt[data-o=h]'));
+        await page.screenshot({ path: path.join(outDir, 'shot-31-grabar-opciones.png') });
+        await page.click('.frs-opt[data-o=v]'); await page.waitForTimeout(1500);
+        const cnt = await page.evaluate(() => !!document.querySelector('.fenix-count') && document.body.classList.contains('fenix-despejado'));
+        await page.waitForTimeout(3200);
+        await page.waitForTimeout(2000);
         const onRec = await page.evaluate(() => document.querySelector('.fenix-rec').classList.contains('on'));
+        const recVis = await page.evaluate(() => { const r = document.querySelector('.fenix-rec').getBoundingClientRect(); return r.width > 0 && r.top < 80 && r.right > 300; });
         await page.screenshot({ path: path.join(outDir, 'shot-30-grabando.png') });
         await page.click('.fenix-rec');
         const d = await dl;
         const okSize = d ? (await d.createReadStream().then(r => new Promise(res => { let n = 0; r.on('data', c => n += c.length); r.on('end', () => res(n)); }))) : 0;
-        T('R1 Grabar partido: boton, grabacion y archivo de video', hasRec && onRec && !!d && okSize > 1000, JSON.stringify({ hasRec, onRec, file: d ? d.suggestedFilename() : null, bytes: okSize }));
+        T('R1 Grabar partido: opciones, cuenta regresiva, despejado, boton arriba y archivo de video', hasRec && sheet && cnt && onRec && recVis && !!d && okSize > 1000, JSON.stringify({ hasRec, sheet, cnt, recVis, onRec, file: d ? d.suggestedFilename() : null, bytes: okSize }));
       } catch (err) { T('R1 Grabar partido', false, String(err).slice(0, 200)); }
       const cx = cr.x + cr.w / 2, cy = cr.y + cr.h / 2;
       // 2) separar dos dedos
