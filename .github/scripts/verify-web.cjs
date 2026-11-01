@@ -194,18 +194,16 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('S6 Camara automatica estilo TV', autoOk, JSON.stringify({ autoOk }));
       } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
       try {
-        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(700);
+        await page.evaluate(() => window.__fenixToggleChat()); await page.waitForTimeout(700);
         const gap = await page.evaluate(() => { const b = document.querySelector('.game-view > .bottom-section > .buttons').getBoundingClientRect(), c = document.querySelector('.replay-controls-view').getBoundingClientRect(); return Math.round(c.top - b.bottom); });
         await page.screenshot({ path: path.join(outDir, 'shot-34-sin-chat.png') });
-        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(600);
+        await page.evaluate(() => window.__fenixToggleChat()); await page.waitForTimeout(600);
         T('C2 Sin chat no queda hueco entre botones y barra de reproduccion', gap >= 0 && gap <= 24, 'hueco=' + gap + 'px');
       } catch (err) { T('C2 Sin chat', false, String(err).slice(0, 200)); }
       try {
-        const posA = await page.evaluate(() => { const t = document.querySelector('.fenix-chat-toggle').getBoundingClientRect(), c = document.querySelector('.chatbox-view').getBoundingClientRect(); return Math.round(t.top - c.top); });
-        await page.click('.fenix-chat-toggle'); await page.waitForTimeout(500); await page.click('.fenix-chat-toggle'); await page.waitForTimeout(600);
-        const posB = await page.evaluate(() => { const t = document.querySelector('.fenix-chat-toggle').getBoundingClientRect(), c = document.querySelector('.chatbox-view').getBoundingClientRect(); return Math.round(t.top - c.top); });
-        T('C3 La flecha del chat queda siempre a la misma altura de la linea', Math.abs(posA - posB) <= 2, JSON.stringify({ posA, posB }));
-      } catch (err) { T('C3 Flecha del chat', false, String(err).slice(0, 200)); }
+        const bub = await page.evaluate(() => { const p = document.querySelector('.chatbox-view .log p'); if (!p) return null; const c = getComputedStyle(p); return { radius: parseFloat(c.borderTopLeftRadius), bg: c.backgroundColor, arrow: !!document.querySelector('.fenix-chat-toggle') && getComputedStyle(document.querySelector('.fenix-chat-toggle')).display !== 'none' }; });
+        T('C3 Chat en burbujas y sin flecha', !!bub && bub.radius >= 10 && bub.bg !== 'rgba(0, 0, 0, 0)' && !bub.arrow, JSON.stringify(bub));
+      } catch (err) { T('C3 Chat en burbujas', false, String(err).slice(0, 200)); }
       try {
         await page.evaluate(() => { document.body.classList.add('fenix-chat-clear'); window.dispatchEvent(new Event('resize')); });
         await page.waitForTimeout(900);
@@ -471,7 +469,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const sp = await page.evaluate(() => ({ t: document.querySelector('[data-hook=spd]').textContent, s: localStorage.getItem('fenix-speed') }));
         await page.click('[data-hook=spd]'); await page.waitForTimeout(200); await page.click('.fenix-speed-pop button[data-i="2"]'); await page.waitForTimeout(200);
         T('B3 Velocidad directa y recordada', pop && /3/.test(sp.t) && sp.s === '4', JSON.stringify(sp));
-        const ch = await page.evaluate(async () => { const b = document.querySelector('.fenix-chat-toggle'); if (!b) return 'sin boton'; b.click(); await new Promise(r => setTimeout(r, 400)); const off = document.body.classList.contains('fenix-nochat'); b.click(); await new Promise(r => setTimeout(r, 400)); return off && !document.body.classList.contains('fenix-nochat') ? 'ok' : 'falla'; });
+        const ch = await page.evaluate(async () => { window.__fenixToggleChat(); await new Promise(r => setTimeout(r, 400)); const off = document.body.classList.contains('fenix-nochat'); window.__fenixToggleChat(); await new Promise(r => setTimeout(r, 400)); return off && !document.body.classList.contains('fenix-nochat') ? 'ok' : 'falla'; });
         T('B4 Chat se oculta y se muestra', ch === 'ok', ch);
         const mk = await page.evaluate(() => document.querySelectorAll('.timebar .marker.k1, .timebar .marker.k2').length);
         T('B2 Marcadores de gol en la barra', mk > 0, String(mk));
