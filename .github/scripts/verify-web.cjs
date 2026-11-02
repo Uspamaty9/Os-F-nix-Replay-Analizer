@@ -397,14 +397,14 @@ const [,, url, outDir, sampleDir] = process.argv;
           T('H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido', gone1 && gone2, JSON.stringify({ gone1, gone2 }));
           await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(500);
           const names = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-group-tile .fs-gname')).map(e => e.textContent));
-          const n1 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length);
+          const n1 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length + (document.querySelector('.fs-sub') ? 1 : 0) + (document.querySelector('.fs-gplus') ? 5 : 0));
           await page.click('.fs-group-tile:nth-child(2)'); await page.waitForTimeout(400);
           const n2 = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-themes .fs-theme .fs-tname')).map(e => e.textContent));
           await page.screenshot({ path: path.join(outDir, 'shot-36-temas-grupos.png') });
-          await page.click('.fs-group-tile:nth-child(2)'); await page.waitForTimeout(300);
+          await page.click('.fs-sub .fs-back'); await page.waitForTimeout(300);
           const n3 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length);
           await page.click('.fs-close'); await page.waitForTimeout(300);
-          T('H3 Temas agrupados: un cuadro por grupo que se despliega', names.join('|') === 'Predeterminados|Competiciones|Mis temas' && n1 === 5 && n2.join(',') === 'La Liga,PL,Serie A,Bundesliga,Champions' && n3 === 0, JSON.stringify({ names, n1, n2, n3 }));
+          T('H3 Temas agrupados: un cuadro por grupo que se despliega', names.join('|') === 'Default|Torneos|Personalizados' && n1 === 5 && n2.join(',') === 'La Liga,PL,Serie A,Bundesliga,Champions' && n3 === 0, JSON.stringify({ names, n1, n2, n3 }));
           let maxOv = 0;
           for (let k = 0; k < 8; k++) { await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(30); maxOv = Math.max(maxOv, await page.evaluate(() => document.querySelectorAll('.fs-overlay').length)); await page.click('.fs-close'); await page.waitForTimeout(30); }
           await page.waitForTimeout(300);
