@@ -356,7 +356,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('K1 Botón atrás', false, String(err).slice(0, 200)); }
       } catch (err) { T('E3 Ajustes horizontal', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
-      try { await page.click('[data-hook=menu]'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-19b-menu-vertical.png') }); await page.click('.fenix-room-close'); await page.waitForTimeout(700); } catch (err) { log('menu vertical: ' + String(err).slice(0, 120)); }
+      try { await page.click('[data-hook=menu]'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-19b-menu-vertical.png') }); await page.click('.fenix-room-close'); await page.waitForTimeout(500); await page.click('#settings_button'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-18b-ajustes-vertical.png') }); await page.click('.settings-view > button[data-hook=close]'); await page.waitForTimeout(600); await page.click('[data-hook=menu]'); await page.waitForTimeout(600); await page.click('.fenix-room-close'); await page.waitForTimeout(700); } catch (err) { log('menu vertical: ' + String(err).slice(0, 120)); }
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
       // ===== Historial, renombrar, reabrir y botones =====
