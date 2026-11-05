@@ -168,6 +168,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         for (let n = 0; n < 3; n++) {
           const id = await page.evaluate((n) => { const l = (window.__fenixLive || []).map(p => p.id); return l[(n + 1) % l.length]; }, n);
           await page.click('.fenix-follow'); await page.waitForTimeout(600);
+          if (n === 0) await page.screenshot({ path: path.join(outDir, 'shot-12b-seguir-panel.png') });
           await page.click('.fenix-follow-panel .ff-item[data-id="' + id + '"]'); await page.waitForTimeout(700);
           const ok = await page.evaluate((id) => { const f = window.__fenixFollow, l = (window.__fenixLive || []).find(p => p.id === id); return !!(l && f && String(f.id) === String(id) && Math.abs(f.x - l.x) < 0.01); }, id);
           res4.push(ok);
@@ -397,6 +398,7 @@ const [,, url, outDir, sampleDir] = process.argv;
           const gone2 = await page.evaluate(() => !document.querySelector('.fs-overlay') && !document.querySelector('.fenix-leaving'));
           T('H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido', gone1 && gone2, JSON.stringify({ gone1, gone2 }));
           await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(500);
+          await page.screenshot({ path: path.join(outDir, 'shot-37-config-inicio.png') });
           const names = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-group-tile .fs-gname')).map(e => e.textContent));
           const n1 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length + (document.querySelector('.fs-sub') ? 1 : 0) + (document.querySelector('.fs-gplus') ? 5 : 0));
           await page.click('.fs-group-tile:nth-child(2)'); await page.waitForTimeout(400);
