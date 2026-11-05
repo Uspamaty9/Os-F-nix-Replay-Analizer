@@ -32,7 +32,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.waitForTimeout(700);
       try { await page.screenshot({ path: path.join(outDir, 'shot-28-analizando-' + f.replace(/\W/g, '') + '.png') }); } catch (e) { }
       await page.waitForTimeout(1500);
-      try { await page.screenshot({ path: path.join(outDir, 'shot-28b-analizando-gol.png') }); } catch (e) { }
+      try { await page.screenshot({ path: path.join(outDir, 'shot-28b-analizando-fenix.png') }); } catch (e) { }
       await page.waitForTimeout(9800);
       await page.screenshot({ path: path.join(outDir, 'shot-2-replay-' + f.replace(/\W/g, '_') + '.png') });
       log('Replay cargado: ' + f + ' | texto: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 300).replace(/\s+/g, ' '));
