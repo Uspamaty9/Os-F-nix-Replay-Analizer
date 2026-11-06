@@ -322,7 +322,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       for (const vp of [{ width: 844, height: 390, n: 'horizontal' }, { width: 390, height: 844, n: 'vertical' }]) {
         try {
           await page.setViewportSize({ width: vp.width, height: vp.height }); await page.waitForTimeout(800);
-          await page.click('#button_staty'); await page.waitForTimeout(1800);
+          await page.evaluate(() => document.getElementById('button_staty').click()); await page.waitForTimeout(1800);
           const stt = await page.evaluate(() => { const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const ov = (a, b) => a && b && !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom); const p = r('#game-stats'), sel = r('#game-stats .title select'), cl = r('#game-stats > button'), dl = Array.from(document.querySelectorAll('#game-stats .title button')).map(b => b.getBoundingClientRect()); return { panelL: Math.round(p.left), panelT: Math.round(p.top), panelR: Math.round(innerWidth - p.right), panelB: Math.round(innerHeight - p.bottom), cierraChoca: ov(cl, sel) || dl.some(d => ov(cl, d)), cols: getComputedStyle(document.querySelector('#game-stats')).display }; });
           await page.screenshot({ path: path.join(outDir, 'shot-17-stats-' + vp.n + '.png') });
           T('E2 Estadísticas ordenadas (' + vp.n + ')', stt.panelL >= 8 && stt.panelT >= 8 && stt.panelR >= 8 && stt.panelB >= 8 && !stt.cierraChoca, JSON.stringify(stt));
@@ -344,7 +344,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       try {
         const bk = (ms = 1200) => page.evaluate(() => window.__fenixBack()).then(() => page.waitForTimeout(ms));
         const r = {};
-        await page.click('#button_staty'); await page.waitForTimeout(1500); await bk();
+        await page.evaluate(() => document.getElementById('button_staty').click()); await page.waitForTimeout(1500); await bk();
         r.stats = await page.evaluate(() => !document.getElementById('game-stats'));
         await page.click('#settings_button'); await page.waitForTimeout(900); await bk();
         r.ajustes = await page.evaluate(() => document.querySelector('.settings-view').style.visibility === 'hidden');
@@ -359,7 +359,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('K1 Botón atrás', false, String(err).slice(0, 200)); }
       } catch (err) { T('E3 Ajustes horizontal', false, String(err).slice(0, 200)); }
       await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
-      try { await page.click('[data-hook=menu]'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-19b-menu-vertical.png') }); await page.click('.fenix-room-close'); await page.waitForTimeout(500); await page.click('#settings_button'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-18b-ajustes-vertical.png') }); await page.click('.settings-view > button[data-hook=close]'); await page.waitForTimeout(600); await page.click('[data-hook=menu]'); await page.waitForTimeout(600); await page.click('.fenix-room-close'); await page.waitForTimeout(700); } catch (err) { log('menu vertical: ' + String(err).slice(0, 120)); }
+      try { await page.click('[data-hook=menu]'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-19b-menu-vertical.png') }); await page.click('.fenix-ptabs button[data-t=stats]'); await page.waitForTimeout(1500); await page.screenshot({ path: path.join(outDir, 'shot-19c-pestana-estadisticas.png') }); await page.click('.fenix-ptabs button[data-t=room]'); await page.waitForTimeout(1500); await page.click('.fenix-room-close'); await page.waitForTimeout(500); await page.click('#settings_button'); await page.waitForTimeout(900); await page.screenshot({ path: path.join(outDir, 'shot-18b-ajustes-vertical.png') }); await page.click('.settings-view > button[data-hook=close]'); await page.waitForTimeout(600); await page.click('[data-hook=menu]'); await page.waitForTimeout(600); await page.click('.fenix-room-close'); await page.waitForTimeout(700); } catch (err) { log('menu vertical: ' + String(err).slice(0, 120)); }
       await page.screenshot({ path: path.join(outDir, 'shot-7-final.png') });
 
       // ===== Historial, renombrar, reabrir y botones =====
@@ -484,7 +484,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const mk = await page.evaluate(() => document.querySelectorAll('.timebar .marker.k1, .timebar .marker.k2').length);
         T('B2 Marcadores de gol en la barra', mk > 0, String(mk));
       } catch (e) { log('PRUEBA FALLIDA · B (velocidad/chat) · ' + String(e.message).slice(0, 160)); }
-      await page.click('#button_staty'); await page.waitForTimeout(2500);
+      await page.evaluate(() => document.getElementById('button_staty').click()); await page.waitForTimeout(2500);
       await page.screenshot({ path: path.join(outDir, 'shot-11-estadisticas.png') });
       log('Texto en estadísticas: ' + (await page.evaluate(() => document.body.innerText)).slice(0, 200).replace(/\s+/g, ' '));
     } catch (e) { log('ERROR en pruebas: ' + String(e.message).slice(0, 300)); }
