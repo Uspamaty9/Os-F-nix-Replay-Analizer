@@ -204,9 +204,9 @@ const [,, url, outDir, sampleDir] = process.argv;
         T('C2 Sin chat no queda hueco entre botones y barra de reproduccion', gap >= 0 && gap <= 24, 'hueco=' + gap + 'px');
       } catch (err) { T('C2 Sin chat', false, String(err).slice(0, 200)); }
       try {
-        const bub = await page.evaluate(() => { const p = document.querySelector('.chatbox-view .log p'); if (!p) return null; const c = getComputedStyle(p); return { radius: parseFloat(c.borderTopLeftRadius), bg: c.backgroundColor, arrow: !!document.querySelector('.fenix-chat-toggle') && getComputedStyle(document.querySelector('.fenix-chat-toggle')).display !== 'none' }; });
-        T('C3 Chat en burbujas y sin flecha', !!bub && bub.radius >= 10 && bub.bg !== 'rgba(0, 0, 0, 0)' && !bub.arrow, JSON.stringify(bub));
-      } catch (err) { T('C3 Chat en burbujas', false, String(err).slice(0, 200)); }
+        const bub = await page.evaluate(() => { const c = document.querySelector('.chatbox-view'); if (!c) return null; const s = getComputedStyle(c); return { radius: parseFloat(s.borderTopLeftRadius), border: parseFloat(s.borderTopWidth), arrow: !!document.querySelector('.fenix-chat-toggle') && getComputedStyle(document.querySelector('.fenix-chat-toggle')).display !== 'none' }; });
+        T('C3 Chat en tarjeta con contorno dorado y sin flecha', !!bub && bub.radius >= 10 && bub.border >= 1 && !bub.arrow, JSON.stringify(bub));
+      } catch (err) { T('C3 Chat en tarjeta', false, String(err).slice(0, 200)); }
       try {
         await page.evaluate(() => { document.body.classList.add('fenix-chat-clear'); window.dispatchEvent(new Event('resize')); });
         await page.waitForTimeout(900);
