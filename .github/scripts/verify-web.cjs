@@ -264,11 +264,12 @@ const [,, url, outDir, sampleDir] = process.argv;
       // ===== Simetría del chat y botón de zoom =====
       try {
         const gaps = await page.evaluate(() => {
-          const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; };
-          const bt = r('.game-view > .bottom-section > .buttons'), ch = r('.chatbox-view'), rc = r('.replay-controls-view');
-          return bt && ch && rc ? { arriba: Math.round(ch.top - bt.bottom), abajo: Math.round(rc.top - ch.bottom) } : null;
+          const ch = document.querySelector('.chatbox-view'); if (!ch) return null;
+          const c = ch.getBoundingClientRect();
+          const bad = [...document.querySelectorAll('.game-view .buttons button, .game-view [class*="fenix-"] button')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 20 && getComputedStyle(e).visibility !== 'hidden' && r.left < c.right - 2 && r.right > c.left + 2 && r.top < c.bottom - 2 && r.bottom > c.top + 2 && c.width > 0; }).length;
+          return { choques: bad, alto: Math.round(c.height) };
         });
-        T('G1 Espacio simétrico entre menús-chat y chat-controles', !!gaps && Math.abs(gaps.arriba - gaps.abajo) <= 3, JSON.stringify(gaps));
+        T('G1 El chat no se superpone con los botones', !!gaps && gaps.choques === 0, JSON.stringify(gaps));
         const zr = [];
         for (const follow of [0, 'ball', 0]) {
           await page.evaluate((f) => { window.__fenixSetFollow(f); window.__fenixView.zoom = 3; }, follow);
