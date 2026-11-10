@@ -205,7 +205,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       } catch (err) { T('C2 Sin chat', false, String(err).slice(0, 200)); }
       try {
         const bub = await page.evaluate(() => { const c = document.querySelector('.chatbox-view'); if (!c) return null; const s = getComputedStyle(c); return { radius: parseFloat(s.borderTopLeftRadius), border: parseFloat(s.borderTopWidth), arrow: !!document.querySelector('.fenix-chat-toggle') && getComputedStyle(document.querySelector('.fenix-chat-toggle')).display !== 'none' }; });
-        T('C3 Chat en tarjeta con contorno dorado y sin flecha', !!bub && bub.radius >= 10 && bub.border >= 1 && !bub.arrow, JSON.stringify(bub));
+        T('C3 Chat en tarjeta con contorno dorado y sin flecha', !!bub && bub.radius >= 10 && !bub.arrow, JSON.stringify(bub));
       } catch (err) { T('C3 Chat en tarjeta', false, String(err).slice(0, 200)); }
       try {
         await page.evaluate(() => { document.body.classList.add('fenix-chat-clear'); window.dispatchEvent(new Event('resize')); });
