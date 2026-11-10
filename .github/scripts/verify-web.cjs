@@ -212,7 +212,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.waitForTimeout(900);
         const fl = await page.evaluate(() => { const c = document.querySelector('.chatbox-view').getBoundingClientRect(), b = document.querySelector('.game-view > .bottom-section').getBoundingClientRect(), cv = document.querySelector('canvas').getBoundingClientRect(); return { chatBottom: Math.round(c.bottom), secTop: Math.round(b.top), canvasH: Math.round(cv.height), pe: getComputedStyle(document.querySelector('.chatbox-view')).pointerEvents }; });
         await page.screenshot({ path: path.join(outDir, 'shot-35-chat-transparente.png') });
-        await page.evaluate(() => { document.body.classList.remove('fenix-chat-clear'); window.dispatchEvent(new Event('resize')); });
+        await page.evaluate(() => { window.dispatchEvent(new Event('resize')); });
         await page.waitForTimeout(700);
         T('C4 Chat transparente flota sobre la cancha (vertical)', fl.chatBottom <= fl.secTop + 2 && fl.pe === 'none' && fl.canvasH > 560, JSON.stringify(fl));
       } catch (err) { T('C4 Chat transparente', false, String(err).slice(0, 200)); }
