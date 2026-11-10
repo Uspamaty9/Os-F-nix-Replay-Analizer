@@ -195,6 +195,12 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.click('.fenix-follow'); await page.waitForTimeout(600);
         await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
         T('S6 Camara automatica estilo TV', autoOk, JSON.stringify({ autoOk }));
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="cine"]'); await page.waitForTimeout(900);
+        const cineOk = await page.evaluate(() => { const f = window.__fenixFollow; return !!(f && f.mode === 'cine' && isFinite(f.x) && isFinite(f.y)); });
+        await page.click('.fenix-follow'); await page.waitForTimeout(600);
+        await page.click('.fenix-follow-panel .ff-item[data-id="0"]'); await page.waitForTimeout(700);
+        T('S6b Camara Cine', cineOk, JSON.stringify({ cineOk }));
       } catch (err) { T('S5 Seguir a la pelota y modo libre', false, String(err).slice(0, 200)); }
       try {
         await page.evaluate(() => window.__fenixToggleChat()); await page.waitForTimeout(700);
