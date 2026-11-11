@@ -542,6 +542,29 @@ const [,, url, outDir, sampleDir] = process.argv;
       await c3.close();
     } catch (e) { log('PRUEBA FALLIDA · G5 ' + vp.n + ' · ' + String(e.message).slice(0, 160)); }
   }
+  // A: escritorio (parte A): inicio en dos columnas, ventana de ajustes centrada, Esc cierra
+  for (const vp of [{ n: 'pc1366', w: 1366, h: 768 }, { n: 'pc1920', w: 1920, h: 1080 }]) {
+    try {
+      const cd = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 });
+      await cd.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
+      const pd = await cd.newPage();
+      await pd.goto(url, { waitUntil: 'load' }); await pd.waitForTimeout(4500);
+      const h = await pd.evaluate(() => {
+        const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom) }; };
+        return { hero: r('.fh-hero'), hist: r('.fh-history'), over: document.documentElement.scrollWidth - innerWidth };
+      });
+      await pd.screenshot({ path: path.join(outDir, 'shot-A-' + vp.n + '-inicio.png') });
+      TG('A1 Escritorio ' + vp.n + ': inicio en dos columnas sin desbordes', !!h.hero && !!h.hist && h.hero.r <= h.hist.l + 2 && h.over <= 1 && h.hist.b <= vp.h + 1, JSON.stringify(h));
+      await pd.click('.fh-gear:not(.fh-exit)'); await pd.waitForTimeout(900);
+      const m = await pd.evaluate(() => { const e = document.querySelector('.fs-sheet'); if (!e) return null; const b = e.getBoundingClientRect(); return { l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom), w: Math.round(b.width) }; });
+      await pd.screenshot({ path: path.join(outDir, 'shot-A-' + vp.n + '-ajustes.png') });
+      TG('A2 Escritorio ' + vp.n + ': ajustes como ventana centrada', !!m && m.l >= 0 && m.r <= vp.w && m.t >= 0 && m.b <= vp.h && m.w <= 920 && Math.abs((m.l + m.r) / 2 - vp.w / 2) < 6, JSON.stringify(m));
+      await pd.keyboard.press('Escape'); await pd.waitForTimeout(900);
+      const closed = await pd.evaluate(() => !document.querySelector('.fs-overlay'));
+      TG('A3 Escritorio ' + vp.n + ': Esc cierra ajustes', closed, JSON.stringify({ closed }));
+      await cd.close();
+    } catch (e) { log('PRUEBA FALLIDA · A ' + vp.n + ' · ' + String(e.message).slice(0, 160)); }
+  }
   log('--- PETICIONES EXTERNAS (' + external.size + ') ---'); [...external].forEach(s => log(s));
   log('--- PETICIONES FALLIDAS (' + failed.length + ') ---'); failed.slice(0, 20).forEach(s => log(s));
   log('--- ERRORES (' + errors.length + ') ---'); errors.slice(0, 20).forEach(s => log(s));
