@@ -85,6 +85,7 @@ jobs:
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
               printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Replay Analyzer Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
               npx cap add android
+              sed -i 's/versionCode [0-9]*/versionCode 1/; s/versionName "[^"]*"/versionName "1.0"/' android/app/build.gradle
               # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res
               if [ -f android-native/make_icons.py ] && [ -f public/brand/app.png ]; then
