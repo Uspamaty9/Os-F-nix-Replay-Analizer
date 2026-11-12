@@ -6,6 +6,8 @@ on:
       - '.github/workflows/build-desktop.yml'
       - 'Os-Fenix-Replay-Analyzer-Motor-Reproduccion-v3.zip'
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   win:
     runs-on: windows-latest
@@ -59,3 +61,9 @@ jobs:
           path: |
             desktop/dist/*.exe
           if-no-files-found: error
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete desktop-latest --yes --cleanup-tag || true
+          gh release create desktop-latest desktop/dist/*.exe --title "Replay Analyzer Os Fênix para Windows" --notes "Instalador y versión portable" --target "$GITHUB_SHA"
