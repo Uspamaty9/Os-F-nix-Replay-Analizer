@@ -1,0 +1,61 @@
+name: Build Desktop (Windows)
+on:
+  push:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-desktop.yml'
+      - 'Os-Fenix-Replay-Analyzer-Motor-Reproduccion-v3.zip'
+  workflow_dispatch:
+jobs:
+  win:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Compilar la web
+        run: |
+          export CI=false
+          ROOT="$PWD"
+          python -c "import zipfile;zipfile.ZipFile('Os-Fenix-Replay-Analyzer-Motor-Reproduccion-v3.zip').extractall('work')"
+          cd "$(dirname "$(find work -name package.json -not -path '*/node_modules/*' | head -1)")"
+          mkdir -p public/offline/tiles
+          get() { out="$1"; shift; for u in "$@"; do if curl -fsSL --retry 3 -m 180 -o "$out" "$u" && [ -s "$out" ]; then echo "OK $out"; return 0; fi; done; echo "NO SE PUDO $out"; rm -f "$out"; return 1; }
+          get public/offline/res.dat https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/res.dat https://haxball-replay-analyzer.github.io/pliki/res.dat https://www.haxball.com/res.dat || true
+          get public/offline/geo.json https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/geo.json https://haxball-replay-analyzer.github.io/pliki/geo.json || true
+          get public/offline/host.json https://kpias760.github.io/haxball-replay-analyzer.github.io/pliki/host.json || true
+          echo '{"content":""}' > public/offline/notice.json
+          for t in grass hockey; do
+            get "public/offline/tiles/${t}tile.png" "https://raw.githubusercontent.com/haxball-stadium-editor/haxball-stadium-editor.github.io/v2.11/${t}tile.png" || true
+          done
+          npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3
+          npm install --no-save --legacy-peer-deps --no-audit --no-fund @fontsource/open-sans@5 @fontsource/roboto@5 @fontsource/oswald@5 @fontsource/poppins@5 material-icons@1 2>&1 | tail -2
+          mkdir -p public/fonts
+          cp node_modules/@fontsource/open-sans/files/open-sans-latin-{400,600,700}-normal.woff2 public/fonts/
+          cp node_modules/@fontsource/roboto/files/roboto-latin-{300,400,700}-normal.woff2 public/fonts/
+          cp node_modules/@fontsource/oswald/files/oswald-latin-{500,600,700}-normal.woff2 public/fonts/
+          cp node_modules/@fontsource/poppins/files/poppins-latin-{400,500,600,700}-normal.woff2 public/fonts/
+          cp node_modules/material-icons/iconfont/material-icons.woff2 public/fonts/
+          { for w in 400 600 700; do echo "@font-face{font-family:'Open Sans';font-weight:$w;font-display:swap;src:url(open-sans-latin-$w-normal.woff2) format('woff2')}"; done
+            for w in 500 600 700; do echo "@font-face{font-family:'Oswald';font-weight:$w;font-display:swap;src:url(oswald-latin-$w-normal.woff2) format('woff2')}"; done
+            for w in 400 500 600 700; do echo "@font-face{font-family:'Poppins';font-weight:$w;font-display:swap;src:url(poppins-latin-$w-normal.woff2) format('woff2')}"; done
+            for w in 300 400 700; do echo "@font-face{font-family:'Roboto';font-weight:$w;font-display:swap;src:url(roboto-latin-$w-normal.woff2) format('woff2')}"; done
+            echo "@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(material-icons.woff2) format('woff2')}"; } > public/fonts/fonts.css
+          GENERATE_SOURCEMAP=false npm run build
+          rm -rf "$ROOT/desktop/web" && cp -r build "$ROOT/desktop/web"
+      - name: Empaquetar con Electron
+        working-directory: desktop
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win --publish never
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Replay-Analyzer-Os-Fenix-Windows
+          path: |
+            desktop/dist/*.exe
+          if-no-files-found: error

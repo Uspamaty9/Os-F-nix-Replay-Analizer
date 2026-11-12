@@ -1,0 +1,19 @@
+{
+  "name": "replay-analyzer-os-fenix-desktop",
+  "version": "1.0.0",
+  "description": "Replay Analyzer Os Fênix para Windows",
+  "author": "Os Fênix",
+  "main": "main.js",
+  "private": true,
+  "devDependencies": { "electron": "31.7.7", "electron-builder": "24.13.3" },
+  "build": {
+    "appId": "com.osfenix.replayanalyzer.desktop",
+    "productName": "Replay Analyzer Os Fênix",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "package.json"],
+    "extraResources": [{ "from": "web", "to": "web" }],
+    "win": { "icon": "build/icon.ico", "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "installerIcon": "build/icon.ico", "uninstallerIcon": "build/icon.ico", "artifactName": "Replay Analyzer Os Fênix Instalador.${ext}" },
+    "portable": { "artifactName": "Replay Analyzer Os Fênix.${ext}" }
+  }
+}
