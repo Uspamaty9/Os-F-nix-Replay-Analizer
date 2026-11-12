@@ -603,7 +603,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       TG('B1b Escritorio ' + vp.n + ': C abre el panel de camaras a un lado y Esc lo cierra', camOpen && camGone && !!camR && camR.r >= vp.w - 2 && camR.w <= 420 && camR.b <= vp.h, JSON.stringify({ camOpen, camGone, camR }));
       await pd.keyboard.press('s'); await pd.waitForTimeout(2600);
       const L = await R('.room-view > .container'), Rt = await R('#game-stats');
-      const maps = await pd.evaluate(() => [...document.querySelectorAll('#game-stats .fs-map-canvas')].map(c => { const b = c.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; }));
+      const maps = await pd.evaluate(() => [...document.querySelectorAll('#game-stats .fs-map-canvas')].map(c => { const b = c.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; }).sort((x, y) => x[0] - y[0]));
       const tabs = await pd.evaluate(() => document.querySelectorAll('.fenix-ptabs').length);
       await pd.screenshot({ path: path.join(outDir, 'shot-B-' + vp.n + '-3sala-estadisticas.png') });
       TG('B2b Escritorio ' + vp.n + ': Sala y Estadisticas lado a lado, sin pestañas', !!L && !!Rt && L.r <= Rt.l && L.l >= 0 && Rt.r <= vp.w && L.b <= vp.h && Rt.b <= vp.h && Math.abs(L.t - Rt.t) <= 2 && tabs === 0, JSON.stringify({ L, Rt, tabs }));
