@@ -565,6 +565,58 @@ const [,, url, outDir, sampleDir] = process.argv;
       await cd.close();
     } catch (e) { log('PRUEBA FALLIDA · A ' + vp.n + ' · ' + String(e.message).slice(0, 160)); }
   }
+  // B: escritorio (parte B): vista de repeticion
+  for (const vp of [{ n: 'pc1366', w: 1366, h: 768 }, { n: 'pc1920', w: 1920, h: 1080 }]) {
+    try {
+      if (!samples.length) break;
+      const cd = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 });
+      await cd.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
+      await cd.addInitScript(() => { setInterval(() => { const o = document.querySelector('.fenix-tap-overlay'); if (o) o.click(); }, 250); });
+      const pd = await cd.newPage();
+      await pd.goto(url, { waitUntil: 'load' }); await pd.waitForTimeout(3500);
+      await pd.setInputFiles('#replayfile', path.join(sampleDir, samples[0])); await pd.waitForTimeout(13000);
+      const R = (s) => pd.evaluate((q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return { l: Math.round(b.left), t: Math.round(b.top), r: Math.round(b.right), b: Math.round(b.bottom), w: Math.round(b.width), h: Math.round(b.height) }; }, s);
+      await pd.screenshot({ path: path.join(outDir, 'shot-B-' + vp.n + '-1repeticion.png') });
+      const f = { cv: await R('.game-view canvas'), bar: await R('.replay-controls-view'), btns: await R('.bottom-section .buttons'), leave: await R('#button_leave'), tb: await R('.replay-controls-view .timebar'), chat: await R('.chatbox-view') };
+      const inter = (a, b) => a && b && a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+      TG('B1 Escritorio ' + vp.n + ': campo al maximo', !!f.cv && f.cv.w >= vp.w - 2 && f.cv.t <= 2 && f.cv.h >= vp.h - 90, JSON.stringify(f.cv));
+      TG('B2 Escritorio ' + vp.n + ': barra abajo sin choques', !!f.bar && f.bar.b >= vp.h - 1 && f.bar.h <= 90 && !inter(f.btns, f.leave) && !inter(f.btns, f.tb) && f.btns.b <= vp.h && f.btns.r <= vp.w, JSON.stringify(f));
+      TG('B4 Escritorio ' + vp.n + ': chat no tapa la barra', !f.chat || f.chat.b <= f.bar.t + 2, JSON.stringify({ chat: f.chat, bar: f.bar }));
+      // atajos
+      const ico = () => pd.evaluate(() => { const p = document.querySelector('[data-hook=playicon]'); return !!(p && p.innerHTML.indexOf('<rect') > -1); });
+      const t0 = await pd.evaluate(() => document.querySelector('[data-hook=time]').textContent);
+      const pl0 = await ico();
+      await pd.keyboard.press('Space'); await pd.waitForTimeout(500); const pl1 = await ico();
+      await pd.keyboard.press('Space'); await pd.waitForTimeout(400); const pl2 = await ico();
+      await pd.keyboard.press('ArrowRight'); await pd.waitForTimeout(700);
+      const t1 = await pd.evaluate(() => document.querySelector('[data-hook=time]').textContent);
+      const sp0 = await pd.evaluate(() => document.querySelector('[data-hook=spd]').textContent);
+      await pd.keyboard.press('+'); await pd.waitForTimeout(300);
+      const sp1 = await pd.evaluate(() => document.querySelector('[data-hook=spd]').textContent);
+      TG('B5 Escritorio ' + vp.n + ': Espacio, flechas y +/-', pl0 !== pl1 && pl1 !== pl2 && t1 !== t0 && sp0 !== sp1, JSON.stringify({ pl0, pl1, pl2, t0, t1, sp0, sp1 }));
+      await pd.keyboard.press('c'); await pd.waitForTimeout(900);
+      const camOpen = await pd.evaluate(() => !!document.querySelector('.fenix-follow-panel.show'));
+      const camR = await R('.fenix-follow-panel .ff-sheet');
+      await pd.screenshot({ path: path.join(outDir, 'shot-B-' + vp.n + '-2camaras.png') });
+      await pd.keyboard.press('Escape'); await pd.waitForTimeout(700);
+      const camGone = await pd.evaluate(() => !document.querySelector('.fenix-follow-panel.show'));
+      TG('B1b Escritorio ' + vp.n + ': C abre el panel de camaras a un lado y Esc lo cierra', camOpen && camGone && !!camR && camR.r >= vp.w - 2 && camR.w <= 420 && camR.b <= vp.h, JSON.stringify({ camOpen, camGone, camR }));
+      await pd.keyboard.press('s'); await pd.waitForTimeout(2600);
+      const L = await R('.room-view > .container'), Rt = await R('#game-stats');
+      const maps = await pd.evaluate(() => [...document.querySelectorAll('#game-stats .fs-map-canvas')].map(c => { const b = c.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; }));
+      const tabs = await pd.evaluate(() => document.querySelectorAll('.fenix-ptabs').length);
+      await pd.screenshot({ path: path.join(outDir, 'shot-B-' + vp.n + '-3sala-estadisticas.png') });
+      TG('B2b Escritorio ' + vp.n + ': Sala y Estadisticas lado a lado, sin pestañas', !!L && !!Rt && L.r <= Rt.l && L.l >= 0 && Rt.r <= vp.w && L.b <= vp.h && Rt.b <= vp.h && Math.abs(L.t - Rt.t) <= 2 && tabs === 0, JSON.stringify({ L, Rt, tabs }));
+      TG('B3 Escritorio ' + vp.n + ': mapas de calor y posesion visibles', maps.length === 2 && maps.every(m => m[2] > 150 && m[3] > 70) && Math.abs(maps[0][1] - maps[1][1]) < 6 && maps[0][0] + maps[0][2] <= maps[1][0] + 2, JSON.stringify(maps));
+      await pd.evaluate(() => { const sc = document.querySelector('#game-stats .fs-scroll'); if (sc) sc.scrollTop = 9999; }); await pd.waitForTimeout(300);
+      await pd.screenshot({ path: path.join(outDir, 'shot-B-' + vp.n + '-4estadisticas-abajo.png') });
+      await pd.keyboard.press('Escape'); await pd.waitForTimeout(1500);
+      const closed = await pd.evaluate(() => !document.querySelector('#game-stats') && !(document.querySelector('.room-view') && document.querySelector('.room-view').offsetParent !== null));
+      TG('B6 Escritorio ' + vp.n + ': Esc cierra el panel', closed, JSON.stringify({ closed }));
+      await pd.mouse.move(300, 300); await pd.waitForTimeout(300);
+      await cd.close();
+    } catch (e) { log('PRUEBA FALLIDA · B ' + vp.n + ' · ' + String(e.message).slice(0, 200)); }
+  }
   log('--- PETICIONES EXTERNAS (' + external.size + ') ---'); [...external].forEach(s => log(s));
   log('--- PETICIONES FALLIDAS (' + failed.length + ') ---'); failed.slice(0, 20).forEach(s => log(s));
   log('--- ERRORES (' + errors.length + ') ---'); errors.slice(0, 20).forEach(s => log(s));
