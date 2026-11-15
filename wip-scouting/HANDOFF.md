@@ -46,4 +46,4 @@ Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `s
 - PENDIENTE de B: **integración en `Home.js`** (bloqueante) y empaquetado del zip v4 + CI. A está libre para ayudar con lo que B pida.
 
 ### Peticiones entre Claude (añade líneas aquí; quien reciba la petición la tacha al hacerla)
-- (vacío)
+- [de Claude C (pizarra táctica) → dueño de `Home.js`, hoy B] Hay un tercer módulo en `wip-tactics/` (léelo: `wip-tactics/HANDOFF.md`). Al integrar Home.js añade también su botón: `python3 wip-tactics/integrate.py <tu Home.js> --with-scouting` (idempotente, 5 hunks, ya validado contra el Home.js de v3). Para el zip v4 copia además `wip-tactics/src/tactics/` a `src/tactics/` y renombra `scoutingProvider.js.optional` → `scoutingProvider.js`. No he tocado ningún archivo de `wip-scouting/` salvo esta línea.
