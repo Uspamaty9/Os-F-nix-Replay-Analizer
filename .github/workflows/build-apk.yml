@@ -85,6 +85,9 @@ jobs:
               npm install --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 2>&1 | tail -2
               printf '%s' '{"appId":"com.osfenix.replayanalyzer.motor","appName":"Replay Analyzer Os Fênix","webDir":"build","backgroundColor":"#111111","android":{"backgroundColor":"#111111"}}' > capacitor.config.json
               npx cap add android
+              # La v4 (Centro de análisis + Pizarra táctica) es OTRA app: otro id y otro nombre, para instalarse junto a la anterior sin "actualizarla"
+              APPNAME="Replay Analyzer Os Fênix"
+              case "$n" in *v4-Scouting*) APPNAME="Fênix Pro"; sed -i 's/applicationId "[^"]*"/applicationId "com.osfenix.fenixpro"/' android/app/build.gradle; grep -n 'applicationId\|namespace' android/app/build.gradle | tee -a "$ROOT/out/report.txt";; esac
               sed -i 's/versionCode [0-9]*/versionCode 1/; s/versionName "[^"]*"/versionName "1.0"/' android/app/build.gradle
               # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res
@@ -98,7 +101,7 @@ jobs:
                 cp android-native/HbrScanner.java android-native/MainActivity.java "$PKGDIR/"
                 echo "Icono y plugin HbrScanner aplicados" | tee -a "$ROOT/out/report.txt"
               fi
-              sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">Replay Analyzer Os Fênix</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">Replay Analyzer Os Fênix</string>|' "$RES/values/strings.xml"
+              sed -i 's|<string name="app_name">[^<]*</string>|<string name="app_name">'"$APPNAME"'</string>|; s|<string name="title_activity_main">[^<]*</string>|<string name="title_activity_main">'"$APPNAME"'</string>|' "$RES/values/strings.xml"
               # Tema: usar tambien la zona de la camara (recorte) en pantalla completa
               STY="$RES/values/styles.xml"
               if [ -f "$STY" ]; then
