@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Seg, Select, Prov, toast, saveFile, textBytes, pickFile, slug, stamp } from './ui';
 import { buildTeamReport, buildPlayerReport, buildMatchReport } from './report';
-import { dashboardData, ownTeamId, teamName, fmtDate, fmtPct } from './model';
+import { dashboardData, applyFilters, ownTeamId, teamName, fmtDate, fmtPct } from './model';
 import { DEFINITIONS } from './analysis';
 
 export default function Reports({ model, view, filters }) {
@@ -22,7 +22,7 @@ export default function Reports({ model, view, filters }) {
   }
   async function backup() { try { await saveFile('OsFenix-scouting-' + stamp() + '.fenixscout', 'application/octet-stream', textBytes(await db.exportScouting())); toast('Copia guardada'); } catch (e) { toast('No se pudo crear la copia'); } }
   async function restore() { const f = await pickFile('.fenixscout,.json,application/json'); if (!f) return; try { const n = await db.importScouting(await f.text()); toast(n + ' registros restaurados'); } catch (e) { toast('Archivo no válido'); } }
-  const d = kind === 'team' ? dashboardData(model, { ...view, filters: { ...filters, teamId } }) : null;
+  const d = kind === 'team' ? dashboardData(model, applyFilters(model, { ...filters, teamId }), { noOwn: !teamId }) : null;
   return (
     <div className="sc-view">
       <Card title="Informes en PDF">

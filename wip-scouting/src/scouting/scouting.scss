@@ -1,6 +1,6 @@
-// Centro de análisis · estilos. Hereda la identidad de Os Fênix: usa las variables del tema activo
-// (--bg, --card, --acc, --red, --txt, --btn-txt) y, si no existen (tema Fênix por defecto), los colores de la marca.
-// Móvil primero; escala a escritorio.
+/* Centro de análisis · estilos. Hereda la identidad de Os Fênix: usa las variables del tema activo */
+/* (--bg, --card, --acc, --red, --txt, --btn-txt) y, si no existen (tema Fênix por defecto), los colores de la marca. */
+/* Móvil primero; escala a escritorio. */
 .sc-root, .sc-toast {
   --sc-bg: var(--bg, #111111);
   --sc-card: var(--card, #181818);
@@ -21,7 +21,7 @@
 .sc-root *, .sc-root *::before, .sc-root *::after { box-sizing: border-box; }
 .sc-root h1, .sc-root h2, .sc-root h3, .sc-root h4, .sc-root p { margin: 0; }
 
-// ---------- Contenedor a pantalla completa ----------
+/* ---------- Contenedor a pantalla completa ---------- */
 .sc-overlay-full {
   position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
   background: var(--sc-bg); overflow: hidden;
@@ -47,7 +47,7 @@
 }
 .sc-tabs::-webkit-scrollbar { display: none; }
 
-// ---------- Tarjetas y bloques ----------
+/* ---------- Tarjetas y bloques ---------- */
 .sc-card { background: var(--sc-card); border: 1px solid var(--sc-line); border-radius: 16px; padding: 14px; }
 .sc-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .sc-card > header h3 { font-family: 'Oswald', 'Poppins', sans-serif; font-weight: 600; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; }
@@ -71,7 +71,7 @@
 .sc-link.back { align-self: flex-start; font-size: 13px; }
 hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 
-// ---------- Botones y formularios ----------
+/* ---------- Botones y formularios ---------- */
 .sc-btn { appearance: none; border: 0; background: var(--sc-acc); color: var(--sc-btn); font: 700 13px 'Poppins', sans-serif; border-radius: 12px; padding: 11px 16px; min-height: 42px; cursor: pointer; }
 .sc-btn.small { padding: 7px 12px; min-height: 34px; font-size: 12px; border-radius: 10px; }
 .sc-btn.ghost { background: transparent; color: var(--sc-txt); border: 1px solid var(--sc-line); }
@@ -106,7 +106,7 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-check { width: 22px; height: 22px; flex: none; border-radius: 7px; border: 2px solid var(--sc-line); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
 .sc-check.on { background: var(--sc-acc); border-color: var(--sc-acc); color: var(--sc-btn); }
 
-// ---------- Indicadores ----------
+/* ---------- Indicadores ---------- */
 .sc-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .sc-kpis.small { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
 .sc-kpi { background: var(--sc-card); border: 1px solid var(--sc-line); border-radius: 14px; padding: 11px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; position: relative; }
@@ -117,13 +117,13 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-kpi.good b { color: var(--sc-good); } .sc-kpi.good::before { background: var(--sc-good); }
 .sc-kpi.bad b { color: var(--sc-bad); } .sc-kpi.bad::before { background: var(--sc-bad); }
 .sc-card .sc-kpi { background: var(--sc-soft); }
-// Etiqueta de origen del dato: E extraído · C calculado · M manual
+/* Etiqueta de origen del dato: E extraído · C calculado · M manual */
 .sc-prov { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 4px; border-radius: 4px; font: 700 9px 'Poppins', sans-serif; vertical-align: middle; }
 .sc-prov.auto { background: color-mix(in srgb, #3FA7D6 28%, transparent); color: #3FA7D6; }
 .sc-prov.calc { background: color-mix(in srgb, var(--sc-acc) 28%, transparent); color: var(--sc-acc); }
 .sc-prov.manual { background: color-mix(in srgb, #B77CD9 28%, transparent); color: #B77CD9; }
 
-// ---------- Listas ----------
+/* ---------- Listas ---------- */
 .sc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .sc-list > li { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--sc-line); min-height: 52px; cursor: pointer; }
 .sc-list > li:last-child { border-bottom: 0; }
@@ -149,7 +149,7 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-rate { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 16px; font-weight: 600; color: var(--sc-btn); background: var(--sc-acc); border-radius: 9px; padding: 3px 9px; }
 .sc-avatar { border-radius: 50%; object-fit: cover; flex: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; }
 
-// ---------- Perfil / cabeceras ----------
+/* ---------- Perfil / cabeceras ---------- */
 .sc-phead { display: flex; align-items: center; gap: 12px; }
 .sc-phead .mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .sc-phead h2 { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 22px; font-weight: 600; overflow-wrap: anywhere; }
@@ -161,7 +161,7 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-bigscore .t { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; } .sc-bigscore .t.r { color: var(--sc-red2); text-align: right; } .sc-bigscore .t.b { color: #5B9BD5; text-align: left; }
 .sc-bigscore .s { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 40px; font-weight: 700; } .sc-bigscore .s em { font-style: normal; color: var(--sc-mute); }
 
-// ---------- Tablas ----------
+/* ---------- Tablas ---------- */
 .sc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .sc-table th, .sc-table td { padding: 8px 8px; text-align: right; border-bottom: 1px solid var(--sc-line); white-space: nowrap; }
 .sc-table th:first-child, .sc-table td:first-child { text-align: left; }
@@ -176,19 +176,19 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-matrix th, .sc-matrix td { padding: 6px 7px; text-align: center; border: 1px solid var(--sc-line); min-width: 34px; }
 .sc-matrix thead th { font-size: 10px; color: var(--sc-mute); } .sc-matrix tbody th { text-align: left; color: var(--sc-txt); white-space: nowrap; }
 
-// ---------- Scouting: criterios ----------
+/* ---------- Scouting: criterios ---------- */
 .sc-crit { padding: 10px 0; border-bottom: 1px solid var(--sc-line); }
 .sc-crit .top { display: flex; justify-content: space-between; align-items: center; } .sc-crit .top b { font-size: 14px; }
 .sc-crit .val { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 20px; color: var(--sc-acc); } .sc-crit .val.dim { color: var(--sc-mute); }
 .sc-crit input[type=range] { width: 100%; accent-color: var(--sc-acc); height: 30px; margin: 4px 0; }
 .sc-crit .sub { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--sc-mute); align-items: flex-start; } .sc-crit .sub small { display: block; opacity: .8; } .sc-crit .act { display: flex; gap: 10px; flex: none; }
 
-// ---------- Comparativa de partido ----------
+/* ---------- Comparativa de partido ---------- */
 .sc-vs .row { display: grid; grid-template-columns: 1fr 1.6fr 1fr; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--sc-line); text-align: center; }
 .sc-vs .row span { font-size: 11px; color: var(--sc-mute); } .sc-vs .row b { font-size: 15px; } .sc-vs .row b.win { color: var(--sc-acc); }
 .sc-defs { list-style: none; margin: 0; padding: 0; } .sc-defs li { padding: 9px 0; border-bottom: 1px solid var(--sc-line); } .sc-defs b { font-size: 13px; } .sc-defs p { font-size: 12px; color: var(--sc-mute); line-height: 1.45; margin-top: 3px; }
 
-// ---------- Gráficos ----------
+/* ---------- Gráficos ---------- */
 .sc-chart { position: relative; }
 .sc-chart svg, .sc-net { display: block; overflow: visible; }
 .sc-chart .grid, .sc-chart svg .grid, svg .grid { stroke: var(--sc-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -207,7 +207,7 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-net .pitch rect, .sc-net .pitch circle { fill: none; stroke: var(--sc-line); stroke-width: 1.5; } .sc-net .pitch line { stroke: var(--sc-line); stroke-width: 1.5; }
 .sc-net .nl { fill: var(--sc-txt); font: 600 9px 'Poppins', sans-serif; } .sc-net .nn { fill: #fff; font: 700 9px 'Poppins', sans-serif; pointer-events: none; }
 
-// ---------- Hojas inferiores, avisos ----------
+/* ---------- Hojas inferiores, avisos ---------- */
 .sc-overlay { position: fixed; inset: 0; z-index: 80; background: #000a; display: flex; align-items: flex-end; justify-content: center; }
 .sc-sheet { width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; background: var(--sc-card); border-radius: 20px 20px 0 0; border: 1px solid var(--sc-line); padding-bottom: env(safe-area-inset-bottom); }
 .sc-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; } .sc-sheet-head h3 { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: var(--sc-acc); }
@@ -216,7 +216,7 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); opacity: 0; transition: .25s; z-index: 120; background: #111; color: #F7F3E8; border: 1px solid #C89A3D; padding: 10px 16px; border-radius: 12px; font: 600 13px 'Poppins', sans-serif; max-width: 88vw; text-align: center; pointer-events: none; }
 .sc-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-// ---------- Pantallas anchas ----------
+/* ---------- Pantallas anchas ---------- */
 @media (min-width: 720px) {
   .sc-main { padding: 18px 24px 32px; }
   .sc-kpis { grid-template-columns: repeat(4, 1fr); }

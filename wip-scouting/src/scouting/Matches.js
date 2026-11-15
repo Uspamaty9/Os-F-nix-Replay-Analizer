@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Prov, useConfirm, toast, saveFile, slug, stamp } from './ui';
 import { NetworkGraph, StackBar } from './charts';
-import { passNetwork, teamName, fmtPct, fmtNum, fmtDate, fmtDur } from './model';
+import { toInputDate, passNetwork, teamName, fmtPct, fmtNum, fmtDate, fmtDur } from './model';
 import { suggestTeams } from './ingest';
 import { buildMatchReport } from './report';
 
@@ -32,7 +32,7 @@ function Detail({ model, m, nav, openReplay }) {
   const rows = an.players.filter((p) => (p.team === 'R' || p.team === 'B') && (side === 'both' || p.team === side) && (!pid || (model.idx.get(p.nick.trim().toLowerCase()) || {}).id === pid));
   const net = useMemo(() => passNetwork(model, [m], side === 'both' ? '' : side === 'R' ? m.redTeamId || '__none' : m.blueTeamId || '__none'), [model, m, side]);
   const cmpRows = [['Posesión', R.possession, B.possession, 'auto', fmtPct], ['Goles', R.goals, B.goals, 'auto'], ['Tiros a puerta', R.shotsOT, B.shotsOT, 'auto'], ['Conversión', R.conversion, B.conversion, 'calc', fmtPct], ['Toques', R.kicks, B.kicks, 'auto'], ['Pases completados', R.passesCompleted, B.passesCompleted, 'calc'], ['Pases fallidos', R.passesFailed, B.passesFailed, 'calc'], ['Precisión de pases', R.passAccuracy, B.passAccuracy, 'calc', fmtPct], ['Pérdidas', R.turnovers, B.turnovers, 'calc'], ['Recuperaciones', R.recoveries, B.recoveries, 'calc'], ['Intercepciones', R.interceptions, B.interceptions, 'calc'], ['Bloqueos', R.blocks, B.blocks, 'calc'], ['Pases clave', R.keyPasses, B.keyPasses, 'calc'], ['Tiros a puerta evitados', R.savesImplied, B.savesImplied, 'calc'], ['Tercios (def·med·ata)', R.thirds.join(' · '), B.thirds.join(' · '), 'auto']];
-  const dateStr = rec.date ? new Date(rec.date).toISOString().slice(0, 10) : '';
+  const dateStr = rec.date ? toInputDate(rec.date) : '';
   async function pdf() { try { const b = buildMatchReport(model, m.id); await saveFile('Partido-' + slug(rn + '-' + bn) + '-' + stamp() + '.pdf', 'application/pdf', b); toast('Informe PDF guardado'); } catch (e) { toast('No se pudo crear el informe'); } }
   async function remove() { if (await confirm('Se borrarán las estadísticas guardadas de este partido (calificaciones incluidas). La repetición seguirá en el historial y podrás volver a analizarla.', 'Borrar estadísticas')) { await db.delMany('ratings', model.ratings.filter((r) => r.matchId === m.id).map((r) => r.id)); await db.del('matches', m.id); nav('matches', {}); } }
   function suggest() { const s = suggestTeams(rec.parts[rec.partIdx], model.players); if (!s.R && !s.B) { toast('No hay suficientes jugadores con equipo para sugerir'); return; } upd({ redTeamId: s.R, blueTeamId: s.B, teamAuto: true }); toast('Equipos asignados según las plantillas'); }

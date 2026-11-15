@@ -40,5 +40,10 @@ Antes de empezar y antes de cada push: `git pull --rebase origin wip/scouting-mo
 
 Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `src/scouting/`, `src/extras.js` y `src/components/Home.js`.
 
+### Estado (actualizado por A)
+- HECHO por A: `scouting.scss`; prueba en Chromium (React 19) con 3 scripts en `tests/browser/` (todo pasa, sin errores de consola); correcciones: coherencia del Panel (un solo ámbito de equipo), color de nodos en red de pases, fechas en hora local.
+- A tocó 2 archivos de B por ser fallos que bloqueaban la revisión (B aún no había empezado): `pdf.js` (los rellenos salían negros: `parseInt('#...')` -> NaN) y `report.js` (títulos huérfanos al final de página, pie de la red de pases, ámbito `noOwn`). Revisión visual del PDF: tras estos cambios se ve correcto; B puede afinar maquetación pero no es bloqueante.
+- PENDIENTE de B: **integración en `Home.js`** (bloqueante) y empaquetado del zip v4 + CI. A está libre para ayudar con lo que B pida.
+
 ### Peticiones entre Claude (añade líneas aquí; quien reciba la petición la tacha al hacerla)
 - (vacío)

@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Kpi, Empty, Avatar } from './ui';
 import { LineChart, HBars, StackBar, Donut, VBars } from './charts';
-import { dashboardData, fmtPct, fmtNum, fmtDate, teamName, ratingAverage } from './model';
+import { dashboardData, applyFilters, ownTeamId, fmtPct, fmtNum, fmtDate, teamName, ratingAverage } from './model';
 import { pendingReplays } from './ingest';
 
-export default function Dashboard({ model, view, nav, openReplay }) {
-  const d = dashboardData(model, view);
+export default function Dashboard({ model, view: baseView, nav, openReplay }) {
+  const [allTeams, setAllTeams] = useState(false);
+  const own = ownTeamId(model);
+  // Ámbito único: todas las cifras del panel se refieren al mismo equipo (el filtro, o «Mi equipo» por defecto).
+  const useOwn = !baseView.filters.teamId && !!own && !allTeams;
+  const view = useOwn ? applyFilters(model, { ...baseView.filters, teamId: own }) : baseView;
+  const unassigned = useOwn ? baseView.matches.filter((m) => !m.redTeamId && !m.blueTeamId).length : 0;
+  const d = dashboardData(model, view, { noOwn: allTeams });
   const [pending, setPending] = useState([]);
   useEffect(() => { let alive = true; pendingReplays().then((p) => { if (alive) setPending(p); }).catch(() => { }); return () => { alive = false; }; }, [model.matches.length]);
   const hasTeam = !!d.perspective;
@@ -15,6 +21,9 @@ export default function Dashboard({ model, view, nav, openReplay }) {
         <Card title="Bienvenido al centro de análisis"><Empty>Aún no hay partidos analizados. Abre una repetición desde el historial: al terminar de analizarla, sus estadísticas se guardan aquí automáticamente. {pending.length > 0 ? 'Tienes ' + pending.length + ' repeticiones en el historial listas para analizar (abajo).' : ''}</Empty></Card>
       )}
       {!view.matches.length && model.matches.length > 0 && <Card><Empty small>Ningún partido coincide con los filtros actuales.</Empty></Card>}
+      {!baseView.filters.teamId && own && (
+        <p className="sc-note scope">{useOwn ? 'Datos de ' + teamName(model, own) + ' (Mi equipo).' : 'Datos de todos los equipos.'} <button className="sc-link" onClick={() => setAllTeams(!allTeams)}>{useOwn ? 'Ver todos los equipos' : 'Solo mi equipo'}</button>{unassigned > 0 && useOwn ? ' · ' + unassigned + ' partido(s) sin equipo asignado no se incluyen.' : ''}</p>
+      )}
       <div className="sc-kpis">
         <Kpi label="Partidos analizados" value={d.matchCount} prov="auto" />
         <Kpi label="Jugadores registrados" value={d.players} />
@@ -47,7 +56,7 @@ export default function Dashboard({ model, view, nav, openReplay }) {
           <LineChart labels={d.evo.map((e) => String(e.i))} series={[{ name: '% de victorias acumulado', data: d.evo.map((e) => Math.round(e.winPct * 100)), color: '#3FA7D6', area: true }]} yMin={0} yMax={100} height={130} fmt={(v) => v + '%'} ariaLabel="Evolución del porcentaje de victorias" />
         </Card>
       )}
-      {view.matches.length > 1 && <Card title="Goles por partido"><VBars labels={view.matches.slice(0, 14).reverse().map((m) => fmtDate(m.date).slice(0, 5))} series={[{ name: 'Rojo', data: view.matches.slice(0, 14).reverse().map((m) => m.score[0]), color: '#B23A48' }, { name: 'Azul', data: view.matches.slice(0, 14).reverse().map((m) => m.score[1]), color: '#3A78B5' }]} /></Card>}
+      {view.matches.length > 1 && <Card title="Goles por partido"><VBars labels={view.matches.slice(0, 14).reverse().map((m) => fmtDate(m.date).slice(0, 5))} series={d.perspective ? [{ name: 'A favor', data: view.matches.slice(0, 14).reverse().map((m) => m.score[m.redTeamId === d.perspective ? 0 : 1]), color: '#59B96B' }, { name: 'En contra', data: view.matches.slice(0, 14).reverse().map((m) => m.score[m.redTeamId === d.perspective ? 1 : 0]), color: '#D2504A' }] : [{ name: 'Rojo', data: view.matches.slice(0, 14).reverse().map((m) => m.score[0]), color: '#B23A48' }, { name: 'Azul', data: view.matches.slice(0, 14).reverse().map((m) => m.score[1]), color: '#3A78B5' }]} /></Card>}
 
       <Card title="Últimos partidos" right={view.matches.length > 0 && <button className="sc-link" onClick={() => nav('matches')}>Ver todos</button>}>
         {!d.lastMatches.length ? <Empty small>Sin partidos.</Empty> : <ul className="sc-list">{d.lastMatches.map((m) => (

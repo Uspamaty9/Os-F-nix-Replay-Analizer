@@ -1,0 +1,10 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import ScoutingApp from '../../src/scouting/ScoutingApp.js';
+import * as db from '../../src/scouting/db.js';
+import * as ingest from '../../src/scouting/ingest.js';
+import * as model from '../../src/scouting/model.js';
+import * as report from '../../src/scouting/report.js';
+window.__db = db; window.__ingest = ingest; window.__model = model; window.__report = report;
+window.__opened = [];
+createRoot(document.getElementById('root')).render(<ScoutingApp onClose={() => { window.__closed = true; }} openReplay={(id) => window.__opened.push(id)} />);

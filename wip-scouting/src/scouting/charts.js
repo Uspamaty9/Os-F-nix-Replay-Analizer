@@ -168,7 +168,7 @@ export function NetworkGraph({ nodes, edges, layout = 'campo', selected, onSelec
       {nodes.map((n) => {
         const p = pos[n.id]; const r = 12 + (n.conn / mk) * 8; const on = !selected || selected === n.id;
         return <g key={n.id} onClick={() => onSelect && onSelect(selected === n.id ? null : n.id)} style={{ cursor: 'pointer' }} opacity={on ? 1 : 0.4}>
-          <circle cx={p[0]} cy={p[1]} r={r} fill={n.team === 'R' ? 'var(--sc-red2)' : '#3A78B5'} stroke={selected === n.id ? 'var(--sc-acc)' : 'var(--sc-card)'} strokeWidth="2.5"><title>{n.nick + ' · ' + n.conn + ' conexiones'}</title></circle>
+          <circle cx={p[0]} cy={p[1]} r={r} fill={n.color || (n.team === 'R' ? 'var(--sc-red2)' : '#3A78B5')} stroke={selected === n.id ? 'var(--sc-acc)' : 'var(--sc-card)'} strokeWidth="2.5"><title>{n.nick + ' · ' + n.conn + ' conexiones'}</title></circle>
           <text x={p[0]} y={p[1] + r + 11} textAnchor="middle" className="nl">{n.nick.length > 11 ? n.nick.slice(0, 10) + '…' : n.nick}</text>
           <text x={p[0]} y={p[1] + 4} textAnchor="middle" className="nn">{n.out + n.inn}</text>
         </g>;

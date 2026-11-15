@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, toast } from './ui';
 import { PlayerEditor } from './Players';
-import { standings, headToHead, teamName, fmtDate, fmtNum } from './model';
+import { toInputDate, standings, headToHead, teamName, fmtDate, fmtNum } from './model';
 
 const TYPES = [['liga', 'Liga'], ['torneo', 'Torneo'], ['amistoso', 'Amistosos']];
 
@@ -103,7 +103,7 @@ function FixtureEditor({ model, fx, defComp, onClose }) {
   return <Sheet title={fx ? 'Editar jornada' : 'Programar jornada'} onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar</button></>}><div className="sc-form">
     <Select label="Competición" value={f.competitionId} onChange={(v) => setF({ ...f, competitionId: v })} placeholder="Elegir…" options={model.competitions.map((x) => [x.id, x.name])} />
     <Input label="Jornada / ronda" value={f.round} onChange={(v) => setF({ ...f, round: v })} /><Select label="Local" value={f.homeId} onChange={(v) => setF({ ...f, homeId: v })} placeholder="Elegir…" options={teams.map((t) => [t.id, t.name])} /><Select label="Visitante" value={f.awayId} onChange={(v) => setF({ ...f, awayId: v })} placeholder="Elegir…" options={teams.map((t) => [t.id, t.name])} />
-    <Input label="Fecha" type="date" value={f.date ? new Date(f.date).toISOString().slice(0, 10) : ''} onChange={(v) => setF({ ...f, date: v ? new Date(v + 'T12:00:00').getTime() : null })} />
+    <Input label="Fecha" type="date" value={f.date ? toInputDate(f.date) : ''} onChange={(v) => setF({ ...f, date: v ? new Date(v + 'T12:00:00').getTime() : null })} />
     <div className="sc-grid2"><Input label="Goles local (opcional)" type="number" min="0" value={f.homeGoals == null ? '' : f.homeGoals} onChange={(v) => setF({ ...f, homeGoals: v })} /><Input label="Goles visitante" type="number" min="0" value={f.awayGoals == null ? '' : f.awayGoals} onChange={(v) => setF({ ...f, awayGoals: v })} /></div>
     <p className="sc-note">Si más tarde vinculas una repetición a esta jornada, el resultado saldrá de la repetición y este se ignorará.</p>
     {fx && <button className="sc-btn small danger" onClick={remove}>Eliminar jornada</button>}</div>{confirmEl}</Sheet>;
@@ -121,7 +121,7 @@ function H2H({ model }) {
 
 function SimpleEditor({ title, item, onClose, store, prefix, fields, usedBy }) {
   const [f, setF] = useState(item ? { ...item } : {}); const [confirm, confirmEl] = useConfirm();
-  const toV = (k, t) => (t === 'date' ? (f[k] ? new Date(f[k]).toISOString().slice(0, 10) : '') : f[k] || '');
+  const toV = (k, t) => (t === 'date' ? (f[k] ? toInputDate(f[k]) : '') : f[k] || '');
   async function save() { if (!(f.name || '').trim()) { toast('Escribe un nombre'); return; } await db.put(store, { ...(item || { id: db.uid(prefix), createdAt: Date.now() }), ...f, name: f.name.trim(), updatedAt: Date.now() }); onClose(); }
   async function remove() { if (usedBy(item.id)) { toast('Está en uso: no se puede eliminar'); return; } if (await confirm('¿Eliminar «' + item.name + '»?', 'Eliminar')) { await db.del(store, item.id); onClose(); } }
   return <Sheet title={(item ? 'Editar ' : 'Nueva ') + title.toLowerCase()} onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar</button></>}><div className="sc-form">{fields.map(([k, l, t]) => <Input key={k} label={l} type={t} value={toV(k, t)} onChange={(v) => setF({ ...f, [k]: t === 'date' ? (v ? new Date(v + 'T12:00:00').getTime() : null) : v })} />)}{item && <button className="sc-btn small danger" onClick={remove}>Eliminar</button>}</div>{confirmEl}</Sheet>;

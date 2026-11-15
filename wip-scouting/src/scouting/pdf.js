@@ -14,7 +14,7 @@ function cw(ch, bold) {
 }
 export function textWidth(str, size, bold) { let w = 0; for (const ch of sanitize(str)) w += cw(ch, bold); return (w * size) / 1000; }
 const esc = (s) => sanitize(s).replace(/[\\()]/g, (m) => '\\' + m).replace(/[\x80-\xff]/g, (m) => '\\' + m.charCodeAt(0).toString(8).padStart(3, '0'));
-const hex = (c) => { c = c || '#000000'; if (c[0] !== '#') c = '#000000'; const n = parseInt(c.length === 4 ? '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => (v / 255).toFixed(3)).join(' '); };
+const hex = (c) => { c = String(c || '#000000'); if (c[0] !== '#') c = '#000000'; c = c.slice(1); if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2]; let n = parseInt(c, 16); if (isNaN(n)) n = 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => (v / 255).toFixed(3)).join(' '); };
 const f2 = (n) => (Math.round(n * 100) / 100).toString();
 
 export const PAGE = { w: 595.28, h: 841.89 };

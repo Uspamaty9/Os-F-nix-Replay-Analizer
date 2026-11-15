@@ -16,8 +16,8 @@ class Doc {
     this.y = 120;
   }
   ensure(h) { if (this.y + h > PAGE.h - 50) { this.p.addPage(); this.y = 48; return true; } return false; }
-  h2(t) { this.ensure(40); this.y += 8; this.p.text(M, this.y + 12, t, { size: 13, bold: true, color: C.red }); this.p.line(M, this.y + 18, M + CW, this.y + 18, { color: C.gold, lw: 1.2 }); this.y += 28; }
-  h3(t) { this.ensure(22); this.p.text(M, this.y + 10, t, { size: 10.5, bold: true, color: C.dark }); this.y += 18; }
+  h2(t) { this.ensure(110); this.y += 8; this.p.text(M, this.y + 12, t, { size: 13, bold: true, color: C.red }); this.p.line(M, this.y + 18, M + CW, this.y + 18, { color: C.gold, lw: 1.2 }); this.y += 28; }
+  h3(t) { this.ensure(60); this.p.text(M, this.y + 10, t, { size: 10.5, bold: true, color: C.dark }); this.y += 18; }
   wrap(t, size, w) { const words = String(t).split(/\s+/); const lines = []; let cur = ''; words.forEach((wd) => { const tr = cur ? cur + ' ' + wd : wd; if (textWidth(tr, size) > w && cur) { lines.push(cur); cur = wd; } else cur = tr; }); if (cur) lines.push(cur); return lines; }
   para(t, o) { o = o || {}; const size = o.size || 10; const lines = this.wrap(t, size, CW - (o.indent || 0)); lines.forEach((l) => { this.ensure(size + 5); this.p.text(M + (o.indent || 0), this.y + size, l, { size, color: o.color || '#222', bold: o.bold }); this.y += size + 4; }); this.y += o.gap == null ? 3 : o.gap; }
   bullets(list) { list.forEach((t) => { const lines = this.wrap(t, 10, CW - 14); lines.forEach((l, i) => { this.ensure(15); if (i === 0) this.p.circle(M + 3, this.y + 7, 1.8, { fill: C.gold }); this.p.text(M + 12, this.y + 10, l, { size: 10, color: '#222' }); this.y += 14; }); this.y += 2; }); }
@@ -69,8 +69,8 @@ class Doc {
     const ids = Object.keys(pos); for (let it = 0; it < 40; it++) for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { const a = pos[ids[i]], b = pos[ids[j]]; const dx = b[0] - a[0], dy = b[1] - a[1]; const d = Math.hypot(dx, dy) || 0.01; if (d < 40) { const f = (40 - d) / 2; a[0] -= (dx / d) * f; a[1] -= (dy / d) * f; b[0] += (dx / d) * f; b[1] += (dy / d) * f; } }
     const mx = Math.max.apply(null, net.edges.map((e) => e.n).concat([1])), mk = Math.max.apply(null, nodes.map((n) => n.conn).concat([1]));
     net.edges.slice(0, 40).forEach((e) => { const a = pos[e.a], b = pos[e.b]; if (!a || !b) return; const t = e.n / mx; this.p.line(a[0], a[1], b[0], b[1], { color: t > 0.6 ? C.gold : '#C9B27A', lw: 0.6 + t * 4.5 }); });
-    nodes.forEach((n) => { const q = pos[n.id]; const r = 8 + (n.conn / mk) * 6; this.p.circle(q[0], q[1], r, { fill: n.team === 'R' ? C.red : C.blue, stroke: '#fff', lw: 1.5 }); this.p.text(q[0], q[1] + r + 9, n.nick, { size: 7.5, bold: true, align: 'center', color: '#222' }); this.p.text(q[0], q[1] + 3, String(n.out + n.inn), { size: 7, bold: true, align: 'center', color: '#fff' }); });
-    this.p.text(x0 + W - 6, y0 + H - 6, 'Grosor = nº de pases · tamaño = conexiones · posición = zona media de toques', { size: 6.5, color: C.grey, align: 'right' });
+    nodes.forEach((n) => { const q = pos[n.id]; const r = 8 + (n.conn / mk) * 6; this.p.circle(q[0], q[1], r, { fill: n.color || (n.team === 'R' ? C.red : C.blue), stroke: '#fff', lw: 1.5 }); this.p.text(q[0], q[1] + r + 9, n.nick, { size: 7.5, bold: true, align: 'center', color: '#222' }); this.p.text(q[0], q[1] + 3, String(n.out + n.inn), { size: 7, bold: true, align: 'center', color: '#fff' }); });
+    this.p.text(x0 + W - 6, y0 + 10, 'Grosor = nº de pases · tamaño = conexiones · posición = zona media de toques', { size: 6.5, color: C.grey, align: 'right' });
     this.y += h + 10;
   }
   radar(axes, series, size) {
@@ -113,7 +113,7 @@ function playerTable(doc, model, groups, matchIds) {
 
 // ------------------------------------------------------------------ INFORME DE EQUIPO / COLECTIVO
 export function buildTeamReport(model, filters) {
-  const f = Object.assign({}, EMPTY_FILTERS, filters); const view = applyFilters(model, f); const d = dashboardData(model, view);
+  const f = Object.assign({}, EMPTY_FILTERS, filters); const view = applyFilters(model, f); const d = dashboardData(model, view, { noOwn: !f.teamId });
   const tName = d.perspective ? teamName(model, d.perspective) : 'Todos los equipos';
   const doc = new Doc('Informe colectivo · ' + tName, filterSummary(model, f) + ' · Generado el ' + fmtDate(Date.now()));
   doc.h2('Resumen del rendimiento');

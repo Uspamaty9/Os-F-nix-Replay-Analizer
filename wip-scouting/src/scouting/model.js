@@ -73,9 +73,9 @@ export function applyFilters(model, f) {
 export function ownTeamId(model) { const t = model.teams.find((x) => x.own); return t ? t.id : ''; }
 
 // ---- Panel general
-export function dashboardData(model, view) {
+export function dashboardData(model, view, opts) {
   const f = view.filters;
-  const perspective = f.teamId || ownTeamId(model) || '';
+  const perspective = f.teamId || (opts && opts.noOwn ? '' : ownTeamId(model)) || '';
   const res = perspective ? model.results.filter((r) => r.teamId === perspective && (!f.seasonId || r.seasonId === f.seasonId) && (!f.competitionId || r.competitionId === f.competitionId)) : [];
   const resSorted = res.slice().sort((a, b) => a.date - b.date);
   const W = res.filter((r) => r.outcome === 'W').length, D = res.filter((r) => r.outcome === 'D').length, L = res.filter((r) => r.outcome === 'L').length;
@@ -151,7 +151,7 @@ export function passNetwork(model, matches, teamId) {
     an.players.forEach((p) => {
       if (!sideOk(p.team) || (p.team !== 'R' && p.team !== 'B')) return;
       const k = keyOf(p.pi); const n = nodes.get(k) || { id: k, nick: p.nick, team: p.team, sx: 0, sy: 0, kicks: 0, out: 0, inn: 0, failed: 0, goals: 0, assists: 0, matches: 0 };
-      n.kicks += p.kicks; n.sx = (n.sx || 0) + (p.team === 'B' ? -p.sx : p.sx); n.sy = (n.sy || 0) + p.sy; n.out += p.passesCompleted; n.inn += p.passesReceived; n.failed += p.passesFailed; n.goals += p.goals; n.assists += p.assists; n.matches += 1; n.nick = (model.playerById.get(k) || {}).nick || p.nick; nodes.set(k, n);
+      n.kicks += p.kicks; n.sx = (n.sx || 0) + (p.team === 'B' ? -p.sx : p.sx); n.sy = (n.sy || 0) + p.sy; n.out += p.passesCompleted; n.inn += p.passesReceived; n.failed += p.passesFailed; n.goals += p.goals; n.assists += p.assists; n.matches += 1; n.nick = (model.playerById.get(k) || {}).nick || p.nick; const pl2 = model.playerById.get(k); const tm = pl2 && pl2.teamId ? model.teamById.get(pl2.teamId) : null; n.color = matches.length === 1 ? (p.team === 'R' ? '#B23A48' : '#3A78B5') : (tm && tm.color ? tm.color : '#7F8C9A'); nodes.set(k, n);
     });
     an.pairs.forEach((e) => { const a = an.players[e.a], b = an.players[e.b]; if (!sideOk(a.team) || !sideOk(b.team)) return; const k = keyOf(e.a) + '>' + keyOf(e.b); edges.set(k, (edges.get(k) || 0) + e.n); });
     an.lost.forEach((e) => { const a = an.players[e.a]; if (!sideOk(a.team)) return; const k = keyOf(e.a) + '>' + keyOf(e.b) + '|' + nick(e.b); lostEdges.set(k, (lostEdges.get(k) || 0) + e.n); });
@@ -208,3 +208,6 @@ export function passChains(model, matches, teamId) {
   });
   return Array.from(chains.values()).sort((x, y) => y.n - x.n);
 }
+
+// Fecha local para <input type="date"> (toISOString usaría UTC y mostraría otro día en zonas con desfase)
+export function toInputDate(t) { if (!t) return ''; const d = new Date(t); const p = (n) => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
