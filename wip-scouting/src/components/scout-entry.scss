@@ -1,0 +1,7 @@
+/* Botón «Centro de análisis» de la pantalla de inicio. Mismo aspecto secundario (borde dorado) que «Pizarra táctica». */
+.fenix-home .fh-scout {
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 400px; margin: 10px auto 0; min-height: 52px; box-sizing: border-box;
+  border-radius: 14px; border: 1.5px solid var(--acc, #C89A3D); background: transparent; color: var(--acc, #C89A3D);
+  font: 600 17px 'Poppins', sans-serif; cursor: pointer;
+  &:active { filter: brightness(.9); transform: scale(.97); }
+}
