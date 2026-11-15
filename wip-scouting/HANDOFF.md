@@ -22,3 +22,23 @@ Decisiones del usuario: entregar como **nuevo zip v4** (dejar v3 intacto), **sin
 
 ## Reglas de datos (no cambiar)
 Extraído (motor) / Calculado / Manual, con insignias E/C/M. Sin inventar estadísticas; valoración automática solo con >=8 actuaciones de >=2 partidos. `DEFINITIONS` en `analysis.js` documenta cada cálculo.
+
+---
+## REPARTO DE TRABAJO (dos Claude en la misma rama `wip/scouting-module`)
+Regla: **cada uno edita solo sus archivos**. Si necesitas un cambio en un archivo del otro, no lo edites: anótalo en "Peticiones" (abajo) y el dueño lo hace.
+Antes de empezar y antes de cada push: `git pull --rebase origin wip/scouting-module`. Commits pequeños, con `[skip ci]` mientras sea WIP.
+
+**Claude A (el que escribió el módulo)** — dueño de:
+- `wip-scouting/src/scouting/scouting.scss` (estilos; lo escribe A)
+- `wip-scouting/src/scouting/*.js` EXCEPTO `report.js` y `pdf.js`
+- Prueba en Chromium con React 19 + datos sintéticos de prueba, y correcciones que salgan de ella.
+
+**Claude B (el otro)** — dueño de:
+- `wip-scouting/src/components/Home.js`: copia modificada de Home.js del zip v3 con la integración (ver "Pendiente" punto 2). No tocar `game2.js`.
+- `wip-scouting/src/scouting/report.js` y `pdf.js`: generar un PDF de prueba, rasterizarlo con `pdftoppm`, corregir maquetación.
+- Empaquetado del zip v4 y revisión del run de CI (solo cuando A avise de que los estilos y las pruebas están listos).
+
+Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `src/scouting/`, `src/extras.js` y `src/components/Home.js`.
+
+### Peticiones entre Claude (añade líneas aquí; quien reciba la petición la tacha al hacerla)
+- (vacío)
