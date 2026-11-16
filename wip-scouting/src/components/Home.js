@@ -627,9 +627,13 @@ function Home() {
         </button>
         <div className='fh-scroll'>
           <div className='fh-hero'>
-            <img className='fh-logo' src={process.env.PUBLIC_URL + '/brand/escudo-nombre.png'} alt='Associação Esportiva Fênix' />
-            <h1>PRO TACTICAL ANALYZER AEF</h1>
-            <p className='fh-tag'>Os Fênix</p>
+            <div className='fh-brand'>
+              <img className='fh-logo' src={process.env.PUBLIC_URL + '/brand/escudo-nombre.png'} alt='Associação Esportiva Fênix' />
+              <div className='fh-brandtxt'>
+                <p className='fh-tag'>Os Fênix</p>
+                <h1><span>Tactical</span><span>Analyzer</span></h1>
+              </div>
+            </div>
             <div className='file-btn fh-import'>
               <label htmlFor='replayfile'>
                 <svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.4' strokeLinecap='round' strokeLinejoin='round'><path d='M12 16V4M7 9l5-5 5 5M4 20h16' /></svg>
@@ -637,14 +641,18 @@ function Home() {
               </label>
               <input id='replayfile' type='file' accept='.hbr2,application/octet-stream' multiple data-hook='replayfile' onClick={(e) => { e.target.value = null; }} onChange={handleChange} />
             </div>
-            <button type='button' className='fh-scout' onClick={() => setShowScouting(true)}>
-              <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><path d='M4 20V10M10 20V4M16 20v-7M22 20H2' /></svg>
-              <span>Centro de análisis</span>
-            </button>
-            <button type='button' className='fh-tactics' onClick={() => setShowTactics(true)}>
-              <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><rect x='3' y='5' width='18' height='14' rx='2' /><path d='M12 5v14' /><circle cx='12' cy='12' r='2.6' /></svg>
-              <span>Pizarra táctica</span>
-            </button>
+            <div className='fh-tools'>
+              <button type='button' className='fh-scout' onClick={() => setShowScouting(true)}>
+                <i className='fh-ico'><svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><path d='M4 20V10M10 20V4M16 20v-7M22 20H2' /></svg></i>
+                <b>Centro de análisis</b>
+                <small>Estadísticas, jugadores y scouting</small>
+              </button>
+              <button type='button' className='fh-tactics' onClick={() => setShowTactics(true)}>
+                <i className='fh-ico'><svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><rect x='3' y='5' width='18' height='14' rx='2' /><path d='M12 5v14' /><circle cx='12' cy='12' r='2.6' /></svg></i>
+                <b>Pizarra táctica</b>
+                <small>Dibuja jugadas y esquemas</small>
+              </button>
+            </div>
           </div>
           <section className='fh-history'>
             <div className='fh-tabs' role='tablist'>

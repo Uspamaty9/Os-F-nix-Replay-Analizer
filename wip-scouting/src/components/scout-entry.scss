@@ -1,10 +1,18 @@
-/* Botón «Centro de análisis» de la pantalla de inicio. Mismo aspecto secundario (borde dorado) que «Pizarra táctica». */
-.fenix-home .fh-scout {
-  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 400px; margin: 10px auto 0; min-height: 52px; box-sizing: border-box;
-  border-radius: 14px; border: 1.5px solid var(--acc, #C89A3D); background: transparent; color: var(--acc, #C89A3D);
-  font: 600 17px 'Poppins', sans-serif; cursor: pointer;
-  &:active { filter: brightness(.9); transform: scale(.97); }
-}
+/* Inicio rediseñado: marca compacta (escudo + nombre) y accesos a las herramientas en dos tarjetas.
+   Selectores con prefijo `html body` para ganar a las reglas del escritorio sin tocar los archivos de la app original. */
+html body .fenix-home .fh-hero .fh-brand { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 6px auto 22px; max-width: 420px; text-align: left; }
+html body .fenix-home .fh-hero .fh-brand .fh-logo { width: 112px; min-width: 112px; height: 112px; margin: 0; flex: none; }
+html body .fenix-home .fh-hero .fh-brandtxt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+html body .fenix-home .fh-hero .fh-brandtxt .fh-tag { margin: 0 0 6px; padding-left: 12px; position: relative; font: 600 11px 'Poppins', sans-serif; letter-spacing: 3px; text-transform: uppercase; color: var(--acc, #C89A3D); }
+html body .fenix-home .fh-hero .fh-brandtxt .fh-tag::before { content: ''; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--acc, #C89A3D); }
+html body .fenix-home .fh-hero .fh-brandtxt h1 { margin: 0; padding: 0; display: flex; flex-direction: column; font: 700 clamp(30px, 9.4vw, 42px)/1 'Oswald', sans-serif; letter-spacing: 2px; text-transform: uppercase; text-align: left; }
+html body .fenix-home .fh-hero .fh-brandtxt h1 span:last-child { color: var(--acc, #C89A3D); }
+html body .fenix-home .fh-hero .fh-import { margin-top: 0; }
 
-/* Título largo "PRO TACTICAL ANALYZER AEF": que quepa en móvil (máx. 2 líneas equilibradas) */
-.fenix-home .fh-hero h1 { font-size: clamp(22px, 7.4vw, 32px); letter-spacing: 2px; line-height: 1.12; text-wrap: balance; padding: 0 12px; }
+html body .fenix-home .fh-hero .fh-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 400px; margin: 14px auto 0; }
+html body .fenix-home .fh-hero .fh-tools button { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 3px; width: auto; min-height: 112px; margin: 0; padding: 14px 14px 12px; box-sizing: border-box; text-align: left;
+  border-radius: 18px; border: 1px solid rgba(200, 154, 61, .35); background: linear-gradient(160deg, rgba(200, 154, 61, .13), rgba(255, 255, 255, .03) 60%); color: #F4EFE4; font-family: 'Poppins', sans-serif; cursor: pointer; transition: transform .12s, border-color .12s; }
+html body .fenix-home .fh-hero .fh-tools button:active { transform: scale(.97); border-color: var(--acc, #C89A3D); }
+html body .fenix-home .fh-hero .fh-tools .fh-ico { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 8px; border-radius: 12px; background: var(--acc, #C89A3D); color: #151210; }
+html body .fenix-home .fh-hero .fh-tools b { font: 600 15px/1.2 'Poppins', sans-serif; color: #F4EFE4; }
+html body .fenix-home .fh-hero .fh-tools small { font: 400 11.5px/1.3 'Poppins', sans-serif; color: rgba(244, 239, 228, .6); }
