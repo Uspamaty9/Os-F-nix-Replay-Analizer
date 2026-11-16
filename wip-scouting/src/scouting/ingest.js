@@ -37,10 +37,11 @@ export async function ingestStats(replayId, stats) {
   const meta = await getMeta(replayId);
   const players = await db.all('players');
   const idx = playerIndex(players);
+  const hideNew = await db.getKv('hideNewPlayers', true); // por defecto los jugadores nuevos quedan sin elegir hasta que los marques
   const fresh = [];
   parts.forEach((pt) => pt.players.forEach((p) => {
     if (!p.team || idx.has(normNick(p.nick))) return;
-    const np = { id: db.uid('p'), nick: p.nick, aliases: [], teamId: null, position: '', avatar: null, notes: '', source: 'replay', createdAt: Date.now(), updatedAt: Date.now() };
+    const np = { id: db.uid('p'), nick: p.nick, aliases: [], teamId: null, position: '', avatar: null, notes: '', source: 'replay', ignored: !!hideNew, createdAt: Date.now(), updatedAt: Date.now() };
     idx.set(normNick(p.nick), np); fresh.push(np); players.push(np);
   }));
   if (fresh.length) await db.putMany('players', fresh);

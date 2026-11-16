@@ -630,7 +630,7 @@ function Home() {
         <div className='fh-scroll'>
           <div className='fh-hero'>
             <img className='fh-logo' src={process.env.PUBLIC_URL + '/brand/escudo-nombre.png'} alt='Associação Esportiva Fênix' />
-            <h1>REPLAY ANALYZER</h1>
+            <h1>PRO TACTICAL ANALYZER AEF</h1>
             <p className='fh-tag'>Os Fênix</p>
             <div className='file-btn fh-import'>
               <label htmlFor='replayfile'>

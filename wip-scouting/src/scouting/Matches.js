@@ -8,16 +8,21 @@ import { buildMatchReport } from './report';
 
 export default function Matches({ model, view, nav, params, openReplay }) {
   const sel = params && params.matchId && model.matchById.get(params.matchId);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(''); const [showEx, setShowEx] = useState(false); const [confirm, confirmEl] = useConfirm();
   if (sel) return <Detail model={model} m={sel} nav={nav} openReplay={openReplay} />;
-  const list = view.matches.filter((m) => !q || (m.rec.name + ' ' + teamName(model, m.redTeamId, '') + ' ' + teamName(model, m.blueTeamId, '')).toLowerCase().includes(q.toLowerCase()));
+  const toggleEx = async (m) => { await db.put('matches', { ...m.rec, excluded: !m.rec.excluded }); toast(m.rec.excluded ? 'Partido incluido de nuevo' : 'Partido excluido: ya no cuenta en las estadísticas'); };
+  const removeM = async (m) => { if (await confirm('Se borrarán las estadísticas guardadas de «' + m.rec.name + '» (calificaciones incluidas). La repetición seguirá en el historial. Si la vuelves a abrir, se analizará de nuevo; para que no cuente sin borrarla, usa «Excluir».', 'Borrar')) { await db.delMany('ratings', model.ratings.filter((r) => r.matchId === m.id).map((r) => r.id)); await db.del('matches', m.id); toast('Partido borrado'); } };
+  const list = (showEx ? view.matches.concat(model.excluded).sort((a, b) => b.date - a.date) : view.matches).filter((m) => !q || (m.rec.name + ' ' + teamName(model, m.redTeamId, '') + ' ' + teamName(model, m.blueTeamId, '')).toLowerCase().includes(q.toLowerCase()));
   return (
-    <div className="sc-view"><Card title="Partidos analizados" right={<span className="sc-sub">{view.matches.length}</span>}>
+    <div className="sc-view"><Card title="Partidos analizados" right={<span className="sc-sub">{view.matches.length} cuentan{model.excluded.length ? ' · ' + model.excluded.length + ' excluidos' : ''}</span>}>
       <input className="sc-search" placeholder="Buscar partido o equipo…" value={q} onChange={(e) => setQ(e.target.value)} />
+      {model.excluded.length > 0 && <div className="sc-row wrap"><button className={'sc-btn small' + (showEx ? '' : ' ghost')} onClick={() => setShowEx(!showEx)}>{showEx ? 'Ocultar excluidos' : 'Mostrar excluidos (' + model.excluded.length + ')'}</button></div>}
       {!list.length ? <Empty>{model.matches.length ? 'Ningún partido coincide con los filtros.' : 'Aún no hay partidos. Abre una repetición desde el historial y, cuando termine de analizarse, aparecerá aquí con todas sus estadísticas.'}</Empty> : (
-        <ul className="sc-list">{list.map((m) => <li key={m.id} onClick={() => nav('matches', { matchId: m.id })}>
+        <ul className="sc-list">{list.map((m) => <li key={m.id} className={m.excluded ? 'off' : ''} style={m.excluded ? { opacity: 0.55 } : undefined} onClick={() => nav('matches', { matchId: m.id })}>
           <div className="sc-score"><i className="r" />{m.score[0]}<em>–</em>{m.score[1]}<i className="b" /></div>
-          <div className="mid"><b>{teamName(model, m.redTeamId, 'Rojo')} vs {teamName(model, m.blueTeamId, 'Azul')}</b><small>{m.rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{m.rec.parts.length > 1 ? ' · ' + m.rec.parts.length + ' tramos' : ''}</small></div><span className="chev">›</span></li>)}</ul>)}
+          <div className="mid"><b>{teamName(model, m.redTeamId, 'Rojo')} vs {teamName(model, m.blueTeamId, 'Azul')}</b><small>{m.rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{m.rec.parts.length > 1 ? ' · ' + m.rec.parts.length + ' tramos' : ''}{m.excluded ? ' · EXCLUIDO' : ''}</small></div>
+          <div className="sc-col" onClick={(e) => e.stopPropagation()}><button className="sc-btn small ghost" onClick={() => toggleEx(m)}>{m.excluded ? 'Incluir' : 'Excluir'}</button><button className="sc-btn small ghost danger" onClick={() => removeM(m)}>Borrar</button></div></li>)}</ul>)}
+      {confirmEl}
     </Card></div>
   );
 }
@@ -41,6 +46,7 @@ function Detail({ model, m, nav, openReplay }) {
       <button className="sc-link back" onClick={() => nav('matches', {})}>‹ Partidos</button>
       <Card className="sc-mhead"><div className="sc-bigscore"><div className="t r">{rn}</div><div className="s">{m.score[0]} <em>–</em> {m.score[1]}</div><div className="t b">{bn}</div></div>
         <small>{rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{an.stadium ? ' · ' + an.stadium : ''}</small>
+        {rec.excluded && <p className="sc-note warn">Este partido está EXCLUIDO: no cuenta en el panel, jugadores, red de pases ni informes.</p>}
         <div className="sc-row wrap"><button className="sc-btn small" onClick={() => openReplay(rec.replayId)}>▶ Ver repetición</button><button className="sc-btn small ghost" onClick={pdf}>Informe PDF</button><button className="sc-btn small ghost" onClick={() => nav('scouting', { matchId: m.id })}>Evaluar jugadores</button></div>
         {(an.consistency.scoreMatchesGoals === false || an.consistency.passesMatch === false || an.consistency.kicksMatch === false) && <p className="sc-note warn">Aviso de coherencia: {an.consistency.scoreMatchesGoals === false ? 'el marcador no coincide con la lista de goles. ' : ''}{an.consistency.passesMatch === false ? 'pases reconstruidos ' + an.consistency.passesDerived + ' vs motor ' + an.consistency.passesEngine + '. ' : ''}{an.consistency.kicksMatch === false ? 'toques no coinciden con el contador del motor.' : ''}</p>}
         {an.spaceMode && <p className="sc-note">Partida en modo especial: los pases se reconstruyen de la secuencia de toques.</p>}
@@ -69,7 +75,7 @@ function Detail({ model, m, nav, openReplay }) {
         <p className="sc-note">G, A, Toq y T.pta (tiros a puerta) <Prov k="auto" /> · el resto <Prov k="calc" /> (ver «Cómo se calcula» en Informes).</p></Card>
       {an.goalsList.length > 0 && <Card title="Goles"><ul className="sc-list">{an.goalsList.map((g, i) => <li key={i}><span className={'sc-dot ' + (g.f === 'R' ? 'r' : 'b')} /><div className="mid"><b>{an.names[g.s]}{g.own ? ' (en propia)' : ''}</b><small>{g.a >= 0 ? 'Asistencia: ' + an.names[g.a] : 'Sin asistencia'}</small></div><span className="big">{g.sc ? g.sc[0] + '–' + g.sc[1] : ''}</span></li>)}</ul></Card>}
       {net.edges.length > 0 && <Card title="Red de pases" right={<button className="sc-link" onClick={() => nav('network', { matchId: m.id })}>Abrir análisis</button>}><NetworkGraph nodes={net.nodes} edges={net.edges} /></Card>}
-      <div className="sc-row end"><button className="sc-btn small ghost danger" onClick={remove}>Borrar estadísticas de este partido</button></div>
+      <div className="sc-row end"><button className="sc-btn small ghost" onClick={() => upd({ excluded: !rec.excluded })}>{rec.excluded ? 'Incluir en las estadísticas' : 'Excluir (no cuenta)'}</button><button className="sc-btn small ghost danger" onClick={remove}>Borrar estadísticas de este partido</button></div>
       {confirmEl}
     </div>
   );

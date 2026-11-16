@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
@@ -13,7 +13,7 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
   const [mergeId, setMergeId] = useState('');
   const [confirm, confirmEl] = useConfirm();
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
-  const clash = (n) => model.players.find((p) => (!player || p.id !== player.id) && (normNick(p.nick) === normNick(n) || (p.aliases || []).some((a) => normNick(a) === normNick(n))));
+  const clash = (n) => model.allPlayers.find((p) => (!player || p.id !== player.id) && (normNick(p.nick) === normNick(n) || (p.aliases || []).some((a) => normNick(a) === normNick(n))));
   async function save() {
     const nick = f.nick.trim(); if (!nick) { toast('Escribe un nickname'); return; }
     const c = clash(nick); if (c) { toast('Ya existe «' + c.nick + '» con ese nick o alias'); return; }
@@ -57,10 +57,37 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
   );
 }
 
+// Elegir qué jugadores se analizan: los no marcados siguen reconocidos pero no cuentan ni aparecen en ninguna lista.
+function PickPlayers({ model, onClose }) {
+  const [q, setQ] = useState(''); const [hideNew, setHideNew] = useState(true); const [teamId, setTeamId] = useState('');
+  const [sel, setSel] = useState(() => new Set(model.allPlayers.filter((p) => !p.ignored).map((p) => p.id)));
+  useEffect(() => { db.getKv('hideNewPlayers', true).then(setHideNew); }, []);
+  const rows = useMemo(() => model.allPlayers.filter((p) => !q || normNick(p.nick).includes(normNick(q))).slice().sort((a, b) => ((model.seenCount.get(b.id) || 0) - (model.seenCount.get(a.id) || 0)) || a.nick.localeCompare(b.nick)), [model, q]);
+  const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const setMany = (list, on) => setSel((s) => { const n = new Set(s); list.forEach((p) => (on ? n.add(p.id) : n.delete(p.id))); return n; });
+  async function save() {
+    const changed = model.allPlayers.filter((p) => !!p.ignored !== !sel.has(p.id)).map((p) => ({ ...p, ignored: !sel.has(p.id), updatedAt: Date.now() }));
+    await db.setKv('hideNewPlayers', hideNew); await db.putMany('players', changed); toast(sel.size + ' jugadores se analizan'); onClose();
+  }
+  return (
+    <Sheet title="Elegir jugadores a analizar" onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar ({sel.size})</button></>}>
+      <div className="sc-form">
+        <p className="sc-note">Solo los jugadores marcados cuentan en goles, asistencias, rankings, red de pases e informes. Los demás no se pierden: puedes marcarlos cuando quieras.</p>
+        <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={() => setMany(rows, true)}>Marcar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small ghost" onClick={() => setMany(rows, false)}>Quitar todos{q ? ' los de la búsqueda' : ''}</button></div>
+        {model.teams.length > 0 && <Select label="Marcar solo los de un equipo" value={teamId} onChange={(v) => { setTeamId(v); if (v) setSel(new Set(model.allPlayers.filter((p) => p.teamId === v).map((p) => p.id))); }} placeholder="Elegir equipo…" options={model.teams.map((t) => [t.id, t.name])} />}
+        <label className="sc-row"><input type="checkbox" checked={hideNew} onChange={(e) => setHideNew(e.target.checked)} /><span>Los jugadores nuevos que aparezcan en repeticiones quedan sin elegir hasta que los marque</span></label>
+        <ul className="sc-list">{rows.map((p) => { const on = sel.has(p.id); return (
+          <li key={p.id} className={on ? 'sel' : ''} onClick={() => toggle(p.id)}><span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span><Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{teamName(model, p.teamId, 'Sin equipo')} · {model.seenCount.get(p.id) || 0} partidos</small></div></li>); })}</ul>
+      </div>
+    </Sheet>
+  );
+}
+
 const METRICS = [['goals', 'Goles', 'auto'], ['assists', 'Asistencias', 'auto'], ['kicks', 'Toques', 'auto'], ['shotsOT', 'Tiros a puerta', 'auto'], ['passesCompleted', 'Pases completados', 'calc'], ['passesReceived', 'Pases recibidos', 'calc'], ['passesFailed', 'Pases fallidos', 'calc'], ['turnovers', 'Pérdidas', 'calc'], ['recoveries', 'Recuperaciones', 'calc'], ['interceptions', 'Intercepciones', 'calc'], ['blocks', 'Bloqueos', 'calc'], ['keyPasses', 'Pases clave', 'calc'], ['goalInvolvements', 'Participaciones en gol', 'calc'], ['ownGoals', 'Goles en propia', 'auto']];
 
 export default function Players({ model, view, filters, nav, params }) {
-  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum');
+  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum');
   const sel = params && params.playerId; const setSel = (id) => nav('players', { playerId: id });
   const ids = useMemo(() => new Set(view.matches.map((m) => m.id)), [view]);
   const list = useMemo(() => {
@@ -73,10 +100,11 @@ export default function Players({ model, view, filters, nav, params }) {
 
   return (
     <div className="sc-view">
-      <Card title="Jugadores" right={<div className="sc-row"><button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button><button className="sc-btn small" onClick={() => setEdit({})}>+ Nuevo</button></div>}>
+      <Card title="Jugadores" right={<div className="sc-row"><button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button><button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" onClick={() => setEdit({})}>+ Nuevo</button></div>}>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
+        {model.allPlayers.length > model.players.length && <p className="sc-note">{model.allPlayers.length - model.players.length} jugador(es) sin elegir no se cuentan. <button className="sc-link" onClick={() => setPick(true)}>Elegir jugadores</button></p>}
         {cmpMode && <p className="sc-note">Marca de 2 a 4 jugadores para compararlos. {cmp.length >= 2 && <button className="sc-btn small" onClick={() => nav('players', { compare: true })}>Comparar ({cmp.length})</button>}</p>}
-        {!list.length ? <Empty>{model.players.length ? 'Ningún jugador coincide.' : 'Todavía no hay jugadores. Se registran solos al analizar una repetición, o puedes crearlos a mano.'}</Empty> : (
+        {!list.length ? <Empty>{model.players.length ? 'Ningún jugador coincide.' : model.allPlayers.length ? 'Aún no has elegido jugadores para analizar. Toca «Elegir».' : 'Todavía no hay jugadores. Se registran solos al analizar una repetición, o puedes crearlos a mano.'}</Empty> : (
           <ul className="sc-list">{list.map(({ p, agg }) => { const ra = ratingAverage(model, p.id, ids); const on = cmp.includes(p.id); return (
             <li key={p.id} className={on ? 'sel' : ''} onClick={() => { if (cmpMode) setCmp((c) => (on ? c.filter((x) => x !== p.id) : c.length < 4 ? [...c, p.id] : c)); else setSel(p.id); }}>
               {cmpMode && <span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span>}
@@ -85,6 +113,7 @@ export default function Players({ model, view, filters, nav, params }) {
             </li>); })}</ul>)}
       </Card>
       {edit && <PlayerEditor model={model} player={edit.id ? edit : null} onClose={() => setEdit(null)} onSaved={(r) => r && setSel(r.id)} />}
+      {pick && <PickPlayers model={model} onClose={() => setPick(false)} />}
     </div>
   );
 }

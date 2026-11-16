@@ -15,19 +15,25 @@ export const ratingKey = (matchId, playerId) => matchId + '|' + playerId;
 export const outcomeOf = (gf, ga) => (gf > ga ? 'W' : gf < ga ? 'L' : 'D');
 
 export function buildModel(store) {
-  const { teams = [], players = [], seasons = [], competitions = [], fixtures = [], matches = [], ratings = [] } = store;
-  const idx = playerIndex(players);
+  const { teams = [], players: allPlayers = [], seasons = [], competitions = [], fixtures = [], matches = [], ratings = [] } = store;
+  // Jugadores "ignorados" (no elegidos para analizar): siguen reconocidos por su nick, pero no cuentan en ninguna cifra ni lista.
+  const players = allPlayers.filter((p) => !p.ignored);
+  const idx = playerIndex(allPlayers);
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const playerById = new Map(players.map((p) => [p.id, p]));
   const ratingMap = new Map(ratings.map((r) => [r.id, r]));
-  const ms = [], rows = [];
+  const ms = [], rows = [], excluded = [], seen = new Map();
   matches.forEach((rec) => {
     const an = analysisOf(rec); if (!an) return;
     const m = { id: rec.id, rec, an, date: rec.date || rec.ingestedAt, redTeamId: rec.redTeamId || null, blueTeamId: rec.blueTeamId || null, seasonId: rec.seasonId || null, competitionId: rec.competitionId || null, round: rec.round || '', score: an.score, ticks: an.ticks };
+    m.excluded = !!rec.excluded;
+    if (m.excluded) { excluded.push(m); return; } // partido excluido: se conserva pero no cuenta en ninguna estadística
     ms.push(m);
     an.players.forEach((p) => {
       if (p.team !== 'R' && p.team !== 'B') return;
       const pl = idx.get(normNick(p.nick));
+      if (pl) seen.set(pl.id, (seen.get(pl.id) || 0) + 1);
+      if (pl && pl.ignored) return;
       rows.push(Object.assign({}, p, { matchId: rec.id, date: m.date, playerId: pl ? pl.id : null, side: p.team, teamId: p.team === 'R' ? m.redTeamId : m.blueTeamId, seasonId: m.seasonId, competitionId: m.competitionId, won: outcomeOf(an.score[p.team === 'R' ? 0 : 1], an.score[p.team === 'R' ? 1 : 0]) }));
     });
   });
@@ -48,8 +54,8 @@ export function buildModel(store) {
     results.push({ key: f.id + 'H', source: 'manual', fixtureId: f.id, teamId: f.homeId, oppId: f.awayId, gf: hg, ga: ag, outcome: outcomeOf(hg, ag), date: f.date || 0, seasonId: (competitions.find((c) => c.id === f.competitionId) || {}).seasonId || null, competitionId: f.competitionId, round: f.round });
     results.push({ key: f.id + 'A', source: 'manual', fixtureId: f.id, teamId: f.awayId, oppId: f.homeId, gf: ag, ga: hg, outcome: outcomeOf(ag, hg), date: f.date || 0, seasonId: (competitions.find((c) => c.id === f.competitionId) || {}).seasonId || null, competitionId: f.competitionId, round: f.round });
   });
-  const model = { store, teams, players, seasons, competitions, fixtures, ratings, teamById, playerById, idx, matches: ms, rows, results, ratingMap };
-  model.matchById = new Map(ms.map((m) => [m.id, m]));
+  const model = { store, teams, players, allPlayers, excluded, seenCount: seen, seasons, competitions, fixtures, ratings, teamById, playerById, idx, matches: ms, rows, results, ratingMap };
+  model.matchById = new Map(ms.concat(excluded).map((m) => [m.id, m]));
   return model;
 }
 
@@ -148,13 +154,14 @@ export function passNetwork(model, matches, teamId) {
     const sideOk = (code) => !teamId || (code === 'R' ? m.redTeamId : m.blueTeamId) === teamId;
     const keyOf = (pi) => { const p = an.players[pi]; const pl = model.idx.get(normNick(p.nick)); return pl ? pl.id : 'n:' + normNick(p.nick); };
     const nick = (pi) => an.players[pi].nick;
+    const ign = (pi) => { const pl = model.idx.get(normNick(an.players[pi].nick)); return !!(pl && pl.ignored); };
     an.players.forEach((p) => {
-      if (!sideOk(p.team) || (p.team !== 'R' && p.team !== 'B')) return;
+      if (!sideOk(p.team) || (p.team !== 'R' && p.team !== 'B') || ign(p.pi)) return;
       const k = keyOf(p.pi); const n = nodes.get(k) || { id: k, nick: p.nick, team: p.team, sx: 0, sy: 0, kicks: 0, out: 0, inn: 0, failed: 0, goals: 0, assists: 0, matches: 0 };
       n.kicks += p.kicks; n.sx = (n.sx || 0) + (p.team === 'B' ? -p.sx : p.sx); n.sy = (n.sy || 0) + p.sy; n.out += p.passesCompleted; n.inn += p.passesReceived; n.failed += p.passesFailed; n.goals += p.goals; n.assists += p.assists; n.matches += 1; n.nick = (model.playerById.get(k) || {}).nick || p.nick; const pl2 = model.playerById.get(k); const tm = pl2 && pl2.teamId ? model.teamById.get(pl2.teamId) : null; n.color = matches.length === 1 ? (p.team === 'R' ? '#B23A48' : '#3A78B5') : (tm && tm.color ? tm.color : '#7F8C9A'); nodes.set(k, n);
     });
-    an.pairs.forEach((e) => { const a = an.players[e.a], b = an.players[e.b]; if (!sideOk(a.team) || !sideOk(b.team)) return; const k = keyOf(e.a) + '>' + keyOf(e.b); edges.set(k, (edges.get(k) || 0) + e.n); });
-    an.lost.forEach((e) => { const a = an.players[e.a]; if (!sideOk(a.team)) return; const k = keyOf(e.a) + '>' + keyOf(e.b) + '|' + nick(e.b); lostEdges.set(k, (lostEdges.get(k) || 0) + e.n); });
+    an.pairs.forEach((e) => { const a = an.players[e.a], b = an.players[e.b]; if (!sideOk(a.team) || !sideOk(b.team) || ign(e.a) || ign(e.b)) return; const k = keyOf(e.a) + '>' + keyOf(e.b); edges.set(k, (edges.get(k) || 0) + e.n); });
+    an.lost.forEach((e) => { const a = an.players[e.a]; if (!sideOk(a.team) || ign(e.a) || ign(e.b)) return; const k = keyOf(e.a) + '>' + keyOf(e.b) + '|' + nick(e.b); lostEdges.set(k, (lostEdges.get(k) || 0) + e.n); });
   });
   const E = Array.from(edges.entries()).map(([k, n]) => { const [a, b] = k.split('>'); return { a, b, n }; }).sort((x, y) => y.n - x.n);
   nodes.forEach((n) => { n.conn = E.filter((e) => e.a === n.id || e.b === n.id).reduce((s, e) => s + e.n, 0); n.partners = new Set(E.filter((e) => e.a === n.id || e.b === n.id).map((e) => (e.a === n.id ? e.b : e.a))).size; });
