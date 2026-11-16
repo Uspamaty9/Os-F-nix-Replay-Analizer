@@ -20,6 +20,20 @@ const TOOLS = [
   { id: 'erase', icon: 'erase', label: 'Borrador' }
 ];
 
+// ---------- anclaje al campo ----------
+// Todo lo que se dibuja se guarda en COORDENADAS DEL CAMPO (unidades de HaxBall), no de la pantalla.
+// La vista de la repetición publica su cámara en window.__fenixView ({camX, camY, k, W, H, h}); con ella se convierte
+// pantalla <-> campo en cada fotograma, así cada raya queda en el sitio del campo donde se puso aunque la cámara se mueva, siga a un jugador o haga zoom.
+const TOKEN_R = 16, BALL_R = 11; // radios en unidades de campo (un jugador de HaxBall mide 15)
+export function viewOk(v) { return !!v && v.k > 0 && isFinite(v.k) && v.W > 0 && v.H > 0 && isFinite(v.camX) && isFinite(v.camY); }
+// Proyección campo -> píxeles de un canvas de ancho `sc`·(píxeles del motor). sc = 1 para el canvas del motor.
+export function makeProj(v, sc) {
+  const s = v.k * sc, ox = (v.W / 2) * sc, oy = ((v.H + (v.h || 0)) / 2) * sc;
+  return { s, X: (wx) => ox + (wx - v.camX) * s, Y: (wy) => oy + (wy - v.camY) * s };
+}
+// píxeles del motor -> campo
+export function toField(v, px, py) { return { x: v.camX + (px - v.W / 2) / v.k, y: v.camY + (py - (v.H + (v.h || 0)) / 2) / v.k }; }
+
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 function segDist(p, a, b) {
   const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
@@ -28,23 +42,24 @@ function segDist(p, a, b) {
 }
 
 // ---------- dibujo (también sirve para la captura) ----------
-export function drawItems(ctx, items, w, h, draft) {
-  const m = Math.min(w, h), tr = Math.max(11, m * 0.034), px = (p) => ({ x: p.x * w, y: p.y * h });
+export function drawItems(ctx, items, P, draft) {
+  if (!P) return;
+  const s = P.s, px = (q) => ({ x: P.X(q.x), y: P.Y(q.y) }), tr = Math.max(7, TOKEN_R * s), lw = Math.max(2, 3.4 * s);
   const all = draft ? items.concat([draft]) : items;
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const it of all) {
-    ctx.strokeStyle = it.color; ctx.fillStyle = it.color; ctx.lineWidth = Math.max(2.5, m * 0.008);
+    ctx.strokeStyle = it.color; ctx.fillStyle = it.color; ctx.lineWidth = lw;
     if (it.type === 'pen' && it.pts.length) {
       ctx.beginPath(); it.pts.forEach((q, i) => { const p = px(q); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
       if (it.pts.length === 1) { const p = px(it.pts[0]); ctx.lineTo(p.x + 0.1, p.y); }
       ctx.stroke();
     } else if (it.type === 'arrow') {
       const a = px(it.a), b = px(it.b), L = dist(a, b); if (L < 2) continue;
-      const ang = Math.atan2(b.y - a.y, b.x - a.x), hd = Math.min(L * 0.5, Math.max(12, m * 0.045));
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), hd = Math.min(L * 0.5, Math.max(10, 28 * s));
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x - Math.cos(ang) * hd * 0.6, b.y - Math.sin(ang) * hd * 0.6); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - hd * Math.cos(ang - 0.45), b.y - hd * Math.sin(ang - 0.45)); ctx.lineTo(b.x - hd * Math.cos(ang + 0.45), b.y - hd * Math.sin(ang + 0.45)); ctx.closePath(); ctx.fill();
     } else if (it.type === 'circle') {
-      const c = px(it.c), r = it.r * m; if (r < 1) continue;
+      const c = px(it.c), r = it.r * s; if (r < 1) continue;
       ctx.save(); ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.stroke();
     } else if (it.type === 'token') {
@@ -54,20 +69,21 @@ export function drawItems(ctx, items, w, h, draft) {
       ctx.fillStyle = '#111'; ctx.font = '700 ' + Math.round(tr * 1.05) + 'px Poppins, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(String(it.n), p.x, p.y + tr * 0.06);
     } else if (it.type === 'ball') {
-      const p = px(it.p), r = tr * 0.62;
+      const p = px(it.p), r = Math.max(5, BALL_R * s);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.lineWidth = Math.max(2, r * 0.3); ctx.strokeStyle = '#111'; ctx.stroke();
     }
   }
   ctx.restore();
 }
 
-function hit(it, p, w, h, tol) {
-  const m = Math.min(w, h), P = { x: p.x * w, y: p.y * h }, px = (q) => ({ x: q.x * w, y: q.y * h }), tr = Math.max(11, m * 0.034);
-  if (it.type === 'token') return dist(P, px(it.p)) <= tr + tol;
-  if (it.type === 'ball') return dist(P, px(it.p)) <= tr * 0.62 + tol;
-  if (it.type === 'circle') { const d = dist(P, px(it.c)); return d <= it.r * m + tol; }
-  if (it.type === 'arrow') return segDist(P, px(it.a), px(it.b)) <= tol;
-  if (it.type === 'pen') { for (let i = 0; i < it.pts.length; i++) { const a = px(it.pts[i]), b = px(it.pts[Math.min(i + 1, it.pts.length - 1)]); if (segDist(P, a, b) <= tol) return true; } }
+// p y tol en píxeles de pantalla (mismo sistema que la proyección P)
+function hit(it, p, P, tol) {
+  const px = (q) => ({ x: P.X(q.x), y: P.Y(q.y) }), s = P.s;
+  if (it.type === 'token') return dist(p, px(it.p)) <= Math.max(7, TOKEN_R * s) + tol;
+  if (it.type === 'ball') return dist(p, px(it.p)) <= Math.max(5, BALL_R * s) + tol;
+  if (it.type === 'circle') return dist(p, px(it.c)) <= it.r * s + tol;
+  if (it.type === 'arrow') return segDist(p, px(it.a), px(it.b)) <= tol;
+  if (it.type === 'pen') { for (let i = 0; i < it.pts.length; i++) { const a = px(it.pts[i]), b = px(it.pts[Math.min(i + 1, it.pts.length - 1)]); if (segDist(p, a, b) <= tol) return true; } }
   return false;
 }
 
@@ -91,9 +107,16 @@ function makeLayer(host, canvas) {
     const d = Math.min(window.devicePixelRatio || 1, 2.5);
     if (Math.abs(cr.width - W) > 0.5 || Math.abs(cr.height - H) > 0.5 || d !== dpr) { W = cr.width; H = cr.height; dpr = d; cv.width = Math.round(W * d); cv.height = Math.round(H * d); draw(); }
   };
-  function draw() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, W, H, st.draft); }
-  const norm = (e) => { const r = cv.getBoundingClientRect(); return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / (r.width || 1))), y: Math.max(0, Math.min(1, (e.clientY - r.top) / (r.height || 1))) }; };
-  const push = (items) => { st.items = items; st.redo = []; renderBar(); draw(); };
+  const fview = () => { const v = window.__fenixView; return viewOk(v) ? v : null; };
+  // proyección campo -> píxeles CSS de la capa (la capa cubre exactamente el canvas del motor)
+  const projCss = () => { const v = fview(); if (!v) return null; return makeProj(v, W / (v.W || canvas.width || 1)); };
+  let lastSig = '';
+  const sigOf = () => { const v = window.__fenixView; return v ? [v.camX, v.camY, v.k, v.W, v.H, v.h, W, H, dpr].join('|') : 'x'; };
+  function draw() { lastSig = sigOf(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, projCss(), st.draft); }
+  // pantalla (clientX/Y) -> campo, con la cámara de ESTE instante
+  const norm = (e) => { const v = fview(); if (!v) return null; const r = cv.getBoundingClientRect(); return toField(v, (e.clientX - r.left) * (v.W / (r.width || 1)), (e.clientY - r.top) * (v.H / (r.height || 1))); };
+  const scr = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const push = (items) => { st.items = items; st.redo = []; renderBar(); draw(); ensureLoop(); };
   const count = (team) => st.items.filter((i) => i.type === 'token' && i.team === team).length;
 
   function renderBar() {
@@ -130,25 +153,27 @@ function makeLayer(host, canvas) {
     e.preventDefault(); e.stopPropagation();
     try { cv.setPointerCapture(e.pointerId); } catch (x) { /* nada */ }
     const p = norm(e), t = st.tool;
+    if (!p) { say('La vista aún no está lista'); return; }
     st.confirm = false;
     if (t === 'red' || t === 'blue') { push(st.items.concat([{ type: 'token', team: t, p, n: count(t) + 1 }])); return; }
     if (t === 'ball') { push(st.items.filter((i) => i.type !== 'ball').concat([{ type: 'ball', p }])); return; }
-    if (t === 'erase') { st.drawing = { id: e.pointerId, erase: true }; eraseAt(p); return; }
+    if (t === 'erase') { st.drawing = { id: e.pointerId, erase: true }; eraseAt(scr(e)); return; }
     st.drawing = { id: e.pointerId };
     st.draft = t === 'pen' ? { type: 'pen', color: st.color, pts: [p] } : t === 'arrow' ? { type: 'arrow', color: st.color, a: p, b: p } : { type: 'circle', color: st.color, c: p, r: 0 };
     draw();
   });
   function eraseAt(p) {
+    const P = projCss(); if (!P) return;
     const tol = Math.max(10, Math.min(W, H) * 0.03);
-    for (let i = st.items.length - 1; i >= 0; i--) if (hit(st.items[i], p, W, H, tol)) { const it = st.items.slice(); it.splice(i, 1); st.items = it; st.redo = []; renderBar(); draw(); return; }
+    for (let i = st.items.length - 1; i >= 0; i--) if (hit(st.items[i], p, P, tol)) { const it = st.items.slice(); it.splice(i, 1); st.items = it; st.redo = []; renderBar(); draw(); return; }
   }
   cv.addEventListener('pointermove', (e) => {
     const d = st.drawing; if (!d || d.id !== e.pointerId) return;
-    const p = norm(e);
-    if (d.erase) { eraseAt(p); return; }
-    if (st.draft.type === 'pen') { const l = st.draft.pts[st.draft.pts.length - 1]; if (Math.hypot((p.x - l.x) * W, (p.y - l.y) * H) > 2) st.draft.pts.push(p); }
+    if (d.erase) { eraseAt(scr(e)); return; }
+    const p = norm(e), v = fview(); if (!p || !v) return;
+    if (st.draft.type === 'pen') { const l = st.draft.pts[st.draft.pts.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) * v.k * (W / v.W) > 2) st.draft.pts.push(p); }
     else if (st.draft.type === 'arrow') st.draft.b = p;
-    else st.draft.r = Math.hypot((p.x - st.draft.c.x) * W, (p.y - st.draft.c.y) * H) / Math.min(W, H);
+    else st.draft.r = Math.hypot(p.x - st.draft.c.x, p.y - st.draft.c.y);
     draw();
   });
   const end = (e, cancel) => {
@@ -157,7 +182,8 @@ function makeLayer(host, canvas) {
     try { cv.releasePointerCapture(e.pointerId); } catch (x) { /* nada */ }
     if (d.erase) return;
     const it = st.draft; st.draft = null;
-    const ok = !cancel && it && (it.type === 'pen' ? it.pts.length > 1 : it.type === 'arrow' ? Math.hypot((it.b.x - it.a.x) * W, (it.b.y - it.a.y) * H) > 8 : it.r * Math.min(W, H) > 6);
+    const v = fview(), k = v ? v.k * (W / v.W) : 1; // unidades de campo -> píxeles de pantalla
+    const ok = !cancel && it && (it.type === 'pen' ? it.pts.length > 1 : it.type === 'arrow' ? dist(it.a, it.b) * k > 8 : it.r * k > 6);
     if (ok) push(st.items.concat([it])); else draw();
   };
   cv.addEventListener('pointerup', (e) => end(e, false));
@@ -171,7 +197,7 @@ function makeLayer(host, canvas) {
       const out = document.createElement('canvas'); out.width = w; out.height = h; const o = out.getContext('2d');
       o.fillStyle = '#111'; o.fillRect(0, 0, w, h);
       try { o.drawImage(canvas, 0, 0, w, h); } catch (x) { /* si no se puede copiar la cancha, queda solo el dibujo */ }
-      drawItems(o, st.items, w, h, null);
+      const v = fview(); if (v) drawItems(o, st.items, makeProj(v, w / (v.W || w)), null);
       const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
       if (!blob) throw new Error('sin imagen');
       await saveBlob(blob, fileName({ name: 'Repeticion' }, 'pizarra-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'), 'png'), 'image/png');
@@ -182,7 +208,15 @@ function makeLayer(host, canvas) {
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null;
   if (ro) { ro.observe(canvas); ro.observe(host); }
   window.addEventListener('resize', place);
-  let raf = 0; const tick = () => { if (st.open) { place(); raf = requestAnimationFrame(tick); } };
+  // Mientras haya dibujos (aunque la pizarra esté cerrada) se vuelve a pintar cuando la cámara cambia: siguen pegados al campo.
+  let raf = 0;
+  const tick = () => {
+    raf = 0;
+    if (!(st.open || st.items.length || st.draft)) return;
+    place(); if (sigOf() !== lastSig) draw();
+    raf = requestAnimationFrame(tick);
+  };
+  const ensureLoop = () => { if (!raf) raf = requestAnimationFrame(tick); };
 
   // ---- botón «Atrás» de Android: primero cierra la pizarra
   let prevBack = null;
@@ -190,8 +224,8 @@ function makeLayer(host, canvas) {
 
   const api = {
     layer, st,
-    open() { if (st.open) return; st.open = true; layer.hidden = false; layer.classList.add('open'); document.body.classList.add('rb-open'); renderBar(); place(); raf = requestAnimationFrame(tick); prevBack = window.__fenixBack; window.__fenixBack = myBack; },
-    close() { if (!st.open) return; st.open = false; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; cancelAnimationFrame(raf); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; layer.hidden = !st.items.length; place(); },
+    open() { if (st.open) return; st.open = true; layer.hidden = false; layer.classList.add('open'); document.body.classList.add('rb-open'); renderBar(); place(); ensureLoop(); prevBack = window.__fenixBack; window.__fenixBack = myBack; },
+    close() { if (!st.open) return; st.open = false; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; ensureLoop(); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; layer.hidden = !st.items.length; place(); },
     toggle() { st.open ? api.close() : api.open(); },
     destroy() { try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); } catch (e) { /* nada */ } }
   };

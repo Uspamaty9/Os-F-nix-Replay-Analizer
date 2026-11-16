@@ -3,7 +3,7 @@
 .game-view{position:relative;width:100vw;height:100vh;display:flex;flex-direction:column}.stage{position:relative;flex:1}.stage>div{position:absolute;inset:0}.stage canvas{width:100%;height:100%;display:block}
 .fenix-fit,.fenix-follow{position:absolute;right:12px;bottom:12px;width:52px;height:44px}.fenix-follow{bottom:66px}</style></head>
 <body><div id="app"></div><script>
-window.__fenixBack=function(){window.__backCalled=(window.__backCalled||0)+1};
-setTimeout(function(){document.getElementById('app').innerHTML='<div class="game-view"><div class="stage" id="host"><div><canvas id="game" width="800" height="440"></canvas></div><button class="fenix-fit">fit</button><button class="fenix-follow">f</button></div></div>';
+window.__fenixView={camX:0,camY:0,k:1,W:innerWidth,H:innerHeight,h:0,zoom:1};window.__fenixBack=function(){window.__backCalled=(window.__backCalled||0)+1};
+setTimeout(function(){document.getElementById('app').innerHTML='<div class="game-view"><div class="stage" id="host"><div><canvas id="game" width="'+innerWidth+'" height="'+innerHeight+'"></canvas></div><button class="fenix-fit">fit</button><button class="fenix-follow">f</button></div></div>';
 var c=document.getElementById('game').getContext('2d');c.fillStyle='#4a6b3a';c.fillRect(0,0,800,440);c.strokeStyle='#fff';c.lineWidth=3;c.strokeRect(30,20,740,400);c.beginPath();c.arc(400,220,60,0,7);c.stroke();},50);
 </script><script src="bundle.js"></script></body></html>

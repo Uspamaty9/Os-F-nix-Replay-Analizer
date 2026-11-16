@@ -40,3 +40,6 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Pizarra independiente: **Borrador** (toca o arrastra), botones de **ficha roja / azul** en la barra, barra de acciones grande para el móvil (Borrador · Borrar selección · Limpiar todo con confirmación).
 - Pruebas nuevas: `tests/replay/` (capa sobre una vista simulada, escritorio y móvil táctil) y `tests/ui/eraser-test.mjs`.
 - Sin verificar: la capa se probó sobre una vista de repetición SIMULADA (misma estructura de DOM que `.fenix-fit` + `canvas`), no sobre el motor real; las anotaciones se anclan a la pantalla (no al campo), así que conviene pausar la repetición al dibujar.
+
+## Anclaje al campo (B, 15 nov noche, a petición del usuario)
+`replayBoard.js` reescrito para que todo lo dibujado se guarde en **coordenadas del campo** (unidades HaxBall) y no de la pantalla. Usa `window.__fenixView` ({camX, camY, k, W, H, h}, publicado por el motor cada fotograma; misma fórmula que el toque a jugador de game2.js) para convertir pantalla ↔ campo. La capa se repinta cuando cambia la cámara (seguir jugador, zoom, arrastre) y también con la pizarra cerrada. Prueba: `tests/replay/anchor.mjs` (mueve la cámara y comprueba que la raya la sigue); `index.html` del mock ahora publica `__fenixView`.
