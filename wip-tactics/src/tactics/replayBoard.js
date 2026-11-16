@@ -157,16 +157,16 @@ function makeLayer(host, canvas) {
   const acts = document.createElement('div'); acts.className = 'rb-acts'; acts.setAttribute('role', 'toolbar'); acts.setAttribute('aria-label', 'Acciones de la pizarra');
   const toast = document.createElement('div'); toast.className = 'rb-toast'; toast.setAttribute('role', 'status');
   layer.appendChild(bar); layer.appendChild(acts); layer.appendChild(toast);
-  host.appendChild(layer);
+  document.body.appendChild(layer); // sobre <body>: ningún botón de la repetición puede quedar por encima de la barra
   const ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1;
 
   const say = (t) => { toast.textContent = t; toast.classList.add('on'); clearTimeout(st.toastT); st.toastT = setTimeout(() => toast.classList.remove('on'), 1500); };
   const T = () => makeT(canvas, W, H);
   const place = () => { // la capa cubre exactamente la cancha de la repetición
-    const hr = host.getBoundingClientRect(), cr = canvas.getBoundingClientRect();
+    const cr = canvas.getBoundingClientRect();
     if (!cr.width || !cr.height) return;
-    layer.style.left = cr.left - hr.left + 'px'; layer.style.top = cr.top - hr.top + 'px'; layer.style.width = cr.width + 'px'; layer.style.height = cr.height + 'px';
+    layer.style.left = cr.left + 'px'; layer.style.top = cr.top + 'px'; layer.style.width = cr.width + 'px'; layer.style.height = cr.height + 'px';
     const d = Math.min(window.devicePixelRatio || 1, 2.5);
     if (Math.abs(cr.width - W) > 0.5 || Math.abs(cr.height - H) > 0.5 || d !== dpr) { W = cr.width; H = cr.height; dpr = d; cv.width = Math.round(W * d); cv.height = Math.round(H * d); st.dirty = true; }
   };
@@ -385,7 +385,8 @@ export function installReplayBoard() {
     cur = { host, btn, api };
     window.__fenixReplayBoard = api;
   };
-  const mo = new MutationObserver(() => { clearTimeout(mo.t); mo.t = setTimeout(sync, 120); });
+  // El botón se crea EN EL MISMO INSTANTE que los demás de la cancha (sin esperar); una vez creado, las revisiones se espacian
+  const mo = new MutationObserver(() => { if (!cur || !cur.btn.isConnected || !cur.host.isConnected) { clearTimeout(mo.t); sync(); } else { clearTimeout(mo.t); mo.t = setTimeout(sync, 300); } });
   mo.observe(document.body, { childList: true, subtree: true });
   sync();
 }

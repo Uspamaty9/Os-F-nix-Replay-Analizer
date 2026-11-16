@@ -8,7 +8,16 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   pg.on('pageerror', (e) => errs.push(String(e))); pg.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
   await pg.goto('http://localhost:8775/index.html'); await pg.waitForSelector('.rb-btn', { timeout: 5000 });
   assert.equal(await pg.locator('.rb-bar').isVisible(), false, 'barra oculta al inicio');
+  const early = await pg.evaluate(async () => { const app = document.getElementById('app'); app.innerHTML = ''; await new Promise((r) => setTimeout(r, 400)); const w = innerWidth, h = innerHeight; app.innerHTML = '<div class="game-view"><div class="stage" id="host"><div><canvas id="game" width="' + w + '" height="' + h + '"></canvas></div><button class="fenix-fit">fit</button><button class="fenix-follow">f</button></div></div>'; await Promise.resolve(); await Promise.resolve(); return !!document.querySelector('.rb-btn'); });
+  assert.ok(early, 'el botón aparece a la vez que los demás');
   await pg.locator('.rb-btn').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
+  // el botón y la barra: la barra queda por encima de cualquier botón de la repetición; el de zoom/restablecer sigue visible
+  await pg.evaluate(() => { const z = document.createElement('button'); z.className = 'zz'; z.style.cssText = 'position:absolute;left:40px;bottom:30px;width:60px;height:40px;z-index:30'; document.getElementById('host').appendChild(z); });
+  await pg.waitForTimeout(100);
+  const topIsBar = await pg.evaluate(() => { const r = document.querySelector('.zz').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(el && el.closest('.rb-bar')); });
+  assert.ok(topIsBar, 'la barra queda por encima de cualquier botón');
+  assert.equal(await pg.locator('.fenix-fit').isVisible(), true, 'botón de zoom visible con la pizarra abierta');
+  const acts = await pg.locator('.rb-acts').boundingBox(); assert.ok(acts && acts.y > 40, 'acciones debajo del botón de zoom');
   const bb = await pg.locator('.rb-canvas').boundingBox(); const gb = await pg.locator('#game').boundingBox();
   assert.ok(Math.abs(bb.width - gb.width) < 2 && Math.abs(bb.height - gb.height) < 2, 'capa del tamaño de la cancha');
   const P = (fx, fy) => ({ x: bb.x + bb.width * fx, y: bb.y + bb.height * fy });
