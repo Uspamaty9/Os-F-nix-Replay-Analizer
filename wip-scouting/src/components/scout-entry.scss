@@ -18,12 +18,12 @@ html body .fenix-home .fh-hero .fh-tools b { font: 600 15px/1.2 'Poppins', sans-
 html body .fenix-home .fh-hero .fh-tools small { font: 400 11.5px/1.3 'Poppins', sans-serif; color: rgba(244, 239, 228, .6); }
 
 /* ===== Inicio: contenido centrado en la pantalla (en vez de pegado arriba) y Favoritos fuera ===== */
+/* El inicio es de altura fija (la lista del historial se desplaza por dentro), así que el aire se deja arriba en proporción a la pantalla */
 @media (max-width: 700px) and (orientation: portrait) {
-  html body .fenix-home .fh-scroll { display: flex; flex-direction: column; padding-top: 64px; }
-  html body .fenix-home .fh-scroll > .fh-hero { margin-top: auto; }
-  html body .fenix-home .fh-scroll > .fh-history { margin-bottom: auto; }
-  html body .fenix-home .fh-hero .fh-brand { margin-bottom: 28px; }
-  html body .fenix-home .fh-hero .fh-tools { margin-top: 16px; }
+  html body .fenix-home .fh-scroll { padding-top: clamp(72px, 13vh, 140px); }
+  html body .fenix-home .fh-hero .fh-brand { margin-bottom: 30px; }
+  html body .fenix-home .fh-hero .fh-tools { margin-top: 18px; }
+  html body .fenix-home .fh-history { margin-top: 8px; }
 }
 html body .fenix-home .fh-tabs { display: flex; align-items: center; margin-top: 26px; }
 html body .fenix-home .fh-histlabel { display: inline-flex; align-items: center; gap: 8px; font: 600 14px 'Oswald', sans-serif; letter-spacing: 2.5px; text-transform: uppercase; color: var(--acc, #C89A3D); }
