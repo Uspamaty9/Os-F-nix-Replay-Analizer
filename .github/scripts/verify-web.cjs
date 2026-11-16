@@ -537,9 +537,12 @@ const [,, url, outDir, sampleDir] = process.argv;
       const watch = setInterval(() => { p4.evaluate(() => !!document.querySelector('.fenix-tap-overlay')).then((v) => { if (v) overlay = true; }).catch(() => { }); }, 200);
       await p4.waitForFunction(() => { const c = document.querySelector('.replay-controls-view'); return !!c && c.getBoundingClientRect().left < 50; }, null, { timeout: 40000 });
       clearInterval(watch);
-      const fitAt = await p4.waitForSelector('.fenix-fit', { state: 'visible', timeout: 4000 }).then(() => Date.now() - t0).catch(() => -1);
+      // el botón de la cancha debe estar ya (a la vez que los controles) y ocupar arriba-derecha, donde estaba la estrella
+      const fitAt = await p4.waitForSelector('.fenix-fit', { state: 'visible', timeout: 1500 }).then(() => Date.now() - t0).catch(() => -1);
+      const fitPos = await p4.evaluate(() => { const e = document.querySelector('.fenix-fit'); if (!e) return null; const r = e.getBoundingClientRect(); return { top: Math.round(r.top), right: Math.round(innerWidth - r.right) }; });
+      const fitTop = !!fitPos && fitPos.top < 90 && fitPos.right < 40;
       await p4.screenshot({ path: path.join(outDir, 'shot-29-entra-directo.png') });
-      TG('W2 Entra directo a la repetición (sin espera ni "toca para continuar") y el botón de la cancha ya está', !overlay && fitAt > 0, JSON.stringify({ overlay, fitAt }));
+      TG('W2 Entra directo a la repetición y el botón de la cancha aparece con todo, arriba a la derecha', !overlay && fitAt > 0 && fitTop, JSON.stringify({ overlay, fitAt, fitPos }));
     } else if (samples.length) {
       await p4.setInputFiles('#replayfile', path.join(sampleDir, samples[0]));
       await p4.waitForTimeout(2500);

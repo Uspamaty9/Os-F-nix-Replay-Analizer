@@ -36,3 +36,6 @@ html body .fenix-wait .fw-pct { font: 700 44px/1 'Oswald', sans-serif; letter-sp
 html body .fenix-wait .fw-pct small { font-size: 20px; margin-left: 2px; opacity: .8; }
 html body .fenix-wait .fw-bar { height: 6px; margin-top: 14px; border-radius: 6px; background: rgba(255, 255, 255, .1); overflow: hidden; }
 html body .fenix-wait .fw-bar i { display: block; height: 100%; border-radius: 6px; background: var(--acc, #C89A3D); transition: width .15s linear; }
+
+/* Botón de restablecer vista de la cancha (zoom): ahora ocupa el lugar que tenía la estrella de Favoritos (arriba a la derecha) */
+html body .fenix-fit { top: calc(var(--edge, 12px) + var(--int, 0px)) !important; bottom: auto !important; right: calc(var(--edge, 12px) + var(--inr, 0px)) !important; height: 46px; min-height: 46px; }

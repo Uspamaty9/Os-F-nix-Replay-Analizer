@@ -1,6 +1,19 @@
 --- a/src/game2.js	2026-11-15 23:22:33.059889719 -0500
-+++ b/src/game2.js	2026-11-15 23:22:33.061252978 -0500
-@@ -1025,6 +1025,7 @@
++++ b/src/game2.js	2026-11-16 11:05:56.466209790 -0500
+@@ -854,6 +854,12 @@
+ }
+ function fenixAttach(canvas) {
+   var fv = fenixView, pts = new Map(), g = null;
++  // Los botones sobre la cancha (restablecer vista, grabar, ...) se crean EN CUANTO la cancha entra en el documento,
++  // sin esperar al primer fotograma dibujado: aparecen a la vez que el resto de la pantalla de la repeticion.
++  (function fenixEarlyButtons(tries) {
++    try { if (canvas.isConnected) fenixEnsureButton(canvas); } catch (e) { }
++    if ((!fv.btn || !fv.btn.isConnected || fv.btn.parentElement !== (canvas.parentElement && canvas.parentElement.parentElement)) && tries < 1200) setTimeout(function () { fenixEarlyButtons(tries + 1); }, 50);
++  })(0);
+   canvas.style.touchAction = 'none';
+   function toCanvas(e) {
+     var r = canvas.getBoundingClientRect();
+@@ -1025,6 +1031,7 @@
    dispatchClearStats();
    keepUpdating = true;
    fenixLoadStart = performance.now();
@@ -8,7 +21,7 @@
    loading = {
      recLength: 1,
      progress: 0,
-@@ -1034,23 +1035,14 @@
+@@ -1034,23 +1041,9 @@
    }
  }
  
@@ -31,15 +44,10 @@
 -    document.body.appendChild(ov);
 -  }, wait);
 +  enterReplayer();
-+  // El boton de restablecer vista (y estrella/grabar) se crea con la primera imagen: se crea ya, sin esperar
-+  try {
-+    var fcv = document.querySelector('[data-hook="gameplay-section"] canvas') || document.querySelector('.game-view canvas');
-+    if (fcv) fenixEnsureButton(fcv);
-+  } catch (e) { }
  }
  function enterReplayer() {
    $('.top-section, .bottom-section, .replay-controls-view').css({ left: 0 }).addClass('fenix-game-in');
-@@ -5705,6 +5697,7 @@
+@@ -5705,6 +5698,7 @@
        if (progress < loading.progress) {
          // console.log('koniec analizy', a);
          loading.done = true;
@@ -47,7 +55,7 @@
          keepUpdating = false;
          dispatchPlayerList(playerList);
          dispatchPlayerPos(playerPos);
-@@ -5712,6 +5705,7 @@
+@@ -5712,6 +5706,7 @@
          bringReplayer();
        } else if (progress !== loading.progress) {
          loading.progress = progress;
