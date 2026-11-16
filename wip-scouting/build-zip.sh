@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Arma el zip v4 desde el v3 (intacto) + módulos nuevos + parches. Uso: bash wip-scouting/build-zip.sh   (desde la raíz del repo)
+set -euo pipefail
+R="$(cd "$(dirname "$0")/.." && pwd)"; V3="$R/Os-Fenix-Replay-Analyzer-Motor-Reproduccion-v3.zip"; OUT="$R/Os-Fenix-Replay-Analyzer-Motor-Reproduccion-v4-Scouting.zip"
+T="$(mktemp -d)"; cd "$T"; unzip -q "$V3"; PRJ="$T/haxball-replay-analyzer.github.io-react"; P="$PRJ/src"
+cp -r "$R/wip-scouting/src/scouting" "$P/"                       # centro de análisis
+cp "$R/wip-scouting/src/extras.js" "$R/wip-scouting/src/settings.js" "$P/"
+cp "$R/wip-scouting/src/components/"*.js "$R/wip-scouting/src/components/"*.scss "$P/components/"   # Home, Ajustes, pantalla Analizando…
+rm -f "$P/components/ThemeEditor.js"                              # temas quitados
+cp -r "$R/wip-tactics/src/tactics" "$P/"; mv "$P/tactics/scoutingProvider.js.optional" "$P/tactics/scoutingProvider.js"
+python3 "$R/wip-tactics/integrate.py" "$P/index.js"               # pizarra sobre la repetición (2 líneas)
+( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-sin-espera.patch" )   # entrar directo a la repetición
+rm -f "$OUT"; zip -qr "$OUT" haxball-replay-analyzer.github.io-react; echo "OK $OUT"; echo "$T" > /tmp/build-zip-last

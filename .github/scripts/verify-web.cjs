@@ -11,6 +11,10 @@ const [,, url, outDir, sampleDir] = process.argv;
   await ctx.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
   await ctx.addInitScript(() => { setInterval(() => { const o = document.querySelector('.fenix-tap-overlay'); if (o) o.click(); }, 250); });
   const page = await ctx.newPage();
+  // La v4 (Tactical Analyzer) ya no tiene Favoritos, temas, guía ni la espera de 5 s: sus pruebas se omiten y se prueba lo nuevo.
+  let IS_V4 = false;
+  try { const dp = await ctx.newPage(); await dp.goto(url, { waitUntil: 'load' }); await dp.waitForSelector('.fh-import', { timeout: 15000 }); IS_V4 = !!(await dp.$('.fh-scout')); await dp.close(); } catch (e) { }
+  console.log('IS_V4=' + IS_V4);
   const external = new Set(), failed = [], okLocal = [], errors = [];
   page.on('request', r => { const u = new URL(r.url()); if (!['localhost', '127.0.0.1'].includes(u.hostname) && u.protocol.startsWith('http')) external.add(r.method() + ' ' + r.url().slice(0, 140)); });
   page.on('response', r => { if (new URL(r.url()).hostname === 'localhost') okLocal.push(r.status() + ' ' + r.url().replace(url, '/')); });
@@ -287,7 +291,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         const edg = await page.evaluate(() => { const g = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const eye = g('.fenix-clean-btn'), st = g('.fenix-star'), fit = g('.fenix-fit'), ctr = g('.replay-controls-view'), lb = g('#button_leave'), mb = g('.game-view > .bottom-section .buttons button'); return { ojoL: Math.round(eye.left), ojoT: Math.round(eye.top), starR: Math.round(innerWidth - st.right), fitR: Math.round(innerWidth - fit.right), leaveB: Math.round(innerHeight - lb.bottom), leaveR: Math.round(innerWidth - lb.right), menuL: Math.round(mb.left) }; });
         T('B1 Márgenes cómodos en los bordes (vertical)', edg.ojoL >= 12 && edg.ojoT >= 12 && edg.starR >= 12 && edg.fitR >= 12 && edg.leaveB >= 10 && edg.leaveR >= 12 && edg.menuL >= 12, JSON.stringify(edg));
         T('Z1 El botón de zoom siempre vuelve a 1.0×', zr.every(z => z === 1), JSON.stringify(zr));
-        T('P1 Ojo arriba-izquierda y favoritos arriba-derecha', pos.ojoIzq && pos.starDer, JSON.stringify(pos));
+        if (!IS_V4) T('P1 Ojo arriba-izquierda y favoritos arriba-derecha', pos.ojoIzq && pos.starDer, JSON.stringify(pos));
         await page.evaluate(() => window.__fenixSetFollow(0));
       } catch (err) { T('G1/Z1/P1 disposición', false, String(err).slice(0, 200)); }
       // 8) barra de tiempo (toque) sin mover la cancha
@@ -390,7 +394,8 @@ const [,, url, outDir, sampleDir] = process.argv;
         const ov = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear'), tabs = Array.from(document.querySelectorAll('.fh-tabs button')).map(b => b.getBoundingClientRect()); const hit = tabs.some(t => !(g.right <= t.left || g.left >= t.right || g.bottom <= t.top || g.top >= t.bottom)); return { choca: hit, gearLeft: Math.round(g.left) }; });
         const ex1 = await page.evaluate(() => { const r = q => document.querySelector(q).getBoundingClientRect(); const g = r('.fh-gear:not(.fh-exit)'), e = r('.fh-exit'); return { choca: !(g.right <= e.left || g.left >= e.right), exitLeft: Math.round(e.left) }; });
         T('X1 Botón de salir del inicio no choca con el engranaje', ex1.choca === false, JSON.stringify(ex1));
-        T('E1 Horizontal: engranaje no se superpone a Favoritos', ov.choca === false, JSON.stringify(ov));
+        if (!IS_V4) T('E1 Horizontal: engranaje no se superpone a Favoritos', ov.choca === false, JSON.stringify(ov));
+        if (!IS_V4) {
         const rc = () => page.evaluate(() => ['.fh-logo', '.fh-import', '.fh-tabs button:nth-child(1)', '.fh-tabs button:nth-child(2)'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }));
         const h1 = await rc();
         await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
@@ -398,6 +403,7 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.screenshot({ path: path.join(outDir, 'shot-20-favoritos-horizontal.png') });
         await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(500);
         T('E4 Horizontal: Historial y Favoritos no mueven nada', JSON.stringify(h1) === JSON.stringify(h2), JSON.stringify([h1, h2]));
+        }
         try {
           await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(500);
           await page.click('.fs-close'); await page.waitForTimeout(220);
@@ -433,12 +439,14 @@ const [,, url, outDir, sampleDir] = process.argv;
         await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(800);
       } catch (err) { T('E1 Engranaje horizontal', false, String(err).slice(0, 200)); }
       const snap = () => page.evaluate(() => ['.fh-logo','.fh-hero h1','.fh-import','.fh-tabs','.fh-scroll','.fenix-home'].map(q => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.x*10)/10, Math.round(r.y*10)/10, Math.round(r.width*10)/10, Math.round(r.height*10)/10]; }));
+      if (!IS_V4) {
       const snapA = await snap();
       await page.click('.fh-tabs button:nth-child(2)'); await page.waitForTimeout(700);
       const snapB = await snap();
       await page.click('.fh-tabs button:nth-child(1)'); await page.waitForTimeout(700);
       const snapC = await snap();
       T('F2 Al cambiar Historial/Favoritos no se mueve nada', JSON.stringify(snapA) === JSON.stringify(snapB) && JSON.stringify(snapA) === JSON.stringify(snapC), JSON.stringify([snapA, snapB, snapC]));
+      }
       const n1 = await page.locator('.fh-item').count();
       T('H1 La repetición importada aparece en el historial', n1 === 1, n1 + ' elemento(s)');
       await page.click('.fh-more'); await page.waitForTimeout(200); await page.click('.fh-rename'); await page.waitForTimeout(200);
@@ -452,6 +460,7 @@ const [,, url, outDir, sampleDir] = process.argv;
       await page.click('.fh-ok'); await page.waitForTimeout(500);
       const nm = await page.evaluate(() => (document.querySelector('.fh-name') || {}).textContent);
       T('H2 Cambiar el nombre de la repetición', nm === 'Final vs Rivales', 'nombre: ' + nm);
+      if (!IS_V4)
       try {
         await page.click('.fh-more'); await page.waitForTimeout(200); await page.click('.fh-star'); await page.waitForTimeout(300);
         await page.click('.fh-more'); await page.waitForTimeout(200); await page.click('.fh-delete'); await page.waitForTimeout(300);
@@ -469,8 +478,10 @@ const [,, url, outDir, sampleDir] = process.argv;
       const reopened = await page.evaluate(() => { const t = document.querySelector('[data-hook=time]'); const c = document.querySelector('.game-state-view canvas'); const r = c && c.getBoundingClientRect(); return !!(t && r && r.width > 100 && window.__fenixView && window.__fenixView.k > 0); });
       T('H3 Abrir una repetición desde el historial', reopened);
       await page.waitForTimeout(800);
+      if (!IS_V4) {
       const starOk = await page.evaluate(async () => { const b = document.querySelector('.fenix-star'); if (!b || b.offsetParent === null) return 'sin estrella'; b.click(); await new Promise(r => setTimeout(r, 700)); const b2 = document.querySelector('.fenix-star'); return b2 && b2.classList.contains('on') ? 'ok' : 'no cambió'; });
       T('F1 Estrella de favoritos dentro de la repetición', starOk === 'ok', starOk);
+      }
       await page.screenshot({ path: path.join(outDir, 'shot-10-reabierta.png') });
       const tiles = await page.evaluate(() => Array.from(document.querySelectorAll('.bottom-section .buttons button')).filter(b => b.offsetParent).map(b => { const r = b.getBoundingClientRect(); return [b.textContent.trim(), Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }));
       log('Botones (texto,x,y,ancho,alto): ' + JSON.stringify(tiles));
@@ -520,7 +531,16 @@ const [,, url, outDir, sampleDir] = process.argv;
     await c4.addInitScript(() => { try { localStorage.setItem('fenix-guide', '1'); } catch (e) { } });
     const p4 = await c4.newPage();
     await p4.goto(url, { waitUntil: 'load' }); await p4.waitForTimeout(3500);
-    if (samples.length) {
+    if (samples.length && IS_V4) {
+      await p4.setInputFiles('#replayfile', path.join(sampleDir, samples[0]));
+      let overlay = false; const t0 = Date.now();
+      const watch = setInterval(() => { p4.evaluate(() => !!document.querySelector('.fenix-tap-overlay')).then((v) => { if (v) overlay = true; }).catch(() => { }); }, 200);
+      await p4.waitForFunction(() => { const c = document.querySelector('.replay-controls-view'); return !!c && c.getBoundingClientRect().left < 50; }, null, { timeout: 40000 });
+      clearInterval(watch);
+      const fitAt = await p4.waitForSelector('.fenix-fit', { state: 'visible', timeout: 4000 }).then(() => Date.now() - t0).catch(() => -1);
+      await p4.screenshot({ path: path.join(outDir, 'shot-29-entra-directo.png') });
+      TG('W2 Entra directo a la repetición (sin espera ni "toca para continuar") y el botón de la cancha ya está', !overlay && fitAt > 0, JSON.stringify({ overlay, fitAt }));
+    } else if (samples.length) {
       await p4.setInputFiles('#replayfile', path.join(sampleDir, samples[0]));
       await p4.waitForTimeout(2500);
       const early = await p4.evaluate(() => !!document.querySelector('.fenix-tap-overlay'));

@@ -528,7 +528,6 @@ function Home() {
   function fmtDt(t) { try { return new Date(t).toLocaleString('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
 
   const [showSettings, setShowSettings] = useState(false);
-  const [histTab, setHistTab] = useState('all');
 
   // Las animaciones de entrada del inicio solo se ven al abrir la app, no al abrir/cerrar paneles
   useEffect(() => { const t = setTimeout(() => document.body.classList.add('fenix-booted'), 1500); return () => clearTimeout(t); }, []);
@@ -655,11 +654,10 @@ function Home() {
             </div>
           </div>
           <section className='fh-history'>
-            <div className='fh-tabs' role='tablist'>
-              <button role='tab' aria-selected={histTab === 'all'} className={histTab === 'all' ? 'on' : ''} onClick={() => setHistTab('all')}><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9' /><path d='M12 7v5l3.2 2' /></svg><span>Historial</span></button>
-              <button role='tab' aria-selected={histTab === 'fav'} className={histTab === 'fav' ? 'on' : ''} onClick={() => setHistTab('fav')}><svg width='18' height='18' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'><path d='M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2 6.6 20.1l1-6.1L3.2 9.7l6.1-.9z' /></svg><span>Favoritos</span></button>
+            <div className='fh-tabs'>
+              <span className='fh-histlabel'><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'><circle cx='12' cy='12' r='9' /><path d='M12 7v5l3 2' /></svg>Historial</span>
             </div>
-            <HistoryList key={histTab} filter={histTab} refreshKey={historyTick} onOpen={openSaved} />
+            <HistoryList key='all' filter='all' refreshKey={historyTick} onOpen={openSaved} />
           </section>
         </div>
       </div>

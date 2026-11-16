@@ -1,0 +1,57 @@
+--- a/src/game2.js	2026-11-15 23:22:33.059889719 -0500
++++ b/src/game2.js	2026-11-15 23:22:33.061252978 -0500
+@@ -1025,6 +1025,7 @@
+   dispatchClearStats();
+   keepUpdating = true;
+   fenixLoadStart = performance.now();
++  try { window.__fenixLoadPct = 0; } catch (e) { }
+   loading = {
+     recLength: 1,
+     progress: 0,
+@@ -1034,23 +1035,14 @@
+   }
+ }
+ 
+-// La pantalla "Analizando" dura al menos 5 segundos y luego pide tocar la pantalla para entrar a la repetición
++// Al terminar el analisis se entra DIRECTO a la repeticion (sin espera minima ni "toca para continuar").
+ function bringReplayer() {
+-  var wait = Math.max(0, 5000 - (performance.now() - fenixLoadStart));
+-  setTimeout(function () {
+-    var ld0 = document.getElementById('loading-screen');
+-    if (ld0) { ld0.classList.add('fw-ready'); var h0 = ld0.querySelector('h1'); if (h0) h0.textContent = '\u00a1Listo!'; }
+-    var ov = document.createElement('div');
+-    ov.className = 'fenix-tap-overlay';
+-    ov.setAttribute('role', 'button');
+-    ov.setAttribute('aria-label', 'Toca la pantalla para continuar');
+-    ov.addEventListener('click', function () {
+-      if (ov.parentNode) ov.parentNode.removeChild(ov);
+-      if (ld0) { ld0.classList.remove('fw-ready'); var h1 = ld0.querySelector('h1'); if (h1) h1.textContent = 'Analizando\u2026'; }
+-      enterReplayer();
+-    });
+-    document.body.appendChild(ov);
+-  }, wait);
++  enterReplayer();
++  // El boton de restablecer vista (y estrella/grabar) se crea con la primera imagen: se crea ya, sin esperar
++  try {
++    var fcv = document.querySelector('[data-hook="gameplay-section"] canvas') || document.querySelector('.game-view canvas');
++    if (fcv) fenixEnsureButton(fcv);
++  } catch (e) { }
+ }
+ function enterReplayer() {
+   $('.top-section, .bottom-section, .replay-controls-view').css({ left: 0 }).addClass('fenix-game-in');
+@@ -5705,6 +5697,7 @@
+       if (progress < loading.progress) {
+         // console.log('koniec analizy', a);
+         loading.done = true;
++        try { window.__fenixLoadPct = 100; } catch (e) { }
+         keepUpdating = false;
+         dispatchPlayerList(playerList);
+         dispatchPlayerPos(playerPos);
+@@ -5712,6 +5705,7 @@
+         bringReplayer();
+       } else if (progress !== loading.progress) {
+         loading.progress = progress;
++        try { window.__fenixLoadPct = progress; } catch (e) { }
+         loading.changed = true;
+         // document.getElementById('loading-progress').style.width = '' + progress + '%'
+         // setLoadingProgress2(progress + '%')
