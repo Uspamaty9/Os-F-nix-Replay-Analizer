@@ -3,25 +3,32 @@
   position: absolute; right: calc(var(--edge, 12px) + var(--inr, 0px)); bottom: 120px; z-index: 3; width: 52px; min-height: 44px; padding: 0; border-radius: 10px;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
   border: 1px solid var(--acc, #C89A3D); background: var(--card, rgba(17,17,17,.82)); color: var(--acc, #C89A3D);
-  &.on { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
 }
 body.fenix-despejado .rb-btn, body.fenix-panel-open .rb-btn { display: none !important; }
+/* Con la pizarra abierta se esconden los botones flotantes de la repetición para que nada se superponga */
+body.rb-open {
+  .rb-btn, .fenix-fit, .fenix-follow, .fenix-star, .fenix-rec, .fenix-clean-btn, .fenix-zoom-range, .fenix-follow-label { display: none !important; }
+}
 .rb-layer {
-  position: absolute; z-index: 5; pointer-events: none; touch-action: none; overflow: hidden;
+  position: absolute; z-index: 5; pointer-events: none; touch-action: none; overflow: hidden; font-family: inherit;
   .rb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
   .rb-bar {
-    position: absolute; left: 6px; right: 6px; bottom: 6px; display: none; flex-direction: column; gap: 6px; pointer-events: auto; padding: 6px;
+    position: absolute; left: 6px; right: 6px; bottom: 6px; display: none; flex-direction: column; gap: 4px; pointer-events: auto; padding: 6px;
     border-radius: 16px; background: rgba(17,17,17,.9); border: 1px solid var(--acc, #C89A3D); color: #F7F3E8; backdrop-filter: blur(8px);
-    font-family: inherit;
+  }
+  .rb-acts {
+    position: absolute; right: 6px; top: 6px; display: none; flex-direction: column; gap: 6px; pointer-events: auto; padding: 5px;
+    border-radius: 16px; background: rgba(17,17,17,.9); border: 1px solid var(--acc, #C89A3D); color: #F7F3E8; backdrop-filter: blur(8px);
   }
   &.open .rb-bar { display: flex; }
+  &.open .rb-acts { display: flex; }
   .rb-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; align-items: center; -webkit-overflow-scrolling: touch; &::-webkit-scrollbar { display: none; } }
   .rb-row.sec { gap: 8px; }
   button { font: 600 11px/1.1 inherit; color: inherit; cursor: pointer; }
   .rb-t, .rb-a {
-    flex: 0 0 auto; min-width: 52px; min-height: 48px; padding: 4px 8px; border-radius: 12px; border: 1px solid transparent; background: rgba(255,255,255,.06);
+    flex: 0 0 auto; min-width: 52px; min-height: 48px; padding: 4px 8px; border-radius: 12px; border: 1px solid transparent; background: rgba(255,255,255,.07);
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    span { font-size: 10.5px; letter-spacing: .1px; white-space: nowrap; opacity: .9; }
+    span { font-size: 10px; letter-spacing: .1px; white-space: nowrap; opacity: .9; }
     &.on { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
     &:disabled { opacity: .35; cursor: default; }
     &:active { transform: scale(.96); }
@@ -29,24 +36,31 @@ body.fenix-despejado .rb-btn, body.fenix-panel-open .rb-btn { display: none !imp
   .rb-t.team i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; display: block; }
   .rb-t.team.red i { background: #E56E6E; } .rb-t.team.blue i { background: #5689E5; }
   .rb-a { flex-direction: row; gap: 6px; padding: 4px 12px; min-height: 44px; }
+  .rb-acts .rb-a { flex-direction: column; gap: 2px; min-width: 56px; min-height: 46px; padding: 4px 6px; }
   .rb-a.danger { color: #FFB4B4; } .rb-a.danger.on { background: #C0392B; color: #fff; }
   .rb-a.close { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
-  .rb-col { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--c); border: 2px solid rgba(255,255,255,.5); padding: 0; &.on { outline: 3px solid var(--acc, #C89A3D); outline-offset: 2px; } }
+  .rb-col { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; background: var(--c); border: 2px solid rgba(255,255,255,.5); padding: 0; &.on { outline: 3px solid var(--acc, #C89A3D); outline-offset: 2px; } }
   .rb-sep { flex: 0 0 1px; height: 28px; background: rgba(255,255,255,.2); margin: 0 2px; }
-  .rb-toast { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 7px 14px; border-radius: 16px; background: rgba(17,17,17,.9); color: #F7F3E8; font: 600 12px/1 inherit; opacity: 0; transition: opacity .2s; pointer-events: none; &.on { opacity: 1; } }
+  .rb-toast { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 7px 14px; border-radius: 16px; background: rgba(17,17,17,.9); color: #F7F3E8; font: 600 12px/1 inherit; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; &.on { opacity: 1; } }
+  .rb-text { position: absolute; width: 180px; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--acc, #C89A3D); background: rgba(17,17,17,.95); color: #F7F3E8; font: 600 14px/1.2 inherit; pointer-events: auto; z-index: 3; }
 }
 @media (min-width: 900px) {
-  .rb-layer .rb-bar { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 20px); }
+  .rb-layer .rb-bar { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 140px); }
 }
-
 @media (max-width: 520px) {
   .rb-layer {
-    .rb-t span, .rb-a span { display: none; }
+    .rb-t span { display: none; }
     .rb-t { min-width: 40px; width: 40px; min-height: 44px; padding: 4px; }
-    .rb-a { min-width: 40px; min-height: 44px; padding: 4px 8px; }
-    .rb-col { width: 22px; height: 22px; }
+    .rb-bar .rb-a { min-width: 40px; min-height: 44px; padding: 4px 8px; span { display: none; } }
+    .rb-acts { top: 4px; right: 4px; gap: 4px; }
+    .rb-acts .rb-a { min-width: 48px; min-height: 44px; span { display: none; } }
+    .rb-col { width: 24px; height: 24px; }
     .rb-row.sec { gap: 6px; }
     .rb-bar { gap: 4px; padding: 5px; }
-    .rb-a.danger.on { padding: 4px 10px; }
   }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .rb-layer .rb-t span { display: none; }
+  .rb-layer .rb-t { min-width: 42px; min-height: 42px; }
+  .rb-layer .rb-acts .rb-a { min-height: 40px; min-width: 44px; span { display: none; } }
 }

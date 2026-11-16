@@ -43,3 +43,9 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 
 ## Anclaje al campo (B, 15 nov noche, a petición del usuario)
 `replayBoard.js` reescrito para que todo lo dibujado se guarde en **coordenadas del campo** (unidades HaxBall) y no de la pantalla. Usa `window.__fenixView` ({camX, camY, k, W, H, h}, publicado por el motor cada fotograma; misma fórmula que el toque a jugador de game2.js) para convertir pantalla ↔ campo. La capa se repinta cuando cambia la cámara (seguir jugador, zoom, arrastre) y también con la pizarra cerrada. Prueba: `tests/replay/anchor.mjs` (mueve la cámara y comprueba que la raya la sigue); `index.html` del mock ahora publica `__fenixView`.
+
+## 16 nov (C): más herramientas, gestos y barra sin solapes
+- **Pizarra sobre la repetición**: ahora con línea, discontinua, flecha recta/curva, círculo, rectángulo, triángulo, zonas de presión/defensa/cobertura, fichas roja/azul numeradas, balón, texto, **Mover marca** (arrastrar una marca), borrador, relleno y 3 grosores. Mantiene el anclaje al campo de B (`__fenixView`), con unidades de campo.
+- **Gesto**: un toque con **2 dedos = deshacer**, con **3 dedos = rehacer** (capa de la repetición y pizarra independiente). Si el primer dedo acababa de colocar algo, eso se descarta y no cuenta.
+- **Layout**: al abrir la pizarra se ocultan los botones flotantes de la repetición (restablecer vista, seguir, estrella, grabar, despejar, zoom) para que no se superpongan; las acciones (Listo, Deshacer, Rehacer, Limpiar, Captura) van en una columna arriba a la derecha y las herramientas abajo.
+- Pruebas: `tests/replay/test.mjs` (herramientas, mover, 2/3 dedos, captura, atrás) y `anchor.mjs` (B). `tests/ui/eraser-test.mjs` incluye 2/3 dedos en la pizarra independiente.

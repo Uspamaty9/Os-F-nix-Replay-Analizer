@@ -580,6 +580,7 @@ export class TacticsController {
 
   _downTool(wp, s, e) {
     const t = this.tool;
+    if (t === 'erase' || t === 'player' || t === 'ball' || t === 'text') this._inst = { t: performance.now(), h: this.h };
     if (t === 'erase') { this.g = { type: 'erase', moved: true }; this._eraseAt(wp); return; }
     if (t === 'player') { this.addPlayer(wp.x, wp.y); return; }
     if (t === 'ball') { this.placeBall(wp.x, wp.y); this.setTool('select'); return; }
@@ -658,11 +659,16 @@ export class TacticsController {
   }
 
   _startPinch() {
+    const now = performance.now(), prev = this.g && this.g.type === 'pinch' ? this.g : null;
+    // Un toque con dos dedos = deshacer; con tres = rehacer. Si el primer dedo acababa de colocar algo, eso también se descarta.
+    if (!prev && this._inst && now - this._inst.t < 500) { this.h = this._inst.h; this._fixSel(); this._changed(); this.emit(); }
+    this._inst = null;
     this._revertGesture(); // el gesto de un dedo se descarta al empezar un pellizco
     this.g = null; this.draft = null; this.box = null;
-    const [a, b] = [...this.pointers.values()];
+    const pts = [...this.pointers.values()], [a, b] = pts;
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    this.g = { type: 'pinch', d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), k0: this.view.k, w0: G.toWorld(this.view, mid.x, mid.y) };
+    this.g = { type: 'pinch', d0: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), k0: this.view.k, w0: G.toWorld(this.view, mid.x, mid.y),
+      t0: prev ? prev.t0 : now, n: pts.length, start: pts.map((q) => ({ ...q })), moved: prev ? prev.moved : false };
     this.userView = true; this.draw();
   }
 
@@ -678,7 +684,9 @@ export class TacticsController {
     if (g.type === 'erase') { this._eraseAt(wp); return; }
     if (g.type === 'pinch') {
       if (this.pointers.size < 2) return;
-      const [a, b] = [...this.pointers.values()];
+      const cur = [...this.pointers.values()];
+      if (!g.moved && cur.some((q, i) => g.start[i] && Math.hypot(q.x - g.start[i].x, q.y - g.start[i].y) > 14)) g.moved = true;
+      const [a, b] = cur;
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       const k = G.clamp(g.k0 * (Math.hypot(a.x - b.x, a.y - b.y) / g.d0), G.K_MIN, G.K_MAX);
       this.view = G.clampView({ k, ox: mid.x - g.w0.x * k, oy: mid.y - g.w0.y * k }, this.w, this.h2);
@@ -737,7 +745,15 @@ export class TacticsController {
     this.pointers.delete(e.pointerId);
     try { this.canvas.releasePointerCapture(e.pointerId); } catch (x) { /* ignorar */ }
     const g = this.g; if (!g) return;
-    if (g.type === 'pinch') { if (this.pointers.size < 2) { this.g = null; this.emit(); } return; }
+    if (g.type === 'pinch') {
+      if (this.pointers.size < 2) {
+        const tap = !g.moved && performance.now() - g.t0 < 450;
+        this.g = null;
+        if (tap) { if (g.n >= 3) this.redo(); else this.undo(); if (this.hooks.onToast) this.hooks.onToast(g.n >= 3 ? 'Rehecho' : 'Deshecho'); }
+        this.emit();
+      }
+      return;
+    }
     if (!had) return;
     this.g = null;
     if (this.tool === 'pan' || g.type === 'pan') this.canvas.style.cursor = this.tool === 'pan' ? 'grab' : this.tool === 'select' ? 'default' : 'crosshair';

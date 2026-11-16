@@ -15,6 +15,15 @@ for (const [name, vp, touch] of [['desk', { width: 1280, height: 760 }, false], 
   // borrador
   await pg.locator('.tx-act:has-text("Borrador")').click(); await tap(0.7, 0.4); await tap(0.6, 0.6);
   await pg.screenshot({ path: process.argv[3] + '/er-' + name + '.png' });
+  if (touch) { // dos dedos = deshacer, tres = rehacer
+    const cdp = await ctx.newCDPSession(pg);
+    const fingers = async (n) => { const pts = [0, 1, 2].slice(0, n).map((i) => ({ x: bb.x + bb.width * (0.3 + i * 0.1), y: bb.y + bb.height * 0.3, id: i + 1 })); await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts }); await new Promise((r) => setTimeout(r, 80)); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await new Promise((r) => setTimeout(r, 80)); };
+    const redoOff = () => pg.locator('[aria-label="Rehacer"]').first().isDisabled();
+    assert.equal(await redoOff(), true, 'sin rehacer al inicio');
+    await pg.locator('[aria-label="Ficha equipo rojo"]').first().click();
+    await fingers(2); assert.equal(await redoOff(), false, 'dos dedos deshacen');
+    await fingers(3); assert.equal(await redoOff(), true, 'tres dedos rehacen');
+  }
   await pg.locator('.tx-act:has-text("Limpiar")').click(); assert.ok(await pg.locator('.tx-act.danger.on').count() === 1, 'pide confirmar');
   await pg.locator('.tx-act.danger').click();
   await pg.waitForTimeout(100);
