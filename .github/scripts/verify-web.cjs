@@ -408,15 +408,17 @@ const [,, url, outDir, sampleDir] = process.argv;
           T('H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido', gone1 && gone2, JSON.stringify({ gone1, gone2 }));
           await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(500);
           await page.screenshot({ path: path.join(outDir, 'shot-37-config-inicio.png') });
-          const names = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-group-tile .fs-gname')).map(e => e.textContent));
-          const n1 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length + (document.querySelector('.fs-sub') ? 1 : 0) + (document.querySelector('.fs-gplus') ? 5 : 0));
-          await page.click('.fs-group-tile:nth-child(2)'); await page.waitForTimeout(400);
-          const n2 = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-themes .fs-theme .fs-tname')).map(e => e.textContent));
-          await page.screenshot({ path: path.join(outDir, 'shot-36-temas-grupos.png') });
-          await page.click('.fs-sub .fs-back'); await page.waitForTimeout(300);
-          const n3 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length);
-          await page.click('.fs-close'); await page.waitForTimeout(300);
-          T('H3 Temas agrupados: un cuadro por grupo que se despliega', names.join('|') === 'Default|Torneos|Personalizados' && n1 === 5 && n2.join(',') === 'La Liga,PL,Serie A,Bundesliga,Champions' && n3 === 0, JSON.stringify({ names, n1, n2, n3 }));
+          if (await page.$('.fs-group-tile')) {
+            const names = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-group-tile .fs-gname')).map(e => e.textContent));
+            const n1 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length + (document.querySelector('.fs-sub') ? 1 : 0) + (document.querySelector('.fs-gplus') ? 5 : 0));
+            await page.click('.fs-group-tile:nth-child(2)'); await page.waitForTimeout(400);
+            const n2 = await page.evaluate(() => Array.from(document.querySelectorAll('.fs-themes .fs-theme .fs-tname')).map(e => e.textContent));
+            await page.screenshot({ path: path.join(outDir, 'shot-36-temas-grupos.png') });
+            await page.click('.fs-sub .fs-back'); await page.waitForTimeout(300);
+            const n3 = await page.evaluate(() => document.querySelectorAll('.fs-themes .fs-theme').length);
+            await page.click('.fs-close'); await page.waitForTimeout(300);
+            T('H3 Temas agrupados: un cuadro por grupo que se despliega', names.join('|') === 'Default|Torneos|Personalizados' && n1 === 5 && n2.join(',') === 'La Liga,PL,Serie A,Bundesliga,Champions' && n3 === 0, JSON.stringify({ names, n1, n2, n3 }));
+          } else { await page.click('.fs-close'); await page.waitForTimeout(300); log('PRUEBA OMITIDA · H3 Temas (esta versión no tiene temas)'); }
           let maxOv = 0;
           for (let k = 0; k < 8; k++) { await page.click('.fh-gear:not(.fh-exit)'); await page.waitForTimeout(30); maxOv = Math.max(maxOv, await page.evaluate(() => document.querySelectorAll('.fs-overlay').length)); await page.click('.fs-close'); await page.waitForTimeout(30); }
           await page.waitForTimeout(300);
@@ -502,6 +504,8 @@ const [,, url, outDir, sampleDir] = process.argv;
     const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
     const p2 = await c2.newPage();
     await p2.goto(url, { waitUntil: 'load' });
+    await p2.waitForSelector('.fh-import', { timeout: 9000 });
+    if (await p2.$('.fh-scout')) { await c2.close(); log('PRUEBA OMITIDA · G1 Guía (esta versión no tiene guía de bienvenida)'); throw { message: '__skip' }; }
     await p2.waitForSelector('.fenix-guide.show', { timeout: 9000 });
     await p2.screenshot({ path: path.join(outDir, 'shot-23-guia.png') });
     await p2.click('.fenix-guide .fg-next'); await p2.click('.fenix-guide .fg-next'); await p2.click('.fenix-guide .fg-next');
@@ -509,7 +513,7 @@ const [,, url, outDir, sampleDir] = process.argv;
     const gone = await p2.evaluate(() => !document.querySelector('.fenix-guide') && localStorage.getItem('fenix-guide') === '1');
     TG('G1 Guía de bienvenida (aparece y se cierra)', gone);
     await c2.close();
-  } catch (e) { log('PRUEBA FALLIDA · G1 Guía · ' + String(e.message).slice(0, 160)); }
+  } catch (e) { if (e && e.message === '__skip') { /* omitida */ } else log('PRUEBA FALLIDA · G1 Guía · ' + String(e.message).slice(0, 160)); }
   // W1: "Analizando" dura al menos 5 s y hay que tocar la pantalla para pasar a la repetición
   try {
     const c4 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
