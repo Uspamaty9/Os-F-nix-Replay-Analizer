@@ -8,24 +8,24 @@ for (const [name, vp, touch] of [['desk', { width: 1280, height: 760 }, false], 
   await pg.goto('http://localhost:8772/index.html'); await pg.waitForSelector('.tx-root[data-ready="1"]');
   const bb = await pg.locator('.tx-canvas').boundingBox();
   const tap = async (fx, fy) => { const x = bb.x + bb.width * fx, y = bb.y + bb.height * fy; touch ? await pg.touchscreen.tap(x, y) : await pg.mouse.click(x, y); };
-  await pg.locator('[aria-label="Ficha equipo rojo"]').first().click(); await tap(0.3, 0.4); await tap(0.4, 0.6);
-  await pg.locator('[aria-label="Ficha equipo azul"]').first().click(); await tap(0.7, 0.4); await tap(0.6, 0.6);
+  await pg.locator('.tx-db.cat:has-text("Añadir")').click().then(() => pg.locator('.tx-ft.team.red').click()); await tap(0.3, 0.4); await tap(0.4, 0.6);
+  await pg.locator('.tx-db.cat:has-text("Añadir")').click().then(() => pg.locator('.tx-ft.team.blue').click()); await tap(0.7, 0.4); await tap(0.6, 0.6);
   const count = () => pg.evaluate(() => window.__ctl ? window.__ctl.doc.players.length : -1);
   const red = await pg.locator('.tx-canvas').evaluate(() => 0);
   // borrador
-  await pg.locator('.tx-act:has-text("Borrador")').click(); await tap(0.7, 0.4); await tap(0.6, 0.6);
+  await pg.locator('.tx-db:has-text("Borrador")').click(); await tap(0.7, 0.4); await tap(0.6, 0.6);
   await pg.screenshot({ path: process.argv[3] + '/er-' + name + '.png' });
   if (touch) { // dos dedos = deshacer, tres = rehacer
     const cdp = await ctx.newCDPSession(pg);
     const fingers = async (n) => { const pts = [0, 1, 2].slice(0, n).map((i) => ({ x: bb.x + bb.width * (0.3 + i * 0.1), y: bb.y + bb.height * 0.3, id: i + 1 })); await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts }); await new Promise((r) => setTimeout(r, 80)); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await new Promise((r) => setTimeout(r, 80)); };
-    const redoOff = () => pg.locator('[aria-label="Rehacer"]').first().isDisabled();
+    const redoOff = () => pg.locator('.tx-db:has-text("Rehacer")').isDisabled();
     assert.equal(await redoOff(), true, 'sin rehacer al inicio');
-    await pg.locator('[aria-label="Ficha equipo rojo"]').first().click();
+    await pg.locator('.tx-db.cat:has-text("Añadir")').click().then(() => pg.locator('.tx-ft.team.red').click());
     await fingers(2); assert.equal(await redoOff(), false, 'dos dedos deshacen');
     await fingers(3); assert.equal(await redoOff(), true, 'tres dedos rehacen');
   }
-  await pg.locator('.tx-act:has-text("Limpiar")').click(); assert.ok(await pg.locator('.tx-act.danger.on').count() === 1, 'pide confirmar');
-  await pg.locator('.tx-act.danger').click();
+  await pg.locator('.tx-db.cat:has-text("Más")').click(); await pg.locator('.tx-ft.danger').click(); assert.ok(await pg.locator('.tx-ft.danger.on').count() === 1, 'pide confirmar');
+  await pg.locator('.tx-ft.danger').click();
   await pg.waitForTimeout(100);
 }
 console.log('ERRS', errs); srv.kill(); await b.close();

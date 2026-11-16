@@ -3,7 +3,7 @@
 // así las cifras coinciden en toda la app. No inventa datos: sin partidos suficientes no hay calificación.
 //
 // Se copia a src/tactics/scoutingProvider.js SOLO cuando existe src/scouting (ver integrate.py --with-scouting).
-import { loadAll } from '../scouting/db';
+import { loadAll, getKv } from '../scouting/db';
 import { buildModel, playerProfile, ratingAverage, teamName, EMPTY_FILTERS } from '../scouting/model';
 import { normNick } from '../scouting/ingest';
 
@@ -36,4 +36,10 @@ export async function scoutingPlayers() {
       stats, rating: rt ? { value: Math.round(rt.avg * 10) / 10, n: rt.n, prov: sources.length && sources.every((s) => s === 'manual') ? 'M' : 'C' } : null,
     };
   });
+}
+
+// Canchas de los partidos importados (geometría guardada al analizar cada repetición)
+export async function scoutingStadiums() {
+  const m = (await getKv('stadiums', {})) || {};
+  return Object.values(m).filter((g) => g && g.name && g.halfW);
 }

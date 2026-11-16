@@ -1,5 +1,5 @@
 // Exportación: imagen de la pizarra, esquema con trayectorias, hoja de pasos, vídeo de la animación y proyecto JSON.
-import { fitView, toScreen, PITCH } from './geometry';
+import { fitView, toScreen, PITCH, setPitch } from './geometry';
 import { drawScene, drawPlayer, drawBall } from './render';
 import { resolvedPos, animPos } from './model';
 import { serializeDoc } from './storage';
@@ -24,6 +24,7 @@ function newCanvas(w, h) { const c = document.createElement('canvas'); c.width =
 
 // Imagen de un paso (o de la posición pos si se da)
 export function renderImage(doc, fi, opts = {}) {
+  setPitch(doc.field || null);
   const w = opts.width || 1600, fh = fieldSize(w), h = fh + STRIP;
   const c = newCanvas(w, h), ctx = c.getContext('2d');
   const v = fitView(w, fh, 'full', 10);
@@ -34,6 +35,7 @@ export function renderImage(doc, fi, opts = {}) {
 
 // Esquema táctico: posiciones iniciales (translúcidas), finales y trayectorias de todos los pasos
 export function renderScheme(doc, opts = {}) {
+  setPitch(doc.field || null);
   const w = opts.width || 1600, fh = fieldSize(w), h = fh + STRIP, last = doc.frames.length - 1;
   const c = newCanvas(w, h), ctx = c.getContext('2d');
   const v = fitView(w, fh, 'full', 10);
@@ -49,6 +51,7 @@ export function renderScheme(doc, opts = {}) {
 
 // Hoja con todos los pasos en cuadrícula (alternativa al vídeo, funciona en cualquier navegador)
 export function renderSheet(doc, opts = {}) {
+  setPitch(doc.field || null);
   const cols = doc.frames.length > 2 ? 2 : 1, cw = opts.cell || 900;
   const fh = fieldSize(cw), rows = Math.ceil(doc.frames.length / cols), lab = 34;
   const w = cols * cw, h = rows * (fh + lab) + STRIP;
@@ -78,6 +81,7 @@ export const webmSupported = () => typeof window !== 'undefined' && !!window.Med
 export function recordAnimation(doc, opts = {}) {
   return new Promise((resolve, reject) => {
     if (!webmSupported()) { reject(new Error('Este dispositivo no puede grabar vídeo. Exporta la hoja de pasos (imagen).')); return; }
+    setPitch(doc.field || null);
     const w = opts.width || 1280, fh = fieldSize(w), h = fh + STRIP;
     const c = newCanvas(w, h), ctx = c.getContext('2d');
     const v = fitView(w, fh, 'full', 10);

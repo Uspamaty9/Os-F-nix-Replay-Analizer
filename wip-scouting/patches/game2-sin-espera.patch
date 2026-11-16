@@ -1,5 +1,5 @@
 --- a/src/game2.js	2026-11-15 23:22:33.059889719 -0500
-+++ b/src/game2.js	2026-11-16 11:05:56.466209790 -0500
++++ b/src/game2.js	2026-11-16 17:25:22.514062869 -0500
 @@ -854,6 +854,12 @@
  }
  function fenixAttach(canvas) {
@@ -63,3 +63,11 @@
          loading.changed = true;
          // document.getElementById('loading-progress').style.width = '' + progress + '%'
          // setLoadingProgress2(progress + '%')
+@@ -7789,6 +7784,7 @@
+               bias: a.Cc,
+               bCoef: a.m,
+               curve: (0 != 0 * a.vb ? 0 : Math.abs(114.59155902616465 * Math.atan(1 / a.vb))),
++              curveS: (0 != 0 * a.vb ? 0 : 114.59155902616465 * Math.atan(1 / a.vb)),
+               vis: a.Za,
+               cMask: getCMask(a.h),
+               cGroup: getCMask(a.v),

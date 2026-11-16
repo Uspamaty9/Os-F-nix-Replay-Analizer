@@ -1,5 +1,5 @@
 // Dibujado de la pizarra en canvas 2D. Sin dependencias de React: se usa en pantalla y para exportar imágenes/vídeo.
-import { PITCH, toScreen, dist, quadAt, curveControl } from './geometry';
+import { PITCH, getField, toScreen, dist, quadAt, curveControl } from './geometry';
 import { ZONES, shapePts, resolvedPos } from './model';
 import { handlesOf, labelAnchor, isClosed } from './shapes';
 
@@ -28,7 +28,53 @@ function pathNet(ctx, v, side) {
   ctx.lineTo(C.x, C.y); ctx.quadraticCurveTo(q2.x, q2.y, D.x, D.y);
 }
 
+const hexc = (c) => (/^[0-9a-f]{3,8}$/i.test(String(c)) ? '#' + c : String(c));
+
+// Cancha de un estadio importado (geometría compacta guardada al analizar la repetición)
+function drawStadium(ctx, v, w, h, g) {
+  const px = (x, y) => toScreen(v, { x, y });
+  const hockey = g.bgType === 'hockey', none = g.bgType === 'none';
+  ctx.fillStyle = hockey ? '#4a5568' : FIELD.outside; ctx.fillRect(0, 0, w, h);
+  const o0 = px(-g.boundW, -g.boundH), o1 = px(g.boundW, g.boundH);
+  ctx.fillStyle = none ? (g.bgColor ? hexc(g.bgColor) : '#3b3b3b') : hockey ? '#5c6b82' : '#65804f'; ctx.fillRect(o0.x, o0.y, o1.x - o0.x, o1.y - o0.y);
+  const a = px(-g.halfW, -g.halfH), b = px(g.halfW, g.halfH);
+  if (!none) {
+    ctx.fillStyle = hockey ? (g.bgColor ? hexc(g.bgColor) : '#6f819c') : (g.bgColor ? hexc(g.bgColor) : FIELD.grass); ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    if (!hockey) {
+      ctx.fillStyle = FIELD.stripe; const sw = (g.halfW * 2) / 10;
+      for (let i = 0; i < 10; i += 2) { const x0 = px(-g.halfW + i * sw, -g.halfH), x1 = px(-g.halfW + (i + 1) * sw, g.halfH); ctx.fillRect(x0.x, x0.y, x1.x - x0.x, x1.y - x0.y); }
+    }
+    const lw = Math.max(1.5, 3 * v.k);
+    ctx.strokeStyle = FIELD.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    const t = px(0, -g.halfH), u = px(0, g.halfH); ctx.beginPath(); ctx.moveTo(t.x, t.y); ctx.lineTo(u.x, u.y); ctx.stroke();
+    const c = px(0, 0);
+    if (g.kickOff > 0) { ctx.beginPath(); ctx.arc(c.x, c.y, g.kickOff * v.k, 0, TAU); ctx.stroke(); }
+    ctx.fillStyle = FIELD.line; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, 3 * v.k), 0, TAU); ctx.fill();
+  }
+  // paredes visibles del estadio (mismo trazado que el motor: arco horario desde el primer vértice)
+  ctx.lineWidth = Math.max(1.4, 3 * v.k); ctx.lineCap = 'round';
+  for (const sg of g.segs || []) {
+    const A = px(sg[0], sg[1]), B = px(sg[2], sg[3]);
+    ctx.strokeStyle = hexc(sg[5]); ctx.beginPath();
+    const th = ((sg[4] || 0) * Math.PI) / 180;
+    if (!th) { ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); } else {
+      const vb = 1 / Math.tan(th / 2), cx0 = (B.x - A.x) / 2, cy0 = (B.y - A.y) / 2;
+      const C = { x: A.x + cx0 - cy0 * vb, y: A.y + cy0 + cx0 * vb };
+      ctx.arc(C.x, C.y, Math.hypot(A.x - C.x, A.y - C.y), Math.atan2(A.y - C.y, A.x - C.x), Math.atan2(B.y - C.y, B.x - C.x));
+    }
+    ctx.stroke();
+  }
+  for (const gl of g.goals || []) {
+    ctx.strokeStyle = gl[4] === 'R' ? 'rgba(255,170,170,.8)' : 'rgba(170,170,255,.8)'; ctx.lineWidth = Math.max(1.5, 3 * v.k);
+    const A = px(gl[0], gl[1]), B = px(gl[2], gl[3]); ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    for (const p of [A, B]) { ctx.fillStyle = gl[4] === 'R' ? FIELD.postRed : FIELD.postBlue; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 1.5 * v.k); ctx.beginPath(); ctx.arc(p.x, p.y, 8 * v.k, 0, TAU); ctx.fill(); ctx.stroke(); }
+  }
+}
+
 export function drawPitch(ctx, v, w, h) {
+  const fld = getField();
+  if (fld) { drawStadium(ctx, v, w, h, fld); return; }
   const px = (x, y) => toScreen(v, { x, y });
   // fondo y límites
   ctx.fillStyle = FIELD.outside; ctx.fillRect(0, 0, w, h);

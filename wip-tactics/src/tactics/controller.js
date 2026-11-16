@@ -158,9 +158,18 @@ export class TacticsController {
   load(doc) {
     this.stop();
     this.h = M.createHistory(M.normalizeDoc(doc));
-    this.fi = 0; this.sel = { players: new Set(), shapes: new Set() }; this.draft = null; this.poly = null; this.g = null;
+    this.userView = false; this.fi = 0; this.sel = { players: new Set(), shapes: new Set() }; this.draft = null; this.poly = null; this.g = null;
     this.play.x = 0; this._co = { key: null, t: 0 };
     this.draw(); this.emit();
+  }
+
+  // Cancha: null = Classic; si no, geometría compacta de un partido importado (se guarda dentro de la jugada)
+  setField(geo) {
+    if (this._locked()) return;
+    const doc = { ...this.doc, updatedAt: Date.now() };
+    if (geo) doc.field = geo; else delete doc.field;
+    this._apply(doc, 'field' + Date.now());
+    this.draw();
   }
 
   setMeta(patch) { this._apply({ ...this.doc, ...patch, updatedAt: Date.now() }, 'meta'); }
@@ -838,6 +847,7 @@ export class TacticsController {
 
   _paint() {
     if (this._dead) return;
+    if (G.setPitch(this.doc.field || null)) { this.userView = false; this.view = G.fitView(this.w, this.h2, this.viewMode); this.emit(); }
     const ctx = this.ctx, d = this.doc;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const playing = this.play.state !== 'stopped';

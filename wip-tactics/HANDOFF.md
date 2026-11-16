@@ -49,3 +49,8 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - **Gesto**: un toque con **2 dedos = deshacer**, con **3 dedos = rehacer** (capa de la repetición y pizarra independiente). Si el primer dedo acababa de colocar algo, eso se descarta y no cuenta.
 - **Layout**: al abrir la pizarra se ocultan los botones flotantes de la repetición (restablecer vista, seguir, estrella, grabar, despejar, zoom) para que no se superpongan; las acciones (Listo, Deshacer, Rehacer, Limpiar, Captura) van en una columna arriba a la derecha y las herramientas abajo.
 - Pruebas: `tests/replay/test.mjs` (herramientas, mover, 2/3 dedos, captura, atrás) y `anchor.mjs` (B). `tests/ui/eraser-test.mjs` incluye 2/3 dedos en la pizarra independiente.
+
+## Rediseño visual + selector de cancha (B)
+- Herramientas ahora en un **dock inferior** (`.tx-dock`): acciones siempre visibles (Mover, Mano, Varios, Borrador, Eliminar, Deshacer, Rehacer), categorías con menú desplegable (Añadir, Líneas, Formas, Zonas, Más) y botón **Animar** que monta/oculta `Timeline`.
+- Se quitó la barra lateral de herramientas, la barra flotante (`tx-actbar`), undo/redo del encabezado y «Colocar jugadores» de `DocPanel` (duplicados).
+- **Cancha**: `doc.field` = geometría compacta (`{name,bgType,halfW,halfH,boundW,boundH,kickOff,bgColor,segs,goals}`); `geometry.setPitch()` cambia `PITCH` globalmente; `render.drawStadium` la dibuja. Prop nueva `stadiumProvider` (async → lista). Las canchas salen de `kv 'stadiums'` (se guardan en `ingest.js` desde `stats[].stadium`; el parche de `game2.js` añade `curveS` con signo). Repeticiones ya importadas necesitan reabrirse una vez para guardar su geometría.

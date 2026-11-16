@@ -6,6 +6,22 @@ export const PITCH = {
   goalHalf: 64, netDepth: 30, kickOff: 75, playerR: 15, ballR: 10
 };
 
+// Cancha activa. Por defecto, la Classic; si el documento trae `field` (geometría de un partido importado) se usa esa.
+export const CLASSIC = { halfW: 370, halfH: 170, boundW: 420, boundH: 200, goalHalf: 64, netDepth: 30, kickOff: 75 };
+let ACTIVE = null;
+export const getField = () => ACTIVE;
+// Devuelve true si la cancha cambió
+export function setPitch(geo) {
+  if (geo === ACTIVE || (geo && ACTIVE && geo.name === ACTIVE.name && geo.segs === ACTIVE.segs)) return false;
+  ACTIVE = geo && geo.halfW ? geo : null;
+  const g = ACTIVE;
+  PITCH.halfW = g ? g.halfW : CLASSIC.halfW; PITCH.halfH = g ? g.halfH : CLASSIC.halfH;
+  PITCH.boundW = g ? g.boundW : CLASSIC.boundW; PITCH.boundH = g ? g.boundH : CLASSIC.boundH;
+  PITCH.kickOff = g ? (g.kickOff || 0) : CLASSIC.kickOff;
+  PITCH.goalHalf = g && g.goals && g.goals[0] ? Math.abs(g.goals[0][3] - g.goals[0][1]) / 2 : CLASSIC.goalHalf;
+  return true;
+}
+
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 export const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 

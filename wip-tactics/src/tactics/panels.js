@@ -285,17 +285,6 @@ export function DocPanel({ ctl, s, folders, registry, onAddRegistered }) {
           </label>
         </div>
       </Section>
-      <Section title='Colocar jugadores'>
-        <div className='tx-row'>
-          <button type='button' className='tx-team on' style={{ '--c': TEAM_COLORS.red }} onClick={() => ctl.addPlayerCenter({ team: 'red' })}>+ Rojo</button>
-          <button type='button' className='tx-team on' style={{ '--c': TEAM_COLORS.blue }} onClick={() => ctl.addPlayerCenter({ team: 'blue' })}>+ Azul</button>
-          <button type='button' className='tx-team on' style={{ '--c': TEAM_COLORS.neutral }} onClick={() => ctl.addPlayerCenter({ team: 'neutral' })}>+ Neutral</button>
-        </div>
-        <div className='tx-row'>
-          {[2, 3, 4].map((n) => <Btn key={n} onClick={() => ctl.addFormation(n)}>{n} vs {n}</Btn>)}
-          <Btn icon='trash' danger onClick={() => ctl.clearBoard()} disabled={!doc.players.length && !doc.shapes.length}>Vaciar</Btn>
-        </div>
-      </Section>
       <Section title={'Jugadores registrados' + (registry.length ? ' (' + registry.length + ')' : '')}>
         {registry.length === 0 ? <p className='tx-note'>Cuando abras repeticiones en el analizador, sus jugadores aparecerán aquí con sus estadísticas reales.</p> : (
           <>

@@ -17,7 +17,7 @@ import Downloading from "./Downloading";
 import SettingsSheet from './SettingsSheet';
 import ReplayFav from './ReplayFav';
 import TacticsBoard from '../tactics/TacticsBoard';
-import { scoutingPlayers } from '../tactics/scoutingProvider';
+import { scoutingPlayers, scoutingStadiums } from '../tactics/scoutingProvider';
 import ScoutingApp from '../scouting/ScoutingApp';
 import { ingestFromEngine } from '../scouting/ingest';
 import './scout-entry.scss';
@@ -720,7 +720,7 @@ function Home() {
       {mainMode === 'stats' && <GameStats replayId={replayId} />}
       {mainMode === 'replays' && <ReplaysList />}
       {showScouting && <ScoutingApp onClose={() => setShowScouting(false)} openReplay={openSaved} />}
-      {showTactics && <TacticsBoard onClose={() => setShowTactics(false)} playerProvider={scoutingPlayers} />}
+      {showTactics && <TacticsBoard onClose={() => setShowTactics(false)} playerProvider={scoutingPlayers} stadiumProvider={scoutingStadiums} />}
     </>
   );
 }

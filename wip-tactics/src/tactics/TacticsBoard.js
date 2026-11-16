@@ -15,14 +15,13 @@ import { listDocs, saveDoc, listFolders, listRoster, saveRosterPlayer, getKv, se
 import { collectFromMatches, mergeRegistry, keyOf } from './players';
 import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, webmSupported, saveBlob, fileName, projectBlob } from './exporter';
 
-const GROUPS = [
-  ['select', 'pan'],
-  ['player', 'ball'],
-  ['erase'],
-  ['pen', 'line', 'dline', 'arrow', 'carrow'],
-  ['circle', 'square', 'rect', 'triangle', 'polygon'],
-  ['press', 'defense', 'cover', 'custom'],
-  ['text']
+// Categorías del dock inferior: al tocarlas se despliegan sus herramientas
+const CATS = [
+  { id: 'add', label: 'Añadir', icon: 'plus', tools: ['player', 'ball'] },
+  { id: 'lines', label: 'Líneas', icon: 'pen', tools: ['pen', 'line', 'dline', 'arrow', 'carrow'] },
+  { id: 'shapes', label: 'Formas', icon: 'square', tools: ['circle', 'square', 'rect', 'triangle', 'polygon'] },
+  { id: 'zones', label: 'Zonas', icon: 'press', tools: ['press', 'defense', 'cover', 'custom'] },
+  { id: 'more', label: 'Más', icon: 'more', tools: [] }
 ];
 const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
 const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'circle', 'square', 'rect', 'triangle', 'polygon', ...ZONE_TOOLS]);
@@ -35,7 +34,7 @@ const EMPTY = {
 const SAVE_TXT = { saved: 'Guardado', saving: 'Guardando…', dirty: 'Sin guardar', error: 'Error al guardar' };
 
 // playerProvider (opcional): async () => entradas del registro (ver players.js). Lo aporta quien integra la pizarra con el Centro de análisis.
-export default function TacticsBoard({ onClose, playerProvider }) {
+export default function TacticsBoard({ onClose, playerProvider, stadiumProvider }) {
   const canvasRef = useRef(null);
   const ctlRef = useRef(null);
   const [snap0, setS] = useState(null);
@@ -50,12 +49,17 @@ export default function TacticsBoard({ onClose, playerProvider }) {
   const [roster, setRoster] = useState([]);
   const [external, setExternal] = useState([]);
   const [panel, setPanel] = useState(false);
+  const [cat, setCat] = useState(null);
+  const [anim, setAnim] = useState(false);
+  const [fieldOpen, setFieldOpen] = useState(false);
+  const [stadiums, setStadiums] = useState([]);
   const matches = useSelector((st) => (st.gameStats ? st.gameStats.matches : null));
 
   const pending = useRef(null), timer = useRef(0), msgTimer = useRef(0), progT = useRef(0), notesT = useRef({});
   const abortRef = useRef(null);
   const libRef = useRef(false), expRef = useRef(false), busyRef = useRef(null);
   libRef.current = lib; expRef.current = expOpen; busyRef.current = busy;
+  const fieldRef = useRef(false); fieldRef.current = fieldOpen;
 
   const flash = useCallback((m) => { setMsg(m); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(''), 2600); }, []);
 
@@ -121,6 +125,7 @@ export default function TacticsBoard({ onClose, playerProvider }) {
     window.__fenixBack = function () {
       const ctl = ctlRef.current;
       if (busyRef.current) { if (abortRef.current) abortRef.current.abort(); return 'ok'; }
+      if (fieldRef.current) { setFieldOpen(false); return 'ok'; }
       if (expRef.current) { setExpOpen(false); return 'ok'; }
       if (libRef.current) { setLib(false); return 'ok'; }
       if (ctl && ctl.poly) { ctl.cancelPoly(); return 'ok'; }
@@ -148,6 +153,16 @@ export default function TacticsBoard({ onClose, playerProvider }) {
     window.addEventListener('fenix-scouting-changed', load);
     return () => { alive = false; window.removeEventListener('fenix-scouting-changed', load); };
   }, [playerProvider]);
+
+  // Canchas de los partidos importados
+  useEffect(() => {
+    if (!stadiumProvider) return undefined;
+    let alive = true;
+    const load = async () => { try { const list = await stadiumProvider(); if (alive && Array.isArray(list)) setStadiums(list); } catch (e) { /* sin canchas importadas: solo Classic */ } };
+    load();
+    window.addEventListener('fenix-scouting-changed', load);
+    return () => { alive = false; window.removeEventListener('fenix-scouting-changed', load); };
+  }, [stadiumProvider]);
 
   // El plantel guarda a los jugadores vistos en el analizador para que sigan disponibles después
   useEffect(() => {
@@ -263,9 +278,7 @@ export default function TacticsBoard({ onClose, playerProvider }) {
           <small className={'tx-save ' + saveState}>{SAVE_TXT[saveState]}</small>
         </div>
         <div className='tx-top-actions'>
-          <button type='button' className='tx-icon' onClick={() => ctl.undo()} disabled={!s.canUndo} title='Deshacer (Ctrl+Z)' aria-label='Deshacer'><Icon name='undo' /></button>
-          <button type='button' className='tx-icon' onClick={() => ctl.redo()} disabled={!s.canRedo} title='Rehacer (Ctrl+Y)' aria-label='Rehacer'><Icon name='redo' /></button>
-          <span className='tx-sep hide-sm' />
+          <button type='button' className='tx-chipbtn' onClick={() => setFieldOpen(true)} title='Cambiar de cancha' aria-label='Cancha'><Icon name='board' size={18} /><span>{s.doc.field ? s.doc.field.name : 'Classic'}</span></button>
           <div className='tx-viewctl hide-sm'>{viewControls}</div>
           <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1 / 1.25)} title='Alejar (−)' aria-label='Alejar'><Icon name='zoomout' /></button>
           <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1.25)} title='Acercar (+)' aria-label='Acercar'><Icon name='zoomin' /></button>
@@ -291,37 +304,9 @@ export default function TacticsBoard({ onClose, playerProvider }) {
       </header>
 
       <div className='tx-body'>
-        <nav className='tx-tools' aria-label='Herramientas'>
-          {GROUPS.map((g, gi) => (
-            <div className='tx-group' key={gi}>
-              {g.map((id) => (
-                <button type='button' key={id} className={'tx-tool' + (s.tool === id ? ' on' : '')} onClick={() => ctl.setTool(id)} title={TOOL[id].label + ' — ' + TOOL[id].hint} aria-label={TOOL[id].label} aria-pressed={s.tool === id}>
-                  <Icon name={id} size={21} />
-                </button>
-              ))}
-              {g[0] === 'player' && (
-                <>
-                  <button type='button' className={'tx-tool team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); }} title='Colocar fichas del equipo ROJO' aria-label='Ficha equipo rojo' aria-pressed={s.tool === 'player' && s.newTeam === 'red'}><i /></button>
-                  <button type='button' className={'tx-tool team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); }} title='Colocar fichas del equipo AZUL' aria-label='Ficha equipo azul' aria-pressed={s.tool === 'player' && s.newTeam === 'blue'}><i /></button>
-                </>
-              )}
-              {gi === 0 && (
-                <button type='button' className={'tx-tool' + (s.multi ? ' on' : '')} onClick={() => ctl.setFlag('multi', !s.multi)} title='Selección múltiple: toca varias fichas para elegirlas' aria-label='Selección múltiple' aria-pressed={s.multi}><Icon name='multi' size={21} /></button>
-              )}
-            </div>
-          ))}
-        </nav>
-
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
           <div className='tx-viewbar show-sm'>{viewControls}</div>
-          {!s.polyActive && !dis && (
-            <div className='tx-actbar'>
-              <button type='button' className={'tx-act' + (s.tool === 'erase' ? ' on' : '')} onClick={() => ctl.setTool(s.tool === 'erase' ? 'select' : 'erase')} aria-pressed={s.tool === 'erase'} aria-label='Borrador'><Icon name='erase' size={20} /><span>Borrador</span></button>
-              <button type='button' className='tx-act' disabled={!(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} aria-label='Borrar selección'><Icon name='trash' size={20} /><span>Borrar</span></button>
-              <button type='button' className={'tx-act danger' + (confirmClear ? ' on' : '')} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3500); } }} aria-label='Limpiar todo'><Icon name='close' size={20} /><span>{confirmClear ? '¿Seguro?' : 'Limpiar todo'}</span></button>
-            </div>
-          )}
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
             <span>{dis ? 'Animación en curso: pausa para editar' : s.multi && s.tool === 'select' ? 'Selección múltiple activa: toca varias fichas' : tool ? tool.hint : ''}</span>
@@ -353,7 +338,73 @@ export default function TacticsBoard({ onClose, playerProvider }) {
         </aside>
       </div>
 
-      <Timeline ctl={ctl} s={s} progress={progress} />
+      <div className='tx-dockwrap'>
+        {anim && <Timeline ctl={ctl} s={s} progress={progress} />}
+        {cat && cat !== 'more' && (
+          <div className='tx-fly' role='group' aria-label={CATS.find((c) => c.id === cat).label}>
+            {cat === 'add' && (
+              <>
+                <button type='button' className={'tx-ft team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); setCat(null); }}><i /><span>Rojo</span></button>
+                <button type='button' className={'tx-ft team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); setCat(null); }}><i /><span>Azul</span></button>
+                <button type='button' className={'tx-ft' + (s.tool === 'ball' ? ' on' : '')} onClick={() => { ctl.setTool('ball'); setCat(null); }}><Icon name='ball' size={22} /><span>Balón</span></button>
+                {[2, 3, 4].map((n) => <button type='button' key={n} className='tx-ft' onClick={() => { ctl.addFormation(n); setCat(null); }}><Icon name='team' size={22} /><span>{n} vs {n}</span></button>)}
+                <button type='button' className='tx-ft' onClick={() => { ctl.setTool('select'); setPanel(true); setCat(null); }}><Icon name='user' size={22} /><span>Registrados</span></button>
+              </>
+            )}
+            {cat !== 'add' && CATS.find((c) => c.id === cat).tools.map((id) => (
+              <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
+            ))}
+          </div>
+        )}
+        {cat === 'more' && (
+          <div className='tx-fly' role='group' aria-label='Más'>
+            <button type='button' className={'tx-ft' + (s.tool === 'text' ? ' on' : '')} onClick={() => { ctl.setTool('text'); setCat(null); }}><Icon name='text' size={22} /><span>Texto</span></button>
+            <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
+          </div>
+        )}
+        <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
+          <div className='tx-dg tx-dg-act'>
+            <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar fichas y figuras'><Icon name='select' size={22} /><span>Mover</span></button>
+            <button type='button' className={'tx-db' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
+            <button type='button' className={'tx-db' + (s.multi ? ' on' : '')} onClick={() => { ctl.setTool('select'); ctl.setFlag('multi', !s.multi); setCat(null); }} aria-pressed={s.multi} title='Selección múltiple: toca varias fichas'><Icon name='multi' size={22} /><span>Varios</span></button>
+            <button type='button' className={'tx-db' + (s.tool === 'erase' ? ' on' : '')} onClick={() => { ctl.setTool(s.tool === 'erase' ? 'select' : 'erase'); setCat(null); }} aria-pressed={s.tool === 'erase'} title='Borrador: toca lo que quieras quitar'><Icon name='erase' size={22} /><span>Borrador</span></button>
+            <button type='button' className='tx-db danger' disabled={dis || !(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} title='Eliminar lo seleccionado'><Icon name='trash' size={22} /><span>Eliminar</span></button>
+            <button type='button' className='tx-db' disabled={dis || !s.canUndo} onClick={() => ctl.undo()} title='Deshacer (Ctrl+Z)'><Icon name='undo' size={22} /><span>Deshacer</span></button>
+            <button type='button' className='tx-db' disabled={dis || !s.canRedo} onClick={() => ctl.redo()} title='Rehacer (Ctrl+Y)'><Icon name='redo' size={22} /><span>Rehacer</span></button>
+          </div>
+          <span className='tx-dsep' />
+          <div className='tx-dg tx-dg-cat'>
+            {CATS.map((c) => {
+              const cur = c.tools.includes(s.tool) ? s.tool : null;
+              return (
+                <button type='button' key={c.id} className={'tx-db cat' + (cat === c.id ? ' open' : '') + (cur || (c.id === 'more' && s.tool === 'text') ? ' on' : '')} onClick={() => setCat(cat === c.id ? null : c.id)} aria-expanded={cat === c.id} title={c.label}>
+                  <Icon name={cur && c.id !== 'add' ? cur : c.icon} size={22} /><span>{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <span className='tx-dsep' />
+          <button type='button' className={'tx-db anim' + (anim ? ' on' : '')} onClick={() => { if (anim && ctl) ctl.stop(); setAnim(!anim); setCat(null); }} aria-pressed={anim} title='Mostrar u ocultar la animación (pasos y reproducción)'><Icon name='film' size={22} /><span>Animar</span></button>
+        </div>
+      </div>
+      {fieldOpen && (
+        <div className='tx-overlay' onClick={() => setFieldOpen(false)}>
+          <div className='tx-sheet tx-fieldsheet' role='dialog' aria-label='Elegir cancha' onClick={(e) => e.stopPropagation()}>
+            <div className='tx-sheet-head'><h3>Cancha</h3><button type='button' className='tx-icon' onClick={() => setFieldOpen(false)} aria-label='Cerrar'><Icon name='close' /></button></div>
+            <div className='tx-fieldlist'>
+              <button type='button' className={'tx-field-opt' + (!s.doc.field ? ' on' : '')} onClick={() => { ctl.setField(null); setFieldOpen(false); }}>
+                <b>Classic</b><small>Predeterminada · 740 × 340</small>{!s.doc.field && <Icon name='check' size={18} />}
+              </button>
+              {stadiums.map((g) => (
+                <button type='button' key={g.name} className={'tx-field-opt' + (s.doc.field && s.doc.field.name === g.name ? ' on' : '')} onClick={() => { ctl.setField(g); setFieldOpen(false); flash('Cancha: ' + g.name); }}>
+                  <b>{g.name}</b><small>De tus partidos importados · {Math.round(g.halfW * 2)} × {Math.round(g.halfH * 2)}</small>{s.doc.field && s.doc.field.name === g.name && <Icon name='check' size={18} />}
+                </button>
+              ))}
+              {!stadiums.length && <p className='tx-note'>Aquí aparecerán las canchas de los partidos que analices. Abre una repetición en el analizador y vuelve: su cancha quedará disponible.</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {lib && <Library currentId={s.doc.id} onOpen={openDoc} onNew={newBoard} onClose={() => setLib(false)} onChanged={libChanged} toast={flash} />}
       {busy && (
