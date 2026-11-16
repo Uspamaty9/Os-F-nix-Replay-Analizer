@@ -1,6 +1,5 @@
 import HistoryList from "./HistoryList";
 import { saveReplayFile, saveReplayFiles, setReplayInfo, getReplayData } from "../storage/history";
-import { showGuide } from "../extras";
 import $ from 'jquery'
 import { handleFile, replayFromSite, fenixEnter } from "../game2.js";
 import LoadingScreen from "./LoadingScreen";
@@ -531,7 +530,6 @@ function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [histTab, setHistTab] = useState('all');
 
-  useEffect(() => { const t = setTimeout(() => showGuide(false), 3000); return () => clearTimeout(t); }, []);
   // Las animaciones de entrada del inicio solo se ven al abrir la app, no al abrir/cerrar paneles
   useEffect(() => { const t = setTimeout(() => document.body.classList.add('fenix-booted'), 1500); return () => clearTimeout(t); }, []);
   // Atajos de escritorio (solo con ratón/teclado): Esc cierra ventanas del inicio, Ctrl+O importa, Ctrl+F o "/" busca
