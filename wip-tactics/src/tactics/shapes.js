@@ -18,6 +18,7 @@ export const TOOLS = [
   { id: 'defense', label: 'Zona defensiva', hint: 'Arrastra' },
   { id: 'cover', label: 'Zona de cobertura', hint: 'Arrastra' },
   { id: 'custom', label: 'Espacio libre', hint: 'Toca los vértices; doble toque o Enter para cerrar' },
+  { id: 'erase', label: 'Borrador', hint: 'Toca o arrastra sobre lo que quieras borrar' },
   { id: 'text', label: 'Texto', hint: 'Toca para escribir una nota' },
   { id: 'player', label: 'Ficha', hint: 'Toca para colocar un jugador' },
   { id: 'ball', label: 'Balón', hint: 'Toca para colocar el balón' }

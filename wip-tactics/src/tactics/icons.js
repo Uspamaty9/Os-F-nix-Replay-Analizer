@@ -33,6 +33,9 @@ const I = {
   save: 'M5 3h11l4 4v14H5zM8 3v6h8V3M8 21v-7h8v7',
   download: 'M12 3v12M7 10l5 5 5-5M4 20h16',
   library: 'M4 5h16v4H4zM4 11h16v4H4zM4 17h16v3H4z',
+  board: 'M3 5h18v14H3zM12 5v14M3 12h3M18 12h3M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
+  erase: 'M16 3l5 5-9 9H7l-4-4zM9 20h12M7 17l-4-4',
+  team: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z',
   trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
   copy: 'M8 8h12v12H8zM4 16V4h12',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
@@ -61,6 +64,13 @@ const I = {
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   upload: 'M12 16V4M7 9l5-5 5 5M4 20h16'
 };
+
+// Mismo icono como texto SVG (para la capa sobre la repetición, que no usa React)
+export function iconSvg(name, size = 20) {
+  const d = I[name]; if (!d) return '';
+  const path = Array.isArray(d) ? d[0] : d, dash = Array.isArray(d) ? d[1] : '';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="' + (name === 'play' ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/></svg>';
+}
 
 export function Icon({ name, size = 20, className }) {
   const d = I[name];

@@ -182,7 +182,7 @@ export class TacticsController {
     if (this.poly) this.cancelPoly();
     this.tool = t; this.draft = null;
     if (t !== 'select') this.hover = null;
-    this.canvas.style.cursor = t === 'pan' ? 'grab' : t === 'select' ? 'default' : 'crosshair';
+    this.canvas.style.cursor = t === 'pan' ? 'grab' : t === 'select' ? 'default' : t === 'erase' ? 'cell' : 'crosshair';
     this.draw(); this.emit();
   }
 
@@ -512,6 +512,23 @@ export class TacticsController {
     return null;
   }
 
+  // Borrador: quita la ficha, el balón o la figura que haya bajo el dedo/ratón (un barrido = un solo «deshacer»)
+  _eraseAt(wp) {
+    if (this._locked()) return;
+    const pid = this._hitPlayer(wp);
+    let d = this.doc;
+    if (pid === 'ball') d = M.setBall(d, this.fi, null);
+    else if (pid) d = M.removePlayers(d, [pid]);
+    else {
+      const pos = M.resolvedPos(this.doc, this.fi);
+      const sh = pickShape(this.doc.shapes, (x) => this._ptsOf(x, pos), wp, this._tol(10));
+      if (!sh) return;
+      d = M.removeShapes(d, [sh.id]);
+    }
+    this.sel = { players: new Set(), shapes: new Set() };
+    this._apply(d, 'erase');
+  }
+
   _ptsOf(s, pos) { return M.shapePts(s, pos || M.resolvedPos(this.doc, this.fi)); }
 
   _downSelect(wp, s, mod) {
@@ -563,6 +580,7 @@ export class TacticsController {
 
   _downTool(wp, s, e) {
     const t = this.tool;
+    if (t === 'erase') { this.g = { type: 'erase', moved: true }; this._eraseAt(wp); return; }
     if (t === 'player') { this.addPlayer(wp.x, wp.y); return; }
     if (t === 'ball') { this.placeBall(wp.x, wp.y); this.setTool('select'); return; }
     if (t === 'text') {
@@ -657,6 +675,7 @@ export class TacticsController {
       return;
     }
     const wp = G.toWorld(this.view, s.x, s.y);
+    if (g.type === 'erase') { this._eraseAt(wp); return; }
     if (g.type === 'pinch') {
       if (this.pointers.size < 2) return;
       const [a, b] = [...this.pointers.values()];
@@ -723,7 +742,7 @@ export class TacticsController {
     this.g = null;
     if (this.tool === 'pan' || g.type === 'pan') this.canvas.style.cursor = this.tool === 'pan' ? 'grab' : this.tool === 'select' ? 'default' : 'crosshair';
     const s = this._pt(e), wp = G.toWorld(this.view, s.x, s.y);
-    if (g.type === 'pan') { this.emit(); return; }
+    if (g.type === 'pan' || g.type === 'erase') { this.emit(); return; }
     if (g.type === 'drag') {
       if (cancelled && g.cp) { this.g = g; this._revertGesture(); this.g = null; } else if (g.moved) { this._co = { key: null, t: 0 }; this._changed(); } else if (g.collapse) { this.sel = { players: new Set([g.collapse]), shapes: new Set() }; }
       this.draw(); this.emit(); return;

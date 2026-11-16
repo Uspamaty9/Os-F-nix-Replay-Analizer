@@ -18,6 +18,7 @@ import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, 
 const GROUPS = [
   ['select', 'pan'],
   ['player', 'ball'],
+  ['erase'],
   ['pen', 'line', 'dline', 'arrow', 'carrow'],
   ['circle', 'square', 'rect', 'triangle', 'polygon'],
   ['press', 'defense', 'cover', 'custom'],
@@ -39,6 +40,7 @@ export default function TacticsBoard({ onClose, playerProvider }) {
   const ctlRef = useRef(null);
   const [snap0, setS] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [saveState, setSaveState] = useState('saved');
   const [msg, setMsg] = useState('');
   const [lib, setLib] = useState(false);
@@ -297,6 +299,12 @@ export default function TacticsBoard({ onClose, playerProvider }) {
                   <Icon name={id} size={21} />
                 </button>
               ))}
+              {g[0] === 'player' && (
+                <>
+                  <button type='button' className={'tx-tool team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); }} title='Colocar fichas del equipo ROJO' aria-label='Ficha equipo rojo' aria-pressed={s.tool === 'player' && s.newTeam === 'red'}><i /></button>
+                  <button type='button' className={'tx-tool team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); }} title='Colocar fichas del equipo AZUL' aria-label='Ficha equipo azul' aria-pressed={s.tool === 'player' && s.newTeam === 'blue'}><i /></button>
+                </>
+              )}
               {gi === 0 && (
                 <button type='button' className={'tx-tool' + (s.multi ? ' on' : '')} onClick={() => ctl.setFlag('multi', !s.multi)} title='Selección múltiple: toca varias fichas para elegirlas' aria-label='Selección múltiple' aria-pressed={s.multi}><Icon name='multi' size={21} /></button>
               )}
@@ -307,6 +315,13 @@ export default function TacticsBoard({ onClose, playerProvider }) {
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
           <div className='tx-viewbar show-sm'>{viewControls}</div>
+          {!s.polyActive && !dis && (
+            <div className='tx-actbar'>
+              <button type='button' className={'tx-act' + (s.tool === 'erase' ? ' on' : '')} onClick={() => ctl.setTool(s.tool === 'erase' ? 'select' : 'erase')} aria-pressed={s.tool === 'erase'} aria-label='Borrador'><Icon name='erase' size={20} /><span>Borrador</span></button>
+              <button type='button' className='tx-act' disabled={!(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} aria-label='Borrar selección'><Icon name='trash' size={20} /><span>Borrar</span></button>
+              <button type='button' className={'tx-act danger' + (confirmClear ? ' on' : '')} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3500); } }} aria-label='Limpiar todo'><Icon name='close' size={20} /><span>{confirmClear ? '¿Seguro?' : 'Limpiar todo'}</span></button>
+            </div>
+          )}
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
             <span>{dis ? 'Animación en curso: pausa para editar' : s.multi && s.tool === 'select' ? 'Selección múltiple activa: toca varias fichas' : tool ? tool.hint : ''}</span>

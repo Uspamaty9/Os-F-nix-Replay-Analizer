@@ -34,3 +34,9 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - No se ha corrido una compilación real de CRA/Sass (sin red en el entorno): se probó con esbuild; el SCSS usa anidado simple, sin variables Sass.
 - WebM depende de `MediaRecorder` del navegador; si no existe, el botón avisa.
 - Falta probarlo dentro de la app real con Home.js ya integrado.
+
+## Novedades (15 nov, tarde)
+- **Pizarra sobre la repetición** (`src/tactics/replayBoard.js` + `.scss`): botón flotante dentro de la vista de repetición (abajo a la derecha, sobre «Seguir jugador»). Abre una capa transparente encima de la cancha: lápiz, flecha, zona, fichas roja y azul numeradas, balón, borrador, deshacer, limpiar todo (con confirmación), captura PNG (repetición + dibujo) y «Mover» para seguir manejando la repetición. **No modifica el partido ni `game2.js`**: se engancha observando el DOM. Se activa con 2 líneas en `src/index.js` (`python3 wip-tactics/integrate.py RUTA/index.js`). El botón Atrás de Android cierra primero la pizarra.
+- Pizarra independiente: **Borrador** (toca o arrastra), botones de **ficha roja / azul** en la barra, barra de acciones grande para el móvil (Borrador · Borrar selección · Limpiar todo con confirmación).
+- Pruebas nuevas: `tests/replay/` (capa sobre una vista simulada, escritorio y móvil táctil) y `tests/ui/eraser-test.mjs`.
+- Sin verificar: la capa se probó sobre una vista de repetición SIMULADA (misma estructura de DOM que `.fenix-fit` + `canvas`), no sobre el motor real; las anotaciones se anclan a la pantalla (no al campo), así que conviene pausar la repetición al dibujar.

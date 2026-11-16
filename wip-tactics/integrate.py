@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Aplica la integración de la Pizarra táctica a un Home.js del analizador (v3 o el ya integrado con scouting).
-Uso: python3 integrate.py RUTA/Home.js [--with-scouting]
+Uso: python3 integrate.py RUTA/Home.js [--with-scouting]   y   python3 integrate.py RUTA/index.js  (pizarra sobre la repetición)
 Idempotente: si ya está aplicada no cambia nada. No toca game2.js ni slices."""
 import sys, re
 p = sys.argv[1]; scout = '--with-scouting' in sys.argv
 s = open(p, encoding='utf-8').read()
+if p.endswith('index.js'):  # pizarra sobre la repetición: 2 líneas en src/index.js
+    if 'installReplayBoard' in s:
+        print('index.js ya integrado'); sys.exit(0)
+    assert "import { initMotion } from './motion';" in s and 'initMotion();' in s, 'index.js inesperado'
+    s = s.replace("import { initMotion } from './motion';", "import { initMotion } from './motion';\nimport { installReplayBoard } from './tactics/replayBoard';", 1).replace('initMotion();', 'initMotion();\ninstallReplayBoard();', 1)
+    open(p, 'w', encoding='utf-8').write(s); print('index.js integrado'); sys.exit(0)
 if 'TacticsBoard' in s:
     print('ya integrado'); sys.exit(0)
 def rep(a, b, count=1):

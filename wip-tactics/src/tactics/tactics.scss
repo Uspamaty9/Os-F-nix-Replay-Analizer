@@ -252,3 +252,27 @@
   font: 600 17px 'Poppins', sans-serif; cursor: pointer;
   &:active { filter: brightness(.9); transform: scale(.97); }
 }
+
+
+/* ===== Borrador, equipos y barra de acciones ===== */
+.tx-root {
+  .tx-tool.team { position: relative; }
+  .tx-tool.team i { display: block; width: 20px; height: 20px; border-radius: 50%; margin: auto; border: 2px solid rgba(255,255,255,.85); box-shadow: 0 0 0 1px rgba(0,0,0,.4) inset; }
+  .tx-tool.team.red i { background: #E56E6E; }
+  .tx-tool.team.blue i { background: #5689E5; }
+  .tx-actbar { position: absolute; left: 8px; right: 8px; bottom: 46px; display: flex; gap: 8px; justify-content: center; pointer-events: none; z-index: 4; }
+  .tx-act {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 22px;
+    border: 1px solid var(--acc, #C89A3D); background: rgba(17,17,17,.86); color: var(--txt, #F7F3E8); font: 600 13px/1 inherit; cursor: pointer;
+    white-space: nowrap; backdrop-filter: blur(6px); transition: transform .12s ease, background-color .15s ease;
+    &:active { transform: scale(.96); }
+    &:disabled { opacity: .4; cursor: default; }
+    &.on { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
+    &.danger { border-color: #E56E6E; color: #FFB4B4; }
+    &.danger.on { background: #C0392B; color: #fff; border-color: #C0392B; }
+  }
+}
+@media (max-width: 760px) {
+  .tx-root .tx-act { min-height: 48px; padding: 0 16px; font-size: 14px; }
+  .tx-root .tx-actbar { bottom: 42px; gap: 6px; }
+}
