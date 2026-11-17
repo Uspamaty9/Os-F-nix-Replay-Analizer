@@ -66,7 +66,11 @@
 .sc-col { display: flex; flex-direction: column; gap: 6px; }
 .sc-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sc-filters2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
-.sc-scrollx { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sc-scrollx { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.sc-scrollx::-webkit-scrollbar { display: none; }
+/* las pestañas largas (Equipos · Temporadas · Ligas…) conservan su fondo y su marca completos al desplazarse */
+.sc-scrollx > .sc-seg { width: max-content; min-width: 100%; }
+.sc-scrollx > .sc-seg button { flex: 1 0 auto; }
 .sc-link { appearance: none; border: 0; background: none; color: var(--sc-acc); font: 600 12px 'Poppins', sans-serif; cursor: pointer; padding: 6px 2px; }
 .sc-link.back { align-self: flex-start; font-size: 13px; }
 hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
@@ -225,3 +229,9 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
   .sc-tabs button { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .sc-toast { transition: none; } }
+
+/* avatar tocable del perfil y botones de borrar */
+.sc-root .sc-avbtn { position: relative; appearance: none; border: 0; background: transparent; padding: 0; border-radius: 50%; cursor: pointer; flex: none; line-height: 0; }
+.sc-root .sc-avbtn .sc-cam { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--sc-acc); color: var(--sc-btn); font: 700 14px/22px 'Poppins', sans-serif; text-align: center; border: 2px solid var(--sc-card); font-style: normal; }
+.sc-root .sc-btn.danger { border-color: var(--sc-red2); color: #FFB4B4; background: transparent; }
+.sc-root .sc-btn.sc-del { flex: none; margin-left: auto; color: #FFB4B4; }

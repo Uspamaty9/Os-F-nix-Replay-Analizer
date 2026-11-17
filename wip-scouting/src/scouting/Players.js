@@ -59,28 +59,51 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
 
 // Elegir qué jugadores se analizan: los no marcados siguen reconocidos pero no cuentan ni aparecen en ninguna lista.
 function PickPlayers({ model, onClose }) {
-  const [q, setQ] = useState(''); const [hideNew, setHideNew] = useState(true); const [teamId, setTeamId] = useState('');
+  const [q, setQ] = useState(''); const [hideNew, setHideNew] = useState(true); const [teamId, setTeamId] = useState(''); const [showDel, setShowDel] = useState(false);
+  const [confirm, confirmEl] = useConfirm();
+  const nDel = model.allPlayers.filter((p) => p.hidden).length;
   const [sel, setSel] = useState(() => new Set(model.allPlayers.filter((p) => !p.ignored).map((p) => p.id)));
   useEffect(() => { db.getKv('hideNewPlayers', true).then(setHideNew); }, []);
-  const rows = useMemo(() => model.allPlayers.filter((p) => !q || normNick(p.nick).includes(normNick(q))).slice().sort((a, b) => ((model.seenCount.get(b.id) || 0) - (model.seenCount.get(a.id) || 0)) || a.nick.localeCompare(b.nick)), [model, q]);
+  const rows = useMemo(() => model.allPlayers.filter((p) => !!p.hidden === showDel).filter((p) => !q || normNick(p.nick).includes(normNick(q))).slice().sort((a, b) => ((model.seenCount.get(b.id) || 0) - (model.seenCount.get(a.id) || 0)) || a.nick.localeCompare(b.nick)), [model, q, showDel]);
   const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const setMany = (list, on) => setSel((s) => { const n = new Set(s); list.forEach((p) => (on ? n.add(p.id) : n.delete(p.id))); return n; });
+  // Borrar: quita al jugador de las listas y de todas las cifras. Sin partidos guardados se elimina del todo; con partidos se conservan
+  // los partidos, pero el perfil (foto, notas, equipo, calificaciones) se borra y queda oculto. Se puede restaurar desde «Borrados».
+  async function wipe(list) {
+    if (!list.length) return;
+    const ids = new Set(list.map((p) => p.id));
+    const ok = await confirm(list.length === 1 ? '¿Borrar a «' + list[0].nick + '»? Se eliminan su foto, notas y calificaciones y deja de contar en el análisis. Sus partidos se conservan.' : '¿Borrar a ' + list.length + ' jugadores? Se eliminan sus fotos, notas y calificaciones y dejan de contar en el análisis. Los partidos se conservan.', 'Borrar');
+    if (!ok) return;
+    await db.delMany('ratings', model.ratings.filter((r) => ids.has(r.playerId)).map((r) => r.id));
+    const free = list.filter((p) => !model.seenCount.get(p.id));
+    await db.delMany('players', free.map((p) => p.id));
+    await db.putMany('players', list.filter((p) => model.seenCount.get(p.id)).map((p) => ({ ...p, hidden: true, ignored: true, avatar: null, notes: '', position: '', teamId: null, updatedAt: Date.now() })));
+    setSel((s0) => { const n = new Set(s0); ids.forEach((i) => n.delete(i)); return n; });
+    toast(list.length === 1 ? 'Jugador borrado' : list.length + ' jugadores borrados');
+  }
+  async function restore(list) { await db.putMany('players', list.map((p) => ({ ...p, hidden: false, updatedAt: Date.now() }))); toast('Jugadores restaurados (sin elegir)'); }
   async function save() {
-    const changed = model.allPlayers.filter((p) => !!p.ignored !== !sel.has(p.id)).map((p) => ({ ...p, ignored: !sel.has(p.id), updatedAt: Date.now() }));
+    const changed = model.allPlayers.filter((p) => !p.hidden && !!p.ignored !== !sel.has(p.id)).map((p) => ({ ...p, ignored: !sel.has(p.id), updatedAt: Date.now() }));
     await db.setKv('hideNewPlayers', hideNew); await db.putMany('players', changed); toast(sel.size + ' jugadores se analizan'); onClose();
   }
   return (
+    <>
     <Sheet title="Elegir jugadores a analizar" onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar ({sel.size})</button></>}>
       <div className="sc-form">
         <p className="sc-note">Solo los jugadores marcados cuentan en goles, asistencias, rankings, red de pases e informes. Los demás no se pierden: puedes marcarlos cuando quieras.</p>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={() => setMany(rows, true)}>Marcar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small ghost" onClick={() => setMany(rows, false)}>Quitar todos{q ? ' los de la búsqueda' : ''}</button></div>
+        {(nDel > 0 || showDel) && <Seg value={showDel ? 'del' : 'act'} onChange={(v) => setShowDel(v === 'del')} options={[['act', 'Jugadores'], ['del', 'Borrados (' + nDel + ')']]} />}
+        {!showDel ? <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={() => setMany(rows, true)}>Marcar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small ghost" onClick={() => setMany(rows, false)}>Quitar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small danger" disabled={!rows.some((p) => !sel.has(p.id))} onClick={() => wipe(rows.filter((p) => !sel.has(p.id)))}>Borrar los no marcados</button></div>
+          : <div className="sc-row wrap"><button className="sc-btn small" disabled={!rows.length} onClick={() => restore(rows)}>Restaurar todos</button></div>}
         {model.teams.length > 0 && <Select label="Marcar solo los de un equipo" value={teamId} onChange={(v) => { setTeamId(v); if (v) setSel(new Set(model.allPlayers.filter((p) => p.teamId === v).map((p) => p.id))); }} placeholder="Elegir equipo…" options={model.teams.map((t) => [t.id, t.name])} />}
         <label className="sc-row"><input type="checkbox" checked={hideNew} onChange={(e) => setHideNew(e.target.checked)} /><span>Los jugadores nuevos que aparezcan en repeticiones quedan sin elegir hasta que los marque</span></label>
         <ul className="sc-list">{rows.map((p) => { const on = sel.has(p.id); return (
-          <li key={p.id} className={on ? 'sel' : ''} onClick={() => toggle(p.id)}><span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span><Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{teamName(model, p.teamId, 'Sin equipo')} · {model.seenCount.get(p.id) || 0} partidos</small></div></li>); })}</ul>
+          <li key={p.id} className={on ? 'sel' : ''} onClick={() => (showDel ? restore([p]) : toggle(p.id))}>{!showDel && <span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span>}<Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{showDel ? 'Toca para restaurar' : teamName(model, p.teamId, 'Sin equipo') + ' · ' + (model.seenCount.get(p.id) || 0) + ' partidos'}</small></div>{!showDel && <button className="sc-btn small ghost sc-del" aria-label={'Borrar a ' + p.nick} onClick={(e) => { e.stopPropagation(); wipe([p]); }}>Borrar</button>}</li>); })}</ul>
+        {!rows.length && showDel && <p className="sc-note">No hay jugadores borrados.</p>}
       </div>
     </Sheet>
+    {confirmEl}
+    </>
   );
 }
 
@@ -128,7 +151,9 @@ function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, 
     <div className="sc-view">
       <button className="sc-link back" onClick={onBack}>‹ Jugadores</button>
       <Card className="sc-phead">
-        <Avatar player={player} size={64} />
+        <button type="button" className="sc-avbtn" aria-label="Cambiar foto de perfil" title="Cambiar foto" onClick={async () => { const fl = await pickFile('image/*'); if (fl) { try { await db.put('players', { ...player, avatar: await resizeImage(fl, 160), updatedAt: Date.now() }); toast('Foto actualizada'); } catch (e) { toast('No se pudo leer la imagen'); } } }}>
+          <Avatar player={player} size={64} /><i className="sc-cam" aria-hidden="true">{player.avatar ? '✎' : '+'}</i>
+        </button>
         <div className="mid"><h2>{player.nick}</h2><small>{teamName(model, player.teamId, 'Sin equipo')}{player.position ? ' · ' + player.position : ' · Posición sin definir'}</small>{(player.aliases || []).length > 0 && <small>También: {player.aliases.join(', ')}</small>}</div>
         <div className="sc-col"><button className="sc-btn small" onClick={onEdit}>Editar</button><button className="sc-btn small ghost" onClick={pdf}>PDF</button><button className="sc-btn small ghost" onClick={() => nav('scouting', { playerId: player.id })}>Evaluar</button></div>
       </Card>

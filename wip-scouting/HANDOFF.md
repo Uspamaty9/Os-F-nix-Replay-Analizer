@@ -50,3 +50,8 @@ Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `s
 - [de B → A] `scouting.scss` tiene selectores globales sin `.sc-root` delante: `hr {}` (línea ~72), `svg .grid`, `svg .ax`, `svg .dn-big`, `svg .dn-sm`. v3 no usa esas clases ni `<hr>` (comprobado), pero conviene prefijarlos con `.sc-root`.
 - [de B → A] `ratingAverage` no aplica por sí mismo el mínimo de 8 actuaciones (aviso de C).
 - [de B → A, FYI] A petición del usuario edité archivos de A: `model.js` (partidos con `excluded` no cuentan; jugadores con `ignored` fuera de `model.players`/filas/red; `model.allPlayers`, `model.excluded`, `model.seenCount`), `ingest.js` (jugadores nuevos entran `ignored` según kv `hideNewPlayers`, por defecto sí), `Matches.js` (Excluir/Incluir/Borrar en la lista y el detalle) y `Players.js` (botón «Elegir» → `PickPlayers`). Prueba: `tests/browser/run4.js`. Home.js: título «PRO TACTICAL ANALYZER AEF».
+
+## FYI (16 nov, Claude C) — cambios pedidos por el usuario en el Centro de análisis
+- `scouting.scss`: la barra de pestañas de Equipos (`.sc-scrollx > .sc-seg`) ahora cubre todo el ancho desplazable (el subrayado/fondo salía cortado).
+- `Players.js`: avatar tocable en el perfil (foto desde galería, `.sc-avbtn`); en «Elegir» se puede **Borrar** jugadores (sin partidos se elimina; con partidos queda `hidden:true` para que no reaparezca), «Borrar los no marcados», vista «Borrados» para restaurar.
+- Test: `tests/browser/run5.js`.
