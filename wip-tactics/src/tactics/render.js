@@ -1,5 +1,5 @@
 // Dibujado de la pizarra en canvas 2D. Sin dependencias de React: se usa en pantalla y para exportar imágenes/vídeo.
-import { PITCH, getField, toScreen, dist, quadAt, curveControl } from './geometry';
+import { PITCH, getField, toScreen, dist, quadAt, curveCtrl } from './geometry';
 import { ZONES, shapePts, resolvedPos } from './model';
 import { handlesOf, labelAnchor, isClosed } from './shapes';
 
@@ -150,14 +150,13 @@ export function drawShape(ctx, v, shape, pts, opts = {}) {
     ctx.font = '600 ' + fs + 'px "Open Sans", Roboto, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = Math.max(2, fs / 5); ctx.strokeStyle = 'rgba(0,0,0,0.65)'; ctx.strokeText(shape.label || 'Texto', sp[0].x, sp[0].y);
     ctx.fillText(shape.label || 'Texto', sp[0].x, sp[0].y);
-  } else if (t === 'circle') {
-    const r = dist(sp[0], sp[1]);
-    ctx.beginPath(); ctx.arc(sp[0].x, sp[0].y, r, 0, TAU);
-    if (shape.fill) { ctx.save(); ctx.globalAlpha *= zone ? 1 : 0.28; ctx.fill(); ctx.restore(); }
-    ctx.stroke();
   } else if (t === 'carrow' && sp.length >= 3) {
-    ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y); ctx.quadraticCurveTo(sp[1].x, sp[1].y, sp[2].x, sp[2].y); ctx.stroke();
-    ctx.setLineDash([]); arrowHead(ctx, sp[1], sp[2], Math.max(8, lw * 3.4));
+    const a = sp[0], b = sp[2], c = curveCtrl(a, sp[1], b), hs = Math.max(8, lw * 3.4);
+    // el trazo termina en la base de la punta (que queda exactamente en el extremo y orientada con la curva)
+    let tb = 1; while (tb > 0.3 && dist(quadAt(a, c, b, tb), b) < hs * 0.7) tb -= 0.02;
+    const e = quadAt(a, c, b, tb);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(a.x + (c.x - a.x) * tb, a.y + (c.y - a.y) * tb, e.x, e.y); ctx.stroke();
+    ctx.setLineDash([]); arrowHead(ctx, e, b, hs);
   } else if (t === 'arrow' && sp.length >= 2) {
     const a = sp[0], b = sp[sp.length - 1], hs = Math.max(8, lw * 3.4), ang = Math.atan2(b.y - a.y, b.x - a.x);
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x - Math.cos(ang) * hs * 0.6, b.y - Math.sin(ang) * hs * 0.6); ctx.stroke();
@@ -206,7 +205,7 @@ function drawSelectionOutline(ctx, v, shape, pts) {
   const sp = pts.map((p) => toScreen(v, p));
   ctx.save(); ctx.setLineDash([6, 4]); ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 1.5;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  if (shape.type === 'circle') { const r = dist(sp[0], sp[1]); x0 = sp[0].x - r; x1 = sp[0].x + r; y0 = sp[0].y - r; y1 = sp[0].y + r; } else for (const p of sp) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+  for (const p of sp) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
   const m = 8; ctx.strokeRect(x0 - m, y0 - m, x1 - x0 + 2 * m, y1 - y0 + 2 * m);
   if (shape.attach) { // icono de vínculo
     ctx.setLineDash([]); ctx.fillStyle = '#C89A3D'; ctx.beginPath(); ctx.arc(x1 + m, y0 - m, 9, 0, TAU); ctx.fill();
@@ -315,4 +314,4 @@ export function drawScene(ctx, v, w, h, scene) {
   }
 }
 
-export { quadAt, curveControl };
+export { quadAt, curveCtrl };

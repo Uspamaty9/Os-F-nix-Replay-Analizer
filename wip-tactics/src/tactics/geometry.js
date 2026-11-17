@@ -108,16 +108,6 @@ export function boxPts(a, b) {
   return [{ x: a.x, y: a.y }, { x: b.x, y: a.y }, { x: b.x, y: b.y }, { x: a.x, y: b.y }];
 }
 
-export function squarePts(a, b) {
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const s = Math.max(Math.abs(dx), Math.abs(dy));
-  return boxPts(a, { x: a.x + Math.sign(dx || 1) * s, y: a.y + Math.sign(dy || 1) * s });
-}
-
-export function trianglePts(a, b) {
-  return [{ x: (a.x + b.x) / 2, y: a.y }, { x: b.x, y: b.y }, { x: a.x, y: b.y }];
-}
-
 export function ellipsePts(a, b, n = 24) {
   const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
   const out = [];
@@ -125,11 +115,43 @@ export function ellipsePts(a, b, n = 24) {
   return out;
 }
 
-// Punto de control de una flecha curva: a un cuarto del largo, perpendicular al segmento
-export function curveControl(a, b) {
-  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-  const dx = b.x - a.x, dy = b.y - a.y;
-  return { x: mx - dy * 0.25, y: my + dx * 0.25 };
+// Flecha curva: pts[1] es un punto POR DONDE PASA la curva (su vértice), no un punto de control.
+// Así el tirador queda sobre la curva y se puede arrastrar hacia cualquiera de los dos lados.
+export function curveMid(a, b, d) { // punto a distancia firmada d del centro de la cuerda (d>0: lado derecho al avanzar)
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+  return { x: mx - (dy / l) * d, y: my + (dx / l) * d };
+}
+export function curveCtrl(a, m, b) { return { x: 2 * m.x - (a.x + b.x) / 2, y: 2 * m.y - (a.y + b.y) / 2 }; }
+export function chordDev(a, b, p) { // distancia firmada de p a la cuerda a→b (mismo signo que curveMid)
+  const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+  return (-(p.x - a.x) * dy + (p.y - a.y) * dx) / l;
+}
+
+// ¿Se cruzan los segmentos ab y cd?
+function crosses(a, b, c, d) {
+  const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  return o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0;
+}
+export function selfIntersects(pts) {
+  const n = pts.length;
+  for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+    if (i === 0 && j === n - 1) continue;
+    if (crosses(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return true;
+  }
+  return false;
+}
+// Reordena lo mínimo los vértices para que el polígono no se cruce (2-opt): 1,2,4,3,5 → 1,2,3,4,5
+export function untangle(pts) {
+  let p = pts.slice();
+  for (let iter = 0; iter < 200 && selfIntersects(p); iter++) {
+    const n = p.length; let done = false;
+    for (let i = 0; i < n && !done; i++) for (let j = i + 2; j < n && !done; j++) {
+      if (i === 0 && j === n - 1) continue;
+      if (crosses(p[i], p[i + 1], p[j], p[(j + 1) % n])) { p = p.slice(0, i + 1).concat(p.slice(i + 1, j + 1).reverse(), p.slice(j + 1)); done = true; }
+    }
+    if (!done) break;
+  }
+  return p;
 }
 
 // ---- Vista (mundo -> pantalla): pantalla = mundo * k + (ox, oy) ----

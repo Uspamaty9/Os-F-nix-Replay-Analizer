@@ -125,11 +125,11 @@ export function ShapePanel({ ctl, s }) {
 export function MultiPanel({ ctl, s }) {
   const ids = s.selPlayers.filter((i) => i !== 'ball');
   const n = ids.length;
-  const kinds = n === 2 ? [['link', 'Conexión', 'link']] : n === 3 ? [['tri', 'Triángulo', 'triangle']] : n === 4 ? [['quad', 'Estructura (4 vértices)', 'polygon'], ['square', 'Cuadrado', 'square']] : n >= 5 ? [['poly', 'Polígono', 'polygon']] : [];
+  const kinds = n === 2 ? [['link', 'Conexión', 'link']] : n === 3 ? [['tri', 'Triángulo', 'polygon']] : n === 4 ? [['quad', 'Estructura (4 vértices)', 'polygon']] : n >= 5 ? [['poly', 'Polígono', 'polygon']] : [];
   return (
     <>
       <Section title={n + ' jugadores seleccionados'}>
-        <p className='tx-note'>{n === 2 ? 'Crea una conexión entre los dos jugadores.' : n === 3 ? 'Genera un triángulo entre sus posiciones.' : n === 4 ? 'Crea un cuadrado o una estructura que une los cuatro.' : n >= 5 ? 'Une todos con un polígono.' : ''}</p>
+        <p className='tx-note'>{n === 2 ? 'Crea una conexión entre los dos jugadores.' : n === 3 ? 'Genera un triángulo entre sus posiciones.' : n === 4 ? 'Crea una estructura que une los cuatro.' : n >= 5 ? 'Une todos con un polígono.' : ''}</p>
         <div className='tx-row'>
           {kinds.map(([k, label, icon]) => <Btn key={k} icon={icon} primary onClick={() => ctl.linkSelection(k)}>{label}</Btn>)}
         </div>

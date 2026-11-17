@@ -9,7 +9,7 @@
 //    stepMs: 1200
 //  }
 
-import { PITCH, clamp, centroid, rotatePts, scalePts, translatePts, sortByAngle } from './geometry';
+import { PITCH, clamp, centroid, ellipsePts, rotatePts, scalePts, translatePts, sortByAngle } from './geometry';
 
 export const TEAM_COLORS = { red: '#E56E6E', blue: '#5689E5', neutral: '#E8E8EC' };
 export const PALETTE = ['#E56E6E', '#5689E5', '#F5C542', '#4CC38A', '#B07CFF', '#FF9F43', '#35D0C8', '#FFFFFF', '#111111'];
@@ -25,6 +25,11 @@ export const ZONES = {
   cover: { label: 'Zona de cobertura', color: '#F5C542', opacity: 0.26 },
   custom: { label: 'Espacio personalizado', color: '#4CC38A', opacity: 0.26 }
 };
+
+// Máximo de fichas por equipo (el campo es de HaxBall: más jugadores no se pueden leer ni animar)
+export const MAX_PER_TEAM = 5;
+export const teamCount = (doc, team) => doc.players.filter((q) => (q.team || 'red') === (team || 'red')).length;
+export const canAddPlayer = (doc, team) => teamCount(doc, team) < MAX_PER_TEAM;
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -102,6 +107,7 @@ export function shapePts(shape, pos) {
 const touch = (doc) => ({ ...doc, updatedAt: Date.now() });
 
 export function addPlayer(doc, fi, p) {
+  if (!canAddPlayer(doc, p.team)) return { doc, id: null };
   const id = uid();
   const n = doc.players.filter((q) => q.team === p.team).length + 1;
   const player = {
@@ -271,6 +277,20 @@ export function normalizeDoc(d) {
   doc.shapes = Array.isArray(doc.shapes) ? doc.shapes : [];
   doc.frames = Array.isArray(doc.frames) && doc.frames.length ? doc.frames : base.frames;
   doc.stepMs = clamp(Number(doc.stepMs) || 1200, 200, 8000);
+  // Jugadas guardadas con versiones anteriores
+  doc.shapes = doc.shapes.map((s) => {
+    if (!s || !Array.isArray(s.pts)) return s;
+    if (s.type === 'circle' && s.pts.length >= 2) { // el círculo ya no existe como herramienta: pasa a polígono
+      const r = Math.hypot(s.pts[1].x - s.pts[0].x, s.pts[1].y - s.pts[0].y), c = s.pts[0];
+      return { ...s, type: 'polygon', pts: ellipsePts({ x: c.x - r, y: c.y - r }, { x: c.x + r, y: c.y + r }) };
+    }
+    if (s.type === 'square' || s.type === 'triangle') return { ...s, type: 'polygon' };
+    if (s.type === 'carrow' && s.pts.length >= 3 && !s.thru) { // antes pts[1] era el punto de control; ahora es un punto de la curva
+      const [a, c, b] = s.pts;
+      return { ...s, thru: true, pts: [a, { x: (a.x + b.x) / 4 + c.x / 2, y: (a.y + b.y) / 4 + c.y / 2 }, b] };
+    }
+    return s;
+  });
   return doc;
 }
 

@@ -10,7 +10,7 @@ import Timeline from './Timeline';
 import { DocPanel, PlayerPanel, MultiPanel, ShapePanel, StylePanel } from './panels';
 import { TacticsController } from './controller';
 import { TOOLS, ZONE_TOOLS } from './shapes';
-import { newDoc, TEAM_COLORS, ZONES } from './model';
+import { newDoc, TEAM_COLORS, ZONES, MAX_PER_TEAM, teamCount } from './model';
 import { listDocs, saveDoc, listFolders, listRoster, saveRosterPlayer, getKv, setKv, serializeDoc } from './storage';
 import { collectFromMatches, mergeRegistry, keyOf } from './players';
 import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, webmSupported, saveBlob, fileName, projectBlob } from './exporter';
@@ -19,12 +19,12 @@ import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, 
 const CATS = [
   { id: 'add', label: 'Añadir', icon: 'plus', tools: ['player', 'ball'] },
   { id: 'lines', label: 'Líneas', icon: 'pen', tools: ['pen', 'line', 'dline', 'arrow', 'carrow'] },
-  { id: 'shapes', label: 'Formas', icon: 'square', tools: ['circle', 'square', 'rect', 'triangle', 'polygon'] },
+  { id: 'shapes', label: 'Formas', icon: 'polygon', tools: ['rect', 'polygon'] },
   { id: 'zones', label: 'Zonas', icon: 'press', tools: ['press', 'defense', 'cover', 'custom'] },
   { id: 'more', label: 'Más', icon: 'more', tools: [] }
 ];
 const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
-const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'circle', 'square', 'rect', 'triangle', 'polygon', ...ZONE_TOOLS]);
+const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'polygon', ...ZONE_TOOLS]);
 // Estado mostrado mientras se abre el proyecto: el árbol de la interfaz es siempre el mismo (el canvas no se recrea)
 const EMPTY = {
   doc: newDoc('Cargando…'), fi: 0, tool: 'select', multi: false, snap: true, names: true, trails: false, ghost: true, newTeam: 'red',
@@ -254,10 +254,11 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
     body = (<section className='tx-sec'><h4>Balón</h4><button type='button' className='tx-btn danger' onClick={() => ctl.removeBall()}><Icon name='trash' size={16} /><span>Quitar balón</span></button></section>); title = 'Balón';
   } else if (DRAWING.has(s.tool)) {
     const z = ZONE_TOOLS.includes(s.tool);
-    body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['circle', 'square', 'rect', 'triangle', 'polygon'].includes(s.tool)} zoneKind={z} />; title = 'Dibujo';
+    body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['rect', 'polygon'].includes(s.tool)} zoneKind={z} />; title = 'Dibujo';
   } else { body = <DocPanel ctl={ctl} s={s} folders={folders} registry={registry} onAddRegistered={addRegistered} />; title = 'Pizarra'; }
 
   const dis = s.play.state !== 'stopped';
+  const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
   const views = [['full', 'full', 'Cancha completa'], ['left', 'halfl', 'Media cancha izquierda'], ['right', 'halfr', 'Media cancha derecha']];
   const viewControls = (
     <>
@@ -319,10 +320,9 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
           )}
           {nPl >= 2 && !s.polyActive && !dis && (
             <div className='tx-quick'>
-              <button type='button' className='tx-btn primary' onClick={() => ctl.linkSelection(nPl === 4 ? 'quad' : undefined)}>
+              <button type='button' className='tx-btn primary' onClick={() => ctl.linkSelection()}>
                 <Icon name='link' size={16} /><span>{nPl === 2 ? 'Crear conexión' : nPl === 3 ? 'Crear triángulo' : nPl === 4 ? 'Crear estructura' : 'Crear polígono'}</span>
               </button>
-              {nPl === 4 && <button type='button' className='tx-btn' onClick={() => ctl.linkSelection('square')}><Icon name='square' size={16} /><span>Cuadrado</span></button>}
             </div>
           )}
           {dis && <div className='tx-playing'>{s.play.state === 'playing' ? 'Reproduciendo' : 'En pausa'} · paso {Math.min(s.doc.frames.length, Math.floor(s.play.state === 'playing' ? progress : s.progress) + 1)} de {s.doc.frames.length}</div>}
@@ -343,8 +343,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
           <div className='tx-fly' role='group' aria-label={CATS.find((c) => c.id === cat).label}>
             {cat === 'add' && (
               <>
-                <button type='button' className={'tx-ft team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); setCat(null); }}><i /><span>Rojo</span></button>
-                <button type='button' className={'tx-ft team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); setCat(null); }}><i /><span>Azul</span></button>
+                <button type='button' className={'tx-ft team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); setCat(null); }}><i /><span>Rojo {nRed}/{MAX_PER_TEAM}</span></button>
+                <button type='button' className={'tx-ft team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); setCat(null); }}><i /><span>Azul {nBlue}/{MAX_PER_TEAM}</span></button>
                 <button type='button' className={'tx-ft' + (s.tool === 'ball' ? ' on' : '')} onClick={() => { ctl.setTool('ball'); setCat(null); }}><Icon name='ball' size={22} /><span>Balón</span></button>
                 {[2, 3, 4].map((n) => <button type='button' key={n} className='tx-ft' onClick={() => { ctl.addFormation(n); setCat(null); }}><Icon name='team' size={22} /><span>{n} vs {n}</span></button>)}
                 <button type='button' className='tx-ft' onClick={() => { ctl.setTool('select'); setPanel(true); setCat(null); }}><Icon name='user' size={22} /><span>Registrados</span></button>

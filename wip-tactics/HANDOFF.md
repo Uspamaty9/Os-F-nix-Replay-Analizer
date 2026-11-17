@@ -54,3 +54,11 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Herramientas ahora en un **dock inferior** (`.tx-dock`): acciones siempre visibles (Mover, Mano, Varios, Borrador, Eliminar, Deshacer, Rehacer), categorías con menú desplegable (Añadir, Líneas, Formas, Zonas, Más) y botón **Animar** que monta/oculta `Timeline`.
 - Se quitó la barra lateral de herramientas, la barra flotante (`tx-actbar`), undo/redo del encabezado y «Colocar jugadores» de `DocPanel` (duplicados).
 - **Cancha**: `doc.field` = geometría compacta (`{name,bgType,halfW,halfH,boundW,boundH,kickOff,bgColor,segs,goals}`); `geometry.setPitch()` cambia `PITCH` globalmente; `render.drawStadium` la dibuja. Prop nueva `stadiumProvider` (async → lista). Las canchas salen de `kv 'stadiums'` (se guardan en `ingest.js` desde `stats[].stadium`; el parche de `game2.js` añade `curveS` con signo). Repeticiones ya importadas necesitan reabrirse una vez para guardar su geometría.
+
+## Funcional de la pizarra (B)
+- Máx. **5 jugadores por equipo** (`model.MAX_PER_TEAM`; `addPlayer` devuelve `id:null` al superarlo; el controlador avisa con un toast).
+- Con cualquier herramienta de dibujo activa, el tirador de la figura seleccionada se puede arrastrar sin pasar a «Mover» (`controller._grabHandle`); con «Ficha» activa, tocar una ficha existente la mueve.
+- **Flecha curva**: `pts[1]` es ahora un punto POR DONDE PASA la curva (`thru:true`); el lado de la curva sale de hacia dónde se desvía el dedo (`_bendFor`). Las jugadas antiguas se migran en `normalizeDoc`.
+- Eliminados círculo, cuadrado y triángulo (herramientas, botones, render e iconos); en jugadas antiguas pasan a polígono. En la capa sobre la repetición se quitaron círculo y triángulo y la curva también elige lado.
+- Polígono/zona libre: si los vértices se tocan en un orden que cruza la figura, `geometry.untangle` (2-opt) los reordena.
+- Pruebas puras: `tests/ui/geo-test.mjs` (empaquetar con esbuild `--platform=node --format=esm` y ejecutar).

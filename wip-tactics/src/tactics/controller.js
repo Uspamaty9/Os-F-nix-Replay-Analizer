@@ -5,7 +5,7 @@ import * as M from './model';
 import { drawScene } from './render';
 import { pickShape, shapeInRect, handlesOf, isClosed } from './shapes';
 
-const DRAW_TOOLS = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'circle', 'square', 'rect', 'triangle', 'press', 'defense', 'cover']);
+const DRAW_TOOLS = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'press', 'defense', 'cover']);
 const POLY_TOOLS = new Set(['polygon', 'custom']);
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3, 4];
 
@@ -216,6 +216,7 @@ export class TacticsController {
   addPlayer(x, y, extra = {}) {
     if (this._locked()) return null;
     const team = extra.team || this.newTeam;
+    if (!M.canAddPlayer(this.doc, team)) { this.toast('Máximo ' + M.MAX_PER_TEAM + ' jugadores por equipo'); return null; }
     const r = M.addPlayer(this.doc, this.fi, { x: G.clamp(x, -400, 400), y: G.clamp(y, -190, 190), team, ...extra });
     this._apply(r.doc);
     this.sel = { players: new Set([r.id]), shapes: new Set() };
@@ -276,12 +277,13 @@ export class TacticsController {
 
   duplicateSelection() {
     if (this._locked()) return;
-    let d = this.doc; const map = {}; const newPl = [], newSh = [];
+    let d = this.doc; const map = {}; const newPl = [], newSh = []; let limit = false;
     const pos = M.resolvedPos(d, this.fi);
     for (const id of this.sel.players) {
       if (id === 'ball') continue;
       const p = d.players.find((q) => q.id === id), q = pos[id]; if (!p || !q) continue;
       const r = M.addPlayer(d, this.fi, { x: q.x + 24, y: q.y + 24, team: p.team, color: p.color, role: p.role, nick: p.nick, num: p.num, regKey: null });
+      if (!r.id) { limit = true; continue; }
       d = r.doc; map[id] = r.id; newPl.push(r.id);
     }
     for (const sid of this.sel.shapes) {
@@ -295,6 +297,7 @@ export class TacticsController {
         d = r.doc; newSh.push(r.id);
       }
     }
+    if (limit) this.toast('Máximo ' + M.MAX_PER_TEAM + ' jugadores por equipo');
     if (!newPl.length && !newSh.length) return;
     this.sel = { players: new Set(newPl), shapes: new Set(newSh) };
     this._apply(d); this.emit();
@@ -305,12 +308,14 @@ export class TacticsController {
     if (this._locked()) return;
     const L = { 1: [[-250, 0]], 2: [[-250, -60], [-250, 60]], 3: [[-310, 0], [-180, -80], [-180, 80]], 4: [[-310, 0], [-200, -95], [-200, 95], [-80, 0]], 5: [[-310, 0], [-210, -100], [-210, 100], [-100, -50], [-100, 50]] };
     const base = L[G.clamp(n, 1, 5)];
-    let d = this.doc; const ids = [];
+    let d = this.doc; const ids = []; let limit = false;
     for (const team of teams) {
       const sign = team === 'red' ? 1 : -1;
       const have = d.players.filter((p) => p.team === team).length;
-      base.forEach(([x, y], i) => { const r = M.addPlayer(d, this.fi, { x: x * sign, y, team, num: have + i + 1 }); d = r.doc; ids.push(r.id); });
+      base.forEach(([x, y], i) => { const r = M.addPlayer(d, this.fi, { x: x * sign, y, team, num: have + i + 1 }); if (!r.id) { limit = true; return; } d = r.doc; ids.push(r.id); });
     }
+    if (limit) this.toast('Máximo ' + M.MAX_PER_TEAM + ' jugadores por equipo');
+    if (!ids.length) return;
     this.sel = { players: new Set(ids), shapes: new Set() };
     this._apply(d); this.emit();
   }
@@ -326,19 +331,11 @@ export class TacticsController {
   }
 
   // ------------------------------------------------------------ vínculos (selección múltiple inteligente)
-  linkSelection(kind) {
+  linkSelection() {
     if (this._locked()) return;
     const ids = this.doc.players.filter((p) => this.sel.players.has(p.id)).map((p) => p.id);
     if (ids.length < 2) { this.toast('Selecciona al menos 2 jugadores'); return; }
-    let r;
-    if (kind === 'square' && ids.length === 4) { // cuadrado regular centrado en el grupo
-      const pos = M.resolvedPos(this.doc, this.fi);
-      const pts = ids.map((i) => pos[i]); const c = G.centroid(pts);
-      const half = Math.max(...pts.map((p) => Math.max(Math.abs(p.x - c.x), Math.abs(p.y - c.y)))) || 40;
-      r = M.addShape(this.doc, { type: 'square', pts: G.boxPts({ x: c.x - half, y: c.y - half }, { x: c.x + half, y: c.y + half }), color: this.style.color, width: this.style.width, opacity: this.style.opacity, fill: true });
-    } else {
-      r = M.createLink(this.doc, this.fi, ids, { color: this.style.color, width: this.style.width, opacity: this.style.opacity, dashed: this.style.dashed, fill: true });
-    }
+    const r = M.createLink(this.doc, this.fi, ids, { color: this.style.color, width: this.style.width, opacity: this.style.opacity, dashed: this.style.dashed, fill: true });
     if (!r.id) return;
     this.sel = { players: new Set(), shapes: new Set([r.id]) };
     this._apply(r.doc); this.emit();
@@ -543,16 +540,7 @@ export class TacticsController {
   _downSelect(wp, s, mod) {
     const pos = M.resolvedPos(this.doc, this.fi);
     // 1) tiradores de la figura seleccionada
-    if (this.sel.shapes.size === 1 && !this.sel.players.size) {
-      const sh = this.doc.shapes.find((x) => this.sel.shapes.has(x.id));
-      if (sh && !sh.attach) {
-        const hs = handlesOf(sh, sh.pts), tol = this._tol(14);
-        let bi = -1, bd = tol;
-        if (sh.type === 'carrow') { const d = G.dist(wp, sh.pts[1]); if (d < bd) { bd = d; bi = 1; } }
-        hs.forEach((p, i) => { const d = G.dist(wp, p); if (d < bd) { bd = d; bi = i; } });
-        if (bi >= 0) { this.g = { type: 'handle', id: sh.id, idx: bi, base: sh.pts.map((p) => ({ ...p })), moved: false }; return; }
-      }
-    }
+    if (this._grabHandle(wp)) return;
     // 2) fichas y balón
     const pid = this._hitPlayer(wp);
     if (pid) {
@@ -568,6 +556,19 @@ export class TacticsController {
     }
     // 4) recuadro de selección
     this.g = { type: 'box', a: wp, sx: s.x, sy: s.y, mod, moved: false, keep: mod ? { players: new Set(this.sel.players), shapes: new Set(this.sel.shapes) } : null };
+  }
+
+  // Si hay una figura seleccionada y el dedo cae en uno de sus tiradores, empieza a editarla (con cualquier herramienta activa)
+  _grabHandle(wp) {
+    if (this.sel.shapes.size !== 1 || this.sel.players.size) return false;
+    const sh = this.doc.shapes.find((x) => this.sel.shapes.has(x.id));
+    if (!sh || sh.attach || sh.type === 'text') return false;
+    const hs = handlesOf(sh, sh.pts), tol = this._tol(14);
+    let bi = -1, bd = tol;
+    hs.forEach((p, i) => { const d = G.dist(wp, p); if (d < bd) { bd = d; bi = i; } });
+    if (bi < 0) return false;
+    this.g = { type: 'handle', id: sh.id, idx: bi, base: sh.pts.map((p) => ({ ...p })), moved: false };
+    return true;
   }
 
   _startDrag(wp, s, collapse) {
@@ -591,7 +592,7 @@ export class TacticsController {
     const t = this.tool;
     if (t === 'erase' || t === 'player' || t === 'ball' || t === 'text') this._inst = { t: performance.now(), h: this.h };
     if (t === 'erase') { this.g = { type: 'erase', moved: true }; this._eraseAt(wp); return; }
-    if (t === 'player') { this.addPlayer(wp.x, wp.y); return; }
+    if (t === 'player') { if (this._hitPlayer(wp)) { this._downSelect(wp, s, false); return; } this.addPlayer(wp.x, wp.y); return; }
     if (t === 'ball') { this.placeBall(wp.x, wp.y); this.setTool('select'); return; }
     if (t === 'text') {
       const r = M.addShape(this.doc, { type: 'text', pts: [wp], label: 'Texto', color: this.style.color, width: Math.max(3, this.style.width), opacity: this.style.opacity });
@@ -599,16 +600,17 @@ export class TacticsController {
       if (this.hooks.onFocusLabel) this.hooks.onFocusLabel();
       return;
     }
+    if (!this.poly && (DRAW_TOOLS.has(t) || POLY_TOOLS.has(t)) && this._grabHandle(wp)) return;
     if (POLY_TOOLS.has(t)) { this._polyTap(wp, s); return; }
     if (DRAW_TOOLS.has(t)) {
       const a = ['line', 'dline', 'arrow', 'carrow'].includes(t) ? this._snapPoint(wp) : wp;
-      this.g = { type: 'draw', a, tool: t, moved: false, sx: s.x, sy: s.y };
+      this.g = { type: 'draw', a, tool: t, moved: false, sx: s.x, sy: s.y, trail: [] };
       this.draft = this._mkDraft(t, a, a);
       this.draw();
     }
   }
 
-  _mkDraft(t, a, b) {
+  _mkDraft(t, a, b, bend = 0) {
     const st = this.style;
     const base = { id: 'draft', color: st.color, width: st.width, opacity: st.opacity, fill: st.fill, dashed: st.dashed, label: '', attach: null, zone: null, rot: 0 };
     switch (t) {
@@ -616,16 +618,23 @@ export class TacticsController {
       case 'line': return { ...base, type: 'line', pts: [a, b] };
       case 'dline': return { ...base, type: 'dline', pts: [a, b], dashed: true };
       case 'arrow': return { ...base, type: 'arrow', pts: [a, b] };
-      case 'carrow': return { ...base, type: 'carrow', pts: [a, G.curveControl(a, b), b] };
-      case 'circle': return { ...base, type: 'circle', pts: [a, b] };
-      case 'square': return { ...base, type: 'square', pts: G.squarePts(a, b) };
+      case 'carrow': return { ...base, type: 'carrow', thru: true, pts: [a, G.curveMid(a, b, bend), b] };
       case 'rect': return { ...base, type: 'rect', pts: G.boxPts(a, b) };
-      case 'triangle': return { ...base, type: 'triangle', pts: G.trianglePts(a, b) };
       case 'defense': return { ...base, type: 'zone', zone: 'defense', color: M.ZONES.defense.color, fill: true, width: 2, pts: G.boxPts(a, b) };
       case 'press': return { ...base, type: 'zone', zone: 'press', color: M.ZONES.press.color, fill: true, width: 2, pts: G.ellipsePts(a, b) };
       case 'cover': return { ...base, type: 'zone', zone: 'cover', color: M.ZONES.cover.color, fill: true, width: 2, pts: G.ellipsePts(a, b) };
       default: return null;
     }
+  }
+
+  // Flecha curva: la curva dobla hacia el lado por el que se desvió el dedo respecto a la línea recta (a→b)
+  _bendFor(g, wp, b) {
+    g.trail.push(wp); if (g.trail.length > 400) g.trail.shift();
+    const len = G.dist(g.a, b); if (len < 1) return 0;
+    let dev = 0;
+    for (const q of g.trail) { const d = G.chordDev(g.a, b, q); if (Math.abs(d) > Math.abs(dev)) dev = d; }
+    if (Math.abs(dev) < Math.max(8, len * 0.07)) dev = 0.22 * len; // trazo casi recto: curva suave por defecto
+    return G.clamp(dev, -0.7 * len, 0.7 * len);
   }
 
   // ---- polígonos: un toque = un vértice
@@ -642,11 +651,12 @@ export class TacticsController {
 
   finishPoly() {
     if (!this.poly) return;
-    const pts = this.poly.pts.slice();
+    let pts = this.poly.pts.slice();
     this.poly = null;
     // un doble toque deja el último vértice repetido: se descarta
     while (pts.length > 1 && G.dist(pts[pts.length - 1], pts[pts.length - 2]) < this._tol(6)) pts.pop();
     if (pts.length < 3) { this.toast('Un polígono necesita al menos 3 vértices'); this.draw(); this.emit(); return; }
+    if (G.selfIntersects(pts)) { pts = G.untangle(pts); this.toast('Ordené los vértices para que la figura no se cruce'); }
     const zone = this.tool === 'custom';
     const st = this.style;
     const r = M.addShape(this.doc, zone
@@ -724,7 +734,7 @@ export class TacticsController {
       const sh = this.doc.shapes.find((x) => x.id === g.id); if (!sh) return;
       let pts = g.base.map((p) => ({ ...p }));
       const q = this._snapPoint(wp);
-      if (sh.type === 'circle') { if (g.idx === 0) { const dx = q.x - pts[0].x, dy = q.y - pts[0].y; pts = pts.map((p) => ({ x: p.x + dx, y: p.y + dy })); } else pts[1] = q; } else pts[g.idx] = (sh.type === 'carrow' && g.idx === 1) ? wp : q;
+      pts[g.idx] = (sh.type === 'carrow' && g.idx === 1) ? wp : q;
       this.h = M.replace(this.h, { ...this.doc, shapes: this.doc.shapes.map((x) => (x.id === g.id ? { ...x, pts } : x)), updatedAt: Date.now() });
       this.draw(); return;
     }
@@ -743,7 +753,9 @@ export class TacticsController {
           const ang = Math.round(Math.atan2(wp.y - g.a.y, wp.x - g.a.x) / (Math.PI / 12)) * (Math.PI / 12), d = G.dist(g.a, wp);
           b = { x: g.a.x + Math.cos(ang) * d, y: g.a.y + Math.sin(ang) * d };
         } else if (['line', 'dline', 'arrow', 'carrow'].includes(g.tool)) b = this._snapPoint(wp);
-        this.draft = this._mkDraft(g.tool, g.a, b);
+        let bend = 0;
+        if (g.tool === 'carrow') bend = this._bendFor(g, wp, b);
+        this.draft = this._mkDraft(g.tool, g.a, b, bend);
       }
       this.draw();
     }
@@ -791,8 +803,7 @@ export class TacticsController {
       if (cancelled || !d) { this.draw(); return; }
       let ok = g.moved;
       let pts = d.pts;
-      if (g.tool === 'pen') { pts = G.simplify(pts, this._tol(1.6)); ok = ok && pts.length >= 2; } else if (g.tool === 'circle') ok = ok && G.dist(pts[0], pts[1]) > 4;
-      else if (['line', 'dline', 'arrow', 'carrow'].includes(g.tool)) ok = ok && G.dist(pts[0], pts[pts.length - 1]) > 4;
+      if (g.tool === 'pen') { pts = G.simplify(pts, this._tol(1.6)); ok = ok && pts.length >= 2; } else if (['line', 'dline', 'arrow', 'carrow'].includes(g.tool)) ok = ok && G.dist(pts[0], pts[pts.length - 1]) > 4;
       else { const bb = G.bbox(pts); ok = ok && (bb.x1 - bb.x0 > 6 || bb.y1 - bb.y0 > 6); }
       if (ok) {
         const r = M.addShape(this.doc, { ...d, id: undefined, pts });
@@ -835,7 +846,7 @@ export class TacticsController {
     if (k === 'p' || k === 'P') { this.toggle(); return; }
     if (k === ',') { this.stepBy(-1); return; }
     if (k === '.') { this.stepBy(1); return; }
-    const map = { v: 'select', h: 'pan', b: 'pen', l: 'line', a: 'arrow', c: 'carrow', o: 'circle', r: 'rect', t: 'triangle', g: 'polygon', f: 'player', n: 'text' };
+    const map = { v: 'select', h: 'pan', b: 'pen', l: 'line', a: 'arrow', c: 'carrow', r: 'rect', g: 'polygon', f: 'player', n: 'text' };
     const t = map[k.toLowerCase()]; if (t) { this.setTool(t); }
   }
 

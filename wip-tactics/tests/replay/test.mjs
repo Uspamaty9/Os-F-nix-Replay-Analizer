@@ -27,7 +27,7 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   const tool = (id) => pg.locator('[data-tool="' + id + '"]').click();
   await tool('pen'); await drag([0.1, 0.2], [0.4, 0.35]); assert.equal(await n(), 1, 'lápiz');
   await tool('arrow'); await drag([0.2, 0.7], [0.5, 0.55]); assert.equal(await n(), 2, 'flecha');
-  await pg.locator('[data-color="#4CC38A"]').click(); await tool('circle'); await drag([0.75, 0.3], [0.85, 0.3]); assert.equal(await n(), 3, 'zona');
+  await pg.locator('[data-color="#4CC38A"]').click(); await tool('carrow'); await drag([0.75, 0.3], [0.85, 0.3]); assert.equal(await n(), 3, 'zona');
   await tool('red'); await tap([0.3, 0.5]); await tap([0.4, 0.6]); await tool('blue'); await tap([0.7, 0.5]); await tool('ball'); await tap([0.5, 0.5]);
   assert.equal(await n(), 7, 'fichas y balón');
   const toks = await pg.evaluate(() => window.__fenixReplayBoard.st.items.filter((i) => i.type === 'token').map((i) => i.team + i.n).join());

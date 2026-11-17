@@ -1,5 +1,5 @@
 // Tipos de figura, pruebas de selección (hit-test) y tiradores de edición.
-import { dist, distToSegment, distToQuad, pointInPoly, centroid } from './geometry';
+import { dist, distToSegment, distToQuad, curveCtrl, pointInPoly, centroid } from './geometry';
 
 export const TOOLS = [
   { id: 'select', label: 'Seleccionar', hint: 'Mover, seleccionar varios con Mayús o arrastrando un recuadro' },
@@ -8,11 +8,8 @@ export const TOOLS = [
   { id: 'line', label: 'Línea', hint: 'Línea recta' },
   { id: 'dline', label: 'Discontinua', hint: 'Línea discontinua' },
   { id: 'arrow', label: 'Flecha', hint: 'Flecha recta' },
-  { id: 'carrow', label: 'Flecha curva', hint: 'Arrastra y ajusta la curva con el punto central' },
-  { id: 'circle', label: 'Círculo', hint: 'Arrastra desde el centro' },
-  { id: 'square', label: 'Cuadrado', hint: 'Arrastra' },
+  { id: 'carrow', label: 'Flecha curva', hint: 'Arrastra; la curva dobla hacia el lado en que muevas el dedo. Ajústala con el punto central' },
   { id: 'rect', label: 'Rectángulo', hint: 'Arrastra' },
-  { id: 'triangle', label: 'Triángulo', hint: 'Arrastra' },
   { id: 'polygon', label: 'Polígono', hint: 'Toca los vértices; doble toque o Enter para cerrar' },
   { id: 'press', label: 'Zona de presión', hint: 'Arrastra' },
   { id: 'defense', label: 'Zona defensiva', hint: 'Arrastra' },
@@ -25,7 +22,7 @@ export const TOOLS = [
 ];
 
 export const ZONE_TOOLS = ['press', 'defense', 'cover', 'custom'];
-export const CLOSED = new Set(['circle', 'square', 'rect', 'triangle', 'polygon', 'zone', 'tri', 'quad', 'poly']);
+export const CLOSED = new Set(['rect', 'polygon', 'zone', 'tri', 'quad', 'poly']);
 export const FILLABLE = CLOSED;
 export const isClosed = (t) => CLOSED.has(t);
 export const isArrow = (t) => t === 'arrow' || t === 'carrow';
@@ -33,12 +30,10 @@ export const isArrow = (t) => t === 'arrow' || t === 'carrow';
 // Puntos que se pueden arrastrar para editar una figura libre
 export function handlesOf(shape, pts) {
   if (shape.attach) return [];
-  if (shape.type === 'circle') return [pts[0], pts[1]];
   return pts;
 }
 
 export function labelAnchor(shape, pts) {
-  if (shape.type === 'circle') return { x: pts[0].x, y: pts[0].y };
   if (shape.type === 'text') return pts[0];
   return centroid(pts);
 }
@@ -48,12 +43,7 @@ export function hitShape(shape, pts, p, tol) {
   const t = tol + (shape.width || 2) / 2;
   switch (shape.type) {
     case 'text': return dist(p, pts[0]) < 18 + tol;
-    case 'circle': {
-      const r = dist(pts[0], pts[1]);
-      const d = dist(p, pts[0]);
-      return shape.fill ? d <= r + t : Math.abs(d - r) <= t;
-    }
-    case 'carrow': return pts.length >= 3 && distToQuad(p, pts[0], pts[1], pts[2]) <= t;
+    case 'carrow': return pts.length >= 3 && distToQuad(p, pts[0], curveCtrl(pts[0], pts[1], pts[2]), pts[2]) <= t;
     case 'pen':
     case 'line': case 'dline': case 'arrow': case 'link': {
       for (let i = 1; i < pts.length; i++) if (distToSegment(p, pts[i - 1], pts[i]) <= t) return true;
@@ -82,8 +72,7 @@ export function shapeInRect(pts, r) {
 
 export function describe(shape) {
   const names = {
-    pen: 'Lápiz', line: 'Línea', dline: 'Línea discontinua', arrow: 'Flecha', carrow: 'Flecha curva', circle: 'Círculo',
-    square: 'Cuadrado', rect: 'Rectángulo', triangle: 'Triángulo', polygon: 'Polígono', link: 'Conexión', tri: 'Triángulo vinculado',
+    pen: 'Lápiz', line: 'Línea', dline: 'Línea discontinua', arrow: 'Flecha', carrow: 'Flecha curva', rect: 'Rectángulo', polygon: 'Polígono', link: 'Conexión', tri: 'Triángulo vinculado',
     quad: 'Estructura vinculada', poly: 'Polígono vinculado', text: 'Texto', zone: 'Zona'
   };
   return names[shape.type] || 'Figura';

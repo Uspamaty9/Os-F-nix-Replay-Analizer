@@ -25,9 +25,7 @@ const TOOLS = [
   { id: 'dline', icon: 'dline', label: 'Discontinua' },
   { id: 'arrow', icon: 'arrow', label: 'Flecha' },
   { id: 'carrow', icon: 'carrow', label: 'Flecha curva' },
-  { id: 'circle', icon: 'circle', label: 'Círculo' },
   { id: 'rect', icon: 'rect', label: 'Rectángulo' },
-  { id: 'tri', icon: 'triangle', label: 'Triángulo' },
   { id: 'press', icon: 'press', label: 'Zona de presión' },
   { id: 'defense', icon: 'defense', label: 'Zona defensiva' },
   { id: 'cover', icon: 'cover', label: 'Zona de cobertura' },
@@ -37,8 +35,8 @@ const TOOLS = [
   { id: 'text', icon: 'text', label: 'Texto' },
   { id: 'erase', icon: 'erase', label: 'Borrador' }
 ];
-const SHORT = { hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', tri: 'Triáng.', press: 'Presión', defense: 'Defensa', cover: 'Cobertura', red: 'Roja', blue: 'Azul', rect: 'Rect.' };
-const DRAG = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'circle', 'rect', 'tri', 'press', 'defense', 'cover']);
+const SHORT = { hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', press: 'Presión', defense: 'Defensa', cover: 'Cobertura', red: 'Roja', blue: 'Azul', rect: 'Rect.' };
+const DRAG = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'press', 'defense', 'cover']);
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 function segDist(p, a, b) {
@@ -88,19 +86,16 @@ export function drawItems(ctx, items, T, draft) {
     } else if (it.type === 'arrow' || it.type === 'carrow') {
       const a = P(it.a), b = P(it.b), L = dist(a, b); if (L < 2) continue;
       let c = null, ang = Math.atan2(b.y - a.y, b.x - a.x);
-      if (it.type === 'carrow') { c = { x: (a.x + b.x) / 2 + (a.y - b.y) * 0.3, y: (a.y + b.y) / 2 + (b.x - a.x) * 0.3 }; ang = Math.atan2(b.y - c.y, b.x - c.x); }
+      if (it.type === 'carrow') { const bd = it.bend != null ? it.bend : 0.3; c = { x: (a.x + b.x) / 2 + (a.y - b.y) * bd, y: (a.y + b.y) / 2 + (b.x - a.x) * bd }; ang = Math.atan2(b.y - c.y, b.x - c.x); }
       const hd = Math.min(L * 0.5, Math.max(11, lw * 3.6));
       const ex = b.x - Math.cos(ang) * hd * 0.6, ey = b.y - Math.sin(ang) * hd * 0.6;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); if (c) ctx.quadraticCurveTo(c.x, c.y, ex, ey); else ctx.lineTo(ex, ey); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - hd * Math.cos(ang - 0.45), b.y - hd * Math.sin(ang - 0.45)); ctx.lineTo(b.x - hd * Math.cos(ang + 0.45), b.y - hd * Math.sin(ang + 0.45)); ctx.closePath(); ctx.fill();
-    } else if (it.type === 'circle') {
-      const c = P(it.c), r = it.r * T.s; if (r < 1) continue;
-      ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); if (it.fill) fillShape(); ctx.stroke();
-    } else if (it.type === 'rect' || it.type === 'tri' || it.type === 'zone') {
+    } else if (it.type === 'rect' || it.type === 'zone') {
       const A = P(it.a), B = P(it.b), x0 = Math.min(A.x, B.x), x1 = Math.max(A.x, B.x), y0 = Math.min(A.y, B.y), y1 = Math.max(A.y, B.y);
       if (x1 - x0 < 2 && y1 - y0 < 2) continue;
       ctx.beginPath();
-      if (it.type === 'tri') { ctx.moveTo((x0 + x1) / 2, y0); ctx.lineTo(x1, y1); ctx.lineTo(x0, y1); ctx.closePath(); } else ctx.rect(x0, y0, x1 - x0, y1 - y0);
+      ctx.rect(x0, y0, x1 - x0, y1 - y0);
       if (it.type === 'zone' || it.fill) fillShape();
       if (it.type === 'zone') ctx.setLineDash([lw * 2.6, lw * 1.8]);
       ctx.stroke(); ctx.setLineDash([]);
@@ -129,9 +124,8 @@ function hit(it, q, T, tol) {
   if (it.type === 'token') return dist(q, P(it.p)) <= Math.max(9, 17 * T.s) + tol;
   if (it.type === 'ball') return dist(q, P(it.p)) <= Math.max(6, 10 * T.s) + tol;
   if (it.type === 'text') { const p = P(it.p), fs = Math.max(13, 22 * T.s); return Math.abs(q.x - p.x) <= it.text.length * fs * 0.35 + tol && Math.abs(q.y - p.y) <= fs * 0.7 + tol; }
-  if (it.type === 'circle') { const d = dist(q, P(it.c)), r = it.r * T.s; return it.fill ? d <= r + tol : Math.abs(d - r) <= tol; }
-  if (it.type === 'line' || it.type === 'dline' || it.type === 'arrow' || it.type === 'carrow') return segDist(q, P(it.a), P(it.b)) <= tol + (it.type === 'carrow' ? Math.max(6, dist(P(it.a), P(it.b)) * 0.15) : 0);
-  if (it.type === 'rect' || it.type === 'tri' || it.type === 'zone') {
+  if (it.type === 'line' || it.type === 'dline' || it.type === 'arrow' || it.type === 'carrow') return segDist(q, P(it.a), P(it.b)) <= tol + (it.type === 'carrow' ? Math.max(6, dist(P(it.a), P(it.b)) * 0.5 * Math.abs(it.bend != null ? it.bend : 0.3)) : 0);
+  if (it.type === 'rect' || it.type === 'zone') {
     const A = P(it.a), B = P(it.b), x0 = Math.min(A.x, B.x) - tol, x1 = Math.max(A.x, B.x) + tol, y0 = Math.min(A.y, B.y) - tol, y1 = Math.max(A.y, B.y) + tol;
     const inside = q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
     if (it.type === 'zone' || it.fill) return inside;
@@ -143,7 +137,7 @@ function hit(it, q, T, tol) {
 
 function shift(it, dx, dy) {
   const mv = (p) => ({ x: p.x + dx, y: p.y + dy }), o = { ...it };
-  if (o.pts) o.pts = o.pts.map(mv); if (o.a) o.a = mv(o.a); if (o.b) o.b = mv(o.b); if (o.c) o.c = mv(o.c); if (o.p) o.p = mv(o.p);
+  if (o.pts) o.pts = o.pts.map(mv); if (o.a) o.a = mv(o.a); if (o.b) o.b = mv(o.b); if (o.p) o.p = mv(o.p);
   return o;
 }
 
@@ -253,8 +247,7 @@ function makeLayer(host, canvas) {
     st.drawing = { id: e.pointerId };
     const base = { id: uid++, color: st.color, w, fill: st.fill };
     if (tool === 'pen') st.draft = { ...base, type: 'pen', pts: [p] };
-    else if (tool === 'circle') st.draft = { ...base, type: 'circle', c: p, r: 0 };
-    else if (tool === 'rect' || tool === 'tri') st.draft = { ...base, type: tool, a: p, b: p };
+    else if (tool === 'rect') st.draft = { ...base, type: tool, a: p, b: p };
     else if (ZONE[tool]) st.draft = { ...base, type: 'zone', kind: tool, a: p, b: p };
     else st.draft = { ...base, type: tool, a: p, b: p };
     mark();
@@ -288,7 +281,16 @@ function makeLayer(host, canvas) {
     if (d.erase) { eraseAt(pt(e), t, false); return; }
     const dr = st.draft;
     if (dr.type === 'pen') { const l = dr.pts[dr.pts.length - 1]; if (Math.hypot((p.x - l.x) * t.s, (p.y - l.y) * t.s) > 2) dr.pts.push(p); }
-    else if (dr.type === 'circle') dr.r = dist(p, dr.c); else dr.b = p;
+    else {
+      dr.b = p;
+      if (dr.type === 'carrow') { // la curva dobla hacia el lado por el que se desvía el dedo respecto a la recta a→b
+        (dr.trail = dr.trail || []).push(p);
+        const dx = p.x - dr.a.x, dy = p.y - dr.a.y, L = Math.hypot(dx, dy) || 1; let dev = 0;
+        for (const q of dr.trail) { const v = (-(q.x - dr.a.x) * dy + (q.y - dr.a.y) * dx) / L; if (Math.abs(v) > Math.abs(dev)) dev = v; }
+        const f = Math.abs(dev) < Math.max(8 / t.s, L * 0.07) ? 0.3 : Math.max(-1.4, Math.min(1.4, (2 * dev) / L));
+        dr.bend = f;
+      }
+    }
     mark();
   });
   const end = (e, cancel) => {
@@ -309,7 +311,7 @@ function makeLayer(host, canvas) {
     if (d.erase) return;
     const it = st.draft; st.draft = null;
     const t = T();
-    const ok = !cancel && it && (it.type === 'pen' ? it.pts.length > 1 : it.type === 'circle' ? it.r * t.s > 6 : dist({ x: t.sx(it.a.x), y: t.sy(it.a.y) }, { x: t.sx(it.b.x), y: t.sy(it.b.y) }) > 8);
+    const ok = !cancel && it && (it.type === 'pen' ? it.pts.length > 1 : dist({ x: t.sx(it.a.x), y: t.sy(it.a.y) }, { x: t.sx(it.b.x), y: t.sy(it.b.y) }) > 8);
     if (ok) commit(st.items.concat([it])); else mark();
   };
   cv.addEventListener('pointerup', (e) => end(e, false));
