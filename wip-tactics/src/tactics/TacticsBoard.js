@@ -247,7 +247,6 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
 
   // En pantallas estrechas el panel se abre al tocar una ficha o figura existente (no al colocar fichas nuevas)
   const selSig = s.selPlayers.join(',') + '|' + s.selShapes.join(',');
-  useEffect(() => { if (s.tool === 'select' && (s.selPlayers.length || s.selShapes.length)) setPanel(true); }, [selSig]); // eslint-disable-line react-hooks/exhaustive-deps
   const nShapes = s.selShapes.length, nPl = s.selPlayers.filter((i) => i !== 'ball').length, ballSel = s.selPlayers.includes('ball');
   const tool = TOOL[s.tool];
   let body, title;
@@ -299,7 +298,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
               </>
             )}
           </div>
-          <button type='button' className={'tx-icon show-sm' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel' aria-label='Panel'><Icon name='panel' /></button>
+          <button type='button' className={'tx-icon' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel de la jugada' aria-label='Panel'><Icon name='panel' /></button>
         </div>
       </header>
 
@@ -332,7 +331,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
         <aside className='tx-panel' aria-label={'Panel: ' + title}>
           <div className='tx-panel-head'>
             <h3>{title}</h3>
-            <button type='button' className='tx-icon show-sm' onClick={() => setPanel(false)} aria-label='Cerrar panel'><Icon name='close' /></button>
+            <button type='button' className='tx-icon' onClick={() => setPanel(false)} aria-label='Cerrar panel'><Icon name='close' /></button>
           </div>
           <div className='tx-panel-body'>{body}</div>
         </aside>

@@ -135,14 +135,15 @@ export function curveControl(a, b) {
 // ---- Vista (mundo -> pantalla): pantalla = mundo * k + (ox, oy) ----
 export const K_MIN = 0.12, K_MAX = 14;
 
+// Encuadre ajustado a la cancha (más las redes de las porterías), no a todo el área exterior: el campo ocupa más pantalla
 export function viewRect(mode) {
-  const m = 10;
-  if (mode === 'left') return { x0: -PITCH.boundW - m, x1: m, y0: -PITCH.boundH - m, y1: PITCH.boundH + m };
-  if (mode === 'right') return { x0: -m, x1: PITCH.boundW + m, y0: -PITCH.boundH - m, y1: PITCH.boundH + m };
-  return { x0: -PITCH.boundW - m, x1: PITCH.boundW + m, y0: -PITCH.boundH - m, y1: PITCH.boundH + m };
+  const m = 10, ex = Math.min(PITCH.boundW, PITCH.halfW + 44), ey = Math.min(PITCH.boundH, PITCH.halfH + 28);
+  if (mode === 'left') return { x0: -ex, x1: m, y0: -ey, y1: ey };
+  if (mode === 'right') return { x0: -m, x1: ex, y0: -ey, y1: ey };
+  return { x0: -ex, x1: ex, y0: -ey, y1: ey };
 }
 
-export function fitView(w, h, mode, pad = 12) {
+export function fitView(w, h, mode, pad = 4) {
   const r = viewRect(mode);
   const k = clamp(Math.min((w - 2 * pad) / (r.x1 - r.x0), (h - 2 * pad) / (r.y1 - r.y0)), K_MIN, K_MAX);
   return { k, ox: w / 2 - (k * (r.x0 + r.x1)) / 2, oy: h / 2 - (k * (r.y0 + r.y1)) / 2 };

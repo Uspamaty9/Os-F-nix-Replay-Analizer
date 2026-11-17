@@ -17,7 +17,7 @@ const clickW = async (x, y, opt = {}) => { const p = await pg.evaluate(([x, y]) 
 const toPx = async (x, y) => { const bb = await stage(); return await pg.evaluate(([x, y, w, h]) => { const r = { x0: -430, x1: 430, y0: -210, y1: 210 }; const pad = 12; const k = Math.min((w - 2 * pad) / (r.x1 - r.x0), (h - 2 * pad) / (r.y1 - r.y0)); return { x: w / 2 + x * k, y: h / 2 + y * k }; }, [x, y, bb.width, bb.height]).then((p) => ({ x: bb.x + p.x, y: bb.y + p.y })); };
 const click = async (x, y, mods = []) => { const p = await toPx(x, y); for (const m of mods) await pg.keyboard.down(m); await pg.mouse.click(p.x, p.y); for (const m of mods) await pg.keyboard.up(m); };
 
-assert.equal(await $('[aria-label="Panel"]').isVisible(), false, 'botón de panel oculto en escritorio'); assert.equal(await $('[aria-label="Cerrar panel"]').isVisible(), false, 'cerrar panel oculto en escritorio');
+assert.equal(await $('.tx-panel').isVisible(), false, 'el panel empieza cerrado para dar espacio al campo'); await $('[aria-label="Panel"]').click(); assert.equal(await $('.tx-panel').isVisible(), true, 'el botón abre el panel');
 // 1) pantalla inicial: panel de pizarra, herramientas, barra de pasos
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 1');
 assert.ok(await $('.tx-db').count() >= 8, 'botones del dock');
@@ -157,8 +157,9 @@ await mp.waitForFunction(() => document.querySelector('.tx-panel-head h3').inner
 assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'colocar una ficha no abre el panel');
 await mp.locator('.tx-db:has-text("Mover")').tap(); await mp.keyboard.press('Escape');
 await mp.locator('.tx-canvas').tap({ position: { x: 150, y: cv.height / 2 } });
-await mp.waitForFunction(() => getComputedStyle(document.querySelector('.tx-panel')).display !== 'none');
-assert.ok(await mp.locator('.tx-panel').isVisible(), 'el panel se abre al seleccionar en móvil');
+assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'seleccionar no tapa el campo con el panel');
+await mp.locator('[aria-label="Panel"]').click();
+assert.ok(await mp.locator('.tx-panel').isVisible(), 'el panel se abre con su botón');
 await mp.screenshot({ path: shots + '/ui-mobile-player.png' });
 const real = errs.filter((e) => !/favicon|Download the React DevTools/.test(e));
 console.log('ERRS', JSON.stringify(real));
