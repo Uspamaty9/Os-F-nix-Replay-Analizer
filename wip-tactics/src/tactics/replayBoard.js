@@ -86,7 +86,7 @@ export function drawItems(ctx, items, T, draft) {
     } else if (it.type === 'arrow' || it.type === 'carrow') {
       const a = P(it.a), b = P(it.b), L = dist(a, b); if (L < 2) continue;
       let c = null, ang = Math.atan2(b.y - a.y, b.x - a.x);
-      if (it.type === 'carrow') { const bd = it.bend != null ? it.bend : 0.3; c = { x: (a.x + b.x) / 2 + (a.y - b.y) * bd, y: (a.y + b.y) / 2 + (b.x - a.x) * bd }; ang = Math.atan2(b.y - c.y, b.x - c.x); }
+      if (it.type === 'carrow') { const bd = it.bend != null ? it.bend : 0.2; c = { x: (a.x + b.x) / 2 + (a.y - b.y) * bd, y: (a.y + b.y) / 2 + (b.x - a.x) * bd }; ang = Math.atan2(b.y - c.y, b.x - c.x); }
       const hd = Math.min(L * 0.5, Math.max(11, lw * 3.6));
       const ex = b.x - Math.cos(ang) * hd * 0.6, ey = b.y - Math.sin(ang) * hd * 0.6;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); if (c) ctx.quadraticCurveTo(c.x, c.y, ex, ey); else ctx.lineTo(ex, ey); ctx.stroke();
@@ -124,7 +124,7 @@ function hit(it, q, T, tol) {
   if (it.type === 'token') return dist(q, P(it.p)) <= Math.max(9, 17 * T.s) + tol;
   if (it.type === 'ball') return dist(q, P(it.p)) <= Math.max(6, 10 * T.s) + tol;
   if (it.type === 'text') { const p = P(it.p), fs = Math.max(13, 22 * T.s); return Math.abs(q.x - p.x) <= it.text.length * fs * 0.35 + tol && Math.abs(q.y - p.y) <= fs * 0.7 + tol; }
-  if (it.type === 'line' || it.type === 'dline' || it.type === 'arrow' || it.type === 'carrow') return segDist(q, P(it.a), P(it.b)) <= tol + (it.type === 'carrow' ? Math.max(6, dist(P(it.a), P(it.b)) * 0.5 * Math.abs(it.bend != null ? it.bend : 0.3)) : 0);
+  if (it.type === 'line' || it.type === 'dline' || it.type === 'arrow' || it.type === 'carrow') return segDist(q, P(it.a), P(it.b)) <= tol + (it.type === 'carrow' ? Math.max(6, dist(P(it.a), P(it.b)) * 0.5 * Math.abs(it.bend != null ? it.bend : 0.2)) : 0);
   if (it.type === 'rect' || it.type === 'zone') {
     const A = P(it.a), B = P(it.b), x0 = Math.min(A.x, B.x) - tol, x1 = Math.max(A.x, B.x) + tol, y0 = Math.min(A.y, B.y) - tol, y1 = Math.max(A.y, B.y) + tol;
     const inside = q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
@@ -287,7 +287,7 @@ function makeLayer(host, canvas) {
         (dr.trail = dr.trail || []).push(p);
         const dx = p.x - dr.a.x, dy = p.y - dr.a.y, L = Math.hypot(dx, dy) || 1; let dev = 0;
         for (const q of dr.trail) { const v = (-(q.x - dr.a.x) * dy + (q.y - dr.a.y) * dx) / L; if (Math.abs(v) > Math.abs(dev)) dev = v; }
-        const f = Math.abs(dev) < Math.max(8 / t.s, L * 0.07) ? 0.3 : Math.max(-1.4, Math.min(1.4, (2 * dev) / L));
+        const f = Math.abs(dev) < Math.max(8 / t.s, L * 0.07) ? 0.2 : Math.max(-0.6, Math.min(0.6, dev / L));
         dr.bend = f;
       }
     }

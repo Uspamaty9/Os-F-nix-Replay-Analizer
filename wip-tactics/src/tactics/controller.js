@@ -633,8 +633,8 @@ export class TacticsController {
     const len = G.dist(g.a, b); if (len < 1) return 0;
     let dev = 0;
     for (const q of g.trail) { const d = G.chordDev(g.a, b, q); if (Math.abs(d) > Math.abs(dev)) dev = d; }
-    if (Math.abs(dev) < Math.max(8, len * 0.07)) dev = 0.22 * len; // trazo casi recto: curva suave por defecto
-    return G.clamp(dev, -0.7 * len, 0.7 * len);
+    if (Math.abs(dev) < Math.max(8, len * 0.07)) return 0.11 * len; // trazo casi recto: curva suave por defecto
+    return G.clamp(dev * 0.5, -0.3 * len, 0.3 * len); // la curva sigue la intención del dedo pero más suave
   }
 
   // ---- polígonos: un toque = un vértice

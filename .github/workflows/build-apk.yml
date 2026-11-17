@@ -87,7 +87,7 @@ jobs:
               npx cap add android
               # La v4 (Centro de análisis + Pizarra táctica) es OTRA app: otro id y otro nombre, para instalarse junto a la anterior sin "actualizarla"
               APPNAME="Replay Analyzer Os Fênix"
-              case "$n" in *v4-Scouting*) APPNAME="Fênix Pro"; sed -i 's/applicationId "[^"]*"/applicationId "com.osfenix.fenixpro"/' android/app/build.gradle; grep -n 'applicationId\|namespace' android/app/build.gradle | tee -a "$ROOT/out/report.txt";; esac
+              case "$n" in *v4-Scouting*) APPNAME="Tactical Analyzer"; sed -i 's/applicationId "[^"]*"/applicationId "com.osfenix.fenixpro"/' android/app/build.gradle; grep -n 'applicationId\|namespace' android/app/build.gradle | tee -a "$ROOT/out/report.txt";; esac
               sed -i 's/versionCode [0-9]*/versionCode 1/; s/versionName "[^"]*"/versionName "1.0"/' android/app/build.gradle
               # Icono de la app: la imagen entregada por el club
               RES=android/app/src/main/res

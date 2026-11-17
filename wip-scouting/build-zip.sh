@@ -7,6 +7,7 @@ cp -r "$R/wip-scouting/src/scouting" "$P/"                       # centro de an�
 cp "$R/wip-scouting/src/extras.js" "$R/wip-scouting/src/settings.js" "$P/"
 cp "$R/wip-scouting/src/components/"*.js "$R/wip-scouting/src/components/"*.scss "$P/components/"   # Home, Ajustes, pantalla Analizando…
 rm -f "$P/components/ThemeEditor.js"                              # temas quitados
+cp "$R/wip-scouting/brand/app.png" "$P/../public/brand/app.png"   # icono de la app
 cp -r "$R/wip-tactics/src/tactics" "$P/"; mv "$P/tactics/scoutingProvider.js.optional" "$P/tactics/scoutingProvider.js"
 python3 "$R/wip-tactics/integrate.py" "$P/index.js"               # pizarra sobre la repetición (2 líneas)
 ( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-sin-espera.patch" )   # entrar directo a la repetición

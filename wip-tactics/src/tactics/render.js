@@ -31,26 +31,35 @@ function pathNet(ctx, v, side) {
 const hexc = (c) => (/^[0-9a-f]{3,8}$/i.test(String(c)) ? '#' + c : String(c));
 
 // Cancha de un estadio importado (geometría compacta guardada al analizar la repetición)
+// Mezcla dos colores hex (t=0 → a, t=1 → b)
+function mixHex(a, b, t) {
+  const p = (c) => { const h = String(c).replace('#', ''); const f = h.length === 3 ? h.split('').map((x) => x + x).join('') : h; return [0, 2, 4].map((i) => parseInt(f.substr(i, 2), 16) || 0); };
+  const A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+const bgLum = (c) => { const h = hexc(c).replace('#', ''); const f = h.length === 3 ? h.split('').map((x) => x + x).join('') : h; const r = parseInt(f.substr(0, 2), 16), g = parseInt(f.substr(2, 2), 16), bl = parseInt(f.substr(4, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * bl) / 255; };
+
 function drawStadium(ctx, v, w, h, g) {
   const px = (x, y) => toScreen(v, { x, y });
   const hockey = g.bgType === 'hockey', none = g.bgType === 'none';
-  ctx.fillStyle = hockey ? '#4a5568' : FIELD.outside; ctx.fillRect(0, 0, w, h);
-  const o0 = px(-g.boundW, -g.boundH), o1 = px(g.boundW, g.boundH);
-  ctx.fillStyle = none ? (g.bgColor ? hexc(g.bgColor) : '#3b3b3b') : hockey ? '#5c6b82' : '#65804f'; ctx.fillRect(o0.x, o0.y, o1.x - o0.x, o1.y - o0.y);
+  // El color del estadio manda: el fondo de toda la pizarra es el color de la cancha (como en el juego)
+  const base = g.bgColor && /^[0-9a-f]{3,8}$/i.test(String(g.bgColor).replace('#', '')) ? hexc(g.bgColor) : (hockey ? '#5c6b82' : none ? '#3b3b3b' : '#718C5A');
+  const dark = bgLum(base) < 0.4;
+  ctx.fillStyle = base; ctx.fillRect(0, 0, w, h);
   const a = px(-g.halfW, -g.halfH), b = px(g.halfW, g.halfH);
   if (!none) {
-    ctx.fillStyle = hockey ? (g.bgColor ? hexc(g.bgColor) : '#6f819c') : (g.bgColor ? hexc(g.bgColor) : FIELD.grass); ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    // la superficie de juego se distingue del exterior con un tono apenas distinto del mismo color
+    ctx.fillStyle = mixHex(base, dark ? '#ffffff' : '#000000', dark ? 0.05 : 0.07); ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
     if (!hockey) {
-      ctx.fillStyle = FIELD.stripe; const sw = (g.halfW * 2) / 10;
+      ctx.fillStyle = dark ? 'rgba(255,255,255,.025)' : 'rgba(0,0,0,.05)'; const sw = (g.halfW * 2) / 10;
       for (let i = 0; i < 10; i += 2) { const x0 = px(-g.halfW + i * sw, -g.halfH), x1 = px(-g.halfW + (i + 1) * sw, g.halfH); ctx.fillRect(x0.x, x0.y, x1.x - x0.x, x1.y - x0.y); }
     }
     const lw = Math.max(1.5, 3 * v.k);
-    ctx.strokeStyle = FIELD.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = dark ? mixHex(base, '#ffffff', 0.45) : FIELD.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
     const t = px(0, -g.halfH), u = px(0, g.halfH); ctx.beginPath(); ctx.moveTo(t.x, t.y); ctx.lineTo(u.x, u.y); ctx.stroke();
     const c = px(0, 0);
     if (g.kickOff > 0) { ctx.beginPath(); ctx.arc(c.x, c.y, g.kickOff * v.k, 0, TAU); ctx.stroke(); }
-    ctx.fillStyle = FIELD.line; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, 3 * v.k), 0, TAU); ctx.fill();
+    ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, 3 * v.k), 0, TAU); ctx.fill();
   }
   // paredes visibles del estadio (mismo trazado que el motor: arco horario desde el primer vértice)
   ctx.lineWidth = Math.max(1.4, 3 * v.k); ctx.lineCap = 'round';
