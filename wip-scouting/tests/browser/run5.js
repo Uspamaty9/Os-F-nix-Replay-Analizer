@@ -35,5 +35,15 @@ const { chromium } = require('playwright'); const assert = require('assert');
   // 3) avatar tocable en el perfil
   await page.click('.sc-list li:has-text("Matheus")'); await page.waitForTimeout(300);
   assert.ok(await page.$('.sc-phead .sc-avbtn'), 'avatar tocable en el perfil'); await page.screenshot({ path: 'shots/profile-avatar.png' }); console.log('OK avatar en el perfil');
+  // 4) selección múltiple directo en la pestaña Jugadores
+  await page.click('.sc-phead ~ * , .sc-view >> text=Jugadores').catch(() => {}); 
+  await page.click('.sc-tabs button:has-text("Jugadores")'); await page.waitForTimeout(250);
+  if (!(await page.$('button:has-text("Seleccionar")'))) { await page.click('.sc-view a:has-text("Jugadores"), .sc-view button:has-text("Jugadores")').catch(() => {}); await page.waitForTimeout(250); }
+  await page.click('button:has-text("Seleccionar")'); await page.waitForTimeout(200);
+  const n0 = await page.$$eval('.sc-list li', (l) => l.length);
+  await page.click('.sc-list li:has-text("Santi")'); await page.click('.sc-list li:has-text("Rojas")'); await page.waitForTimeout(150);
+  await page.screenshot({ path: 'shots/select-multi.png' });
+  await page.click('button:has-text("Borrar (2)")'); await page.waitForTimeout(200); await page.click('.sc-sheet-foot .sc-btn.danger'); await page.waitForTimeout(500);
+  assert.strictEqual(await page.$$eval('.sc-list li', (l) => l.length), n0 - 2, 'dos jugadores borrados a la vez'); console.log('OK borrado múltiple en Jugadores');
   console.log('ERRORS', errors); assert.deepStrictEqual(errors, []); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

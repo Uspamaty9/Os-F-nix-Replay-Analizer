@@ -55,3 +55,4 @@ Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `s
 - `scouting.scss`: la barra de pestañas de Equipos (`.sc-scrollx > .sc-seg`) ahora cubre todo el ancho desplazable (el subrayado/fondo salía cortado).
 - `Players.js`: avatar tocable en el perfil (foto desde galería, `.sc-avbtn`); en «Elegir» se puede **Borrar** jugadores (sin partidos se elimina; con partidos queda `hidden:true` para que no reaparezca), «Borrar los no marcados», vista «Borrados» para restaurar.
 - Test: `tests/browser/run5.js`.
+- (16 nov, 2.ª pasada) `Players.js`: botón **Seleccionar** en la pestaña Jugadores (marcar varios → «Dejar de analizar» / «Borrar (n)»); `wipePlayers()` es compartido con «Elegir».
