@@ -26,7 +26,27 @@ export function useLocal(key, init) {
 
 // ---------- Archivos ----------
 export function bytesToB64(u) { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
-export async function saveFile(name, mime, bytes) { await sendBytes(name, mime, bytesToB64(bytes), 'downloads', false); }
+// Guarda/descarga el archivo y AVISA claramente al usuario cuando ya está listo (con el nombre y dónde quedó).
+export async function saveFile(name, mime, bytes) {
+  await sendBytes(name, mime, bytesToB64(bytes), 'downloads', false);
+  const native = !!(typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  toast('✓ ' + (native ? 'Guardado en Descargas: ' : 'Descargado: ') + name);
+}
+// Pregunta antes de generar un archivo (PDF, copia de seguridad…). Devuelve una promesa con true/false.
+export function askExport(text, okLabel) {
+  return new Promise((res) => {
+    const ov = document.createElement('div'); ov.className = 'sc-overlay';
+    const sh = document.createElement('div'); sh.className = 'sc-sheet sc-root'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Confirmar descarga');
+    const done = (v) => { ov.remove(); res(v); };
+    const h = document.createElement('div'); h.className = 'sc-sheet-head'; const t = document.createElement('h3'); t.textContent = 'Descargar'; h.appendChild(t);
+    const b = document.createElement('div'); b.className = 'sc-sheet-body'; const p = document.createElement('p'); p.textContent = text; b.appendChild(p);
+    const f = document.createElement('div'); f.className = 'sc-sheet-foot';
+    const no = document.createElement('button'); no.className = 'sc-btn ghost'; no.textContent = 'Cancelar'; no.onclick = () => done(false);
+    const ok = document.createElement('button'); ok.className = 'sc-btn'; ok.textContent = okLabel || 'Sí, descargar'; ok.onclick = () => done(true);
+    f.append(no, ok); sh.append(h, b, f); ov.appendChild(sh); ov.onclick = (e) => { if (e.target === ov) done(false); };
+    document.body.appendChild(ov); ok.focus();
+  });
+}
 export function textBytes(str) { return new TextEncoder().encode(str); }
 export function stamp() { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()); }
 export function slug(s) { return String(s || 'informe').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'informe'; }
@@ -77,7 +97,7 @@ export function toast(msg, action) {
     const t = document.createElement('div'); t.className = 'sc-toast'; const sp = document.createElement('span'); sp.textContent = msg; t.appendChild(sp);
     const kill = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };
     if (action) { const b = document.createElement('button'); b.className = 'sc-toast-act'; b.textContent = action.label || 'Deshacer'; b.onclick = () => { try { action.fn(); } finally { kill(); } }; t.appendChild(b); }
-    document.body.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(kill, action ? 7000 : 2400);
+    document.body.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(kill, action ? 7000 : (String(msg).startsWith('✓') ? 5000 : 2400));
   } catch (e) { }
 }
 

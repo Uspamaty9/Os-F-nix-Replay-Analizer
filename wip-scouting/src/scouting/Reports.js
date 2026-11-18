@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as db from './db';
-import { Card, Empty, Seg, Select, Prov, Fold, toast, saveFile, textBytes, pickFile, slug, stamp } from './ui';
+import { Card, Empty, Seg, Select, Prov, Fold, toast, askExport, saveFile, textBytes, pickFile, slug, stamp } from './ui';
 import { buildTeamReport, buildPlayerReport, buildMatchReport } from './report';
 import { dashboardData, applyFilters, ownTeamId, teamName, fmtDate, fmtPct } from './model';
 import { DEFINITIONS } from './analysis';
@@ -9,6 +9,7 @@ export default function Reports({ model, view, filters }) {
   const [kind, setKind] = useState('team'); const [teamId, setTeamId] = useState(filters.teamId || ownTeamId(model) || ''); const [playerId, setPlayerId] = useState(filters.playerId || ''); const [matchId, setMatchId] = useState('');
   const [busy, setBusy] = useState(false);
   async function gen() {
+    if (!(await askExport('¿Sacar el informe en PDF' + (kind === 'team' ? ' del equipo' : kind === 'player' ? ' del jugador' : ' del partido') + '? Se descargará en tu dispositivo.', 'Sí, sacar PDF'))) return;
     setBusy(true);
     try {
       let bytes = null, name = '';
@@ -16,7 +17,7 @@ export default function Reports({ model, view, filters }) {
       else if (kind === 'player') { if (!playerId) { toast('Elige un jugador'); setBusy(false); return; } bytes = buildPlayerReport(model, playerId, { ...filters, playerId }); name = 'Informe-' + slug((model.playerById.get(playerId) || {}).nick); }
       else { if (!matchId) { toast('Elige un partido'); setBusy(false); return; } bytes = buildMatchReport(model, matchId); name = 'Partido-' + slug((model.matchById.get(matchId) || { rec: {} }).rec.name); }
       if (!bytes) { toast('No hay datos para el informe'); setBusy(false); return; }
-      await saveFile(name + '-' + stamp() + '.pdf', 'application/pdf', bytes); toast('Informe PDF guardado');
+      await saveFile(name + '-' + stamp() + '.pdf', 'application/pdf', bytes);
     } catch (e) { toast('No se pudo crear el informe'); }
     setBusy(false);
   }

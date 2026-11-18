@@ -155,7 +155,7 @@ function makeLayer(host, canvas) {
   const ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1;
 
-  const say = (t) => { toast.textContent = t; toast.classList.add('on'); clearTimeout(st.toastT); st.toastT = setTimeout(() => toast.classList.remove('on'), 1500); };
+  const say = (t) => { toast.textContent = t; toast.classList.add('on'); clearTimeout(st.toastT); st.toastT = setTimeout(() => toast.classList.remove('on'), String(t).startsWith('✓') ? 4500 : 1500); };
   const T = () => makeT(canvas, W, H);
   const place = () => { // la capa cubre exactamente la cancha de la repetición
     const cr = canvas.getBoundingClientRect();
@@ -328,8 +328,8 @@ function makeLayer(host, canvas) {
       drawItems(o, st.items, makeT(canvas, cw, ch, false), null);
       const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
       if (!blob) throw new Error('sin imagen');
-      await saveBlob(blob, fileName({ name: 'Repeticion' }, 'pizarra-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'), 'png'), 'image/png');
-      say('Captura guardada');
+      const how = await saveBlob(blob, fileName({ name: 'Repeticion' }, 'pizarra-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'), 'png'), 'image/png');
+      say(how === 'native' ? '✓ Captura guardada en Descargas' : '✓ Captura descargada');
     } catch (e) { say('No se pudo guardar la captura'); }
   }
 

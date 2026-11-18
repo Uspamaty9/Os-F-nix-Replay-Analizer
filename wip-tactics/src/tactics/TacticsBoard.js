@@ -61,7 +61,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   libRef.current = lib; expRef.current = expOpen; busyRef.current = busy;
   const fieldRef = useRef(false); fieldRef.current = fieldOpen;
 
-  const flash = useCallback((m) => { setMsg(m); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(''), 2600); }, []);
+  const flash = useCallback((m) => { setMsg(m); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(''), String(m).startsWith('✓') ? 5000 : 2600); }, []);
+  const saved = (what, n, how) => '✓ ' + what + (how === 'native' ? ' guardado en Descargas: ' : ' descargado: ') + n;
 
   // ---------- guardado automático ----------
   const flush = useCallback(async () => {
@@ -226,10 +227,10 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
     ctl.stop();
     const doc = ctl.doc;
     try {
-      if (kind === 'json') { const n = fileName(doc, '', 'json'); await saveBlob(projectBlob(doc), n, 'application/json'); flash('Proyecto exportado: ' + n); return; }
-      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash('Imagen guardada: ' + n); return; }
-      if (kind === 'scheme') { const n = fileName(doc, 'esquema', 'png'); await saveBlob(await canvasToBlob(renderScheme(doc)), n, 'image/png'); flash('Esquema guardado: ' + n); return; }
-      if (kind === 'sheet') { const n = fileName(doc, 'secuencia', 'png'); await saveBlob(await canvasToBlob(renderSheet(doc)), n, 'image/png'); flash('Secuencia guardada: ' + n); return; }
+      if (kind === 'json') { const n = fileName(doc, '', 'json'); const how = await saveBlob(projectBlob(doc), n, 'application/json'); flash(saved('Proyecto', n, how)); return; }
+      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); const how = await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash(saved('Imagen', n, how)); return; }
+      if (kind === 'scheme') { const n = fileName(doc, 'esquema', 'png'); const how = await saveBlob(await canvasToBlob(renderScheme(doc)), n, 'image/png'); flash(saved('Esquema', n, how)); return; }
+      if (kind === 'sheet') { const n = fileName(doc, 'secuencia', 'png'); const how = await saveBlob(await canvasToBlob(renderSheet(doc)), n, 'image/png'); flash(saved('Secuencia', n, how)); return; }
       if (kind === 'video') {
         if (doc.frames.length < 2) { flash('Añade al menos 2 pasos para exportar la animación'); return; }
         if (!webmSupported()) { flash('Este dispositivo no graba vídeo: se exporta la secuencia como imagen'); await doExport('sheet'); return; }
@@ -237,7 +238,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
         const blob = await recordAnimation(doc, { speed: ctl.play.speed, signal: ac.signal, onProgress: (p) => setBusy({ label: 'Grabando animación…', pct: p }) });
         setBusy(null); abortRef.current = null;
         if (ac.signal.aborted) { flash('Exportación cancelada'); return; }
-        const n = fileName(doc, 'animacion', 'webm'); await saveBlob(blob, n, 'video/webm'); flash('Animación guardada: ' + n);
+        const n = fileName(doc, 'animacion', 'webm'); const how = await saveBlob(blob, n, 'video/webm'); flash(saved('Animación', n, how));
       }
     } catch (e) { setBusy(null); flash('No se pudo exportar: ' + (e && e.message ? e.message : 'error')); }
   };

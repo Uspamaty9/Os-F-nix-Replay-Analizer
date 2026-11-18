@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
-import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, slug, stamp } from './ui';
+import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
 import { playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
 import { aggregateRows, CRITERIA } from './analysis';
@@ -111,7 +111,7 @@ function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, 
   const a = pr.agg; const ra = ratingAverage(model, player.id, new Set(pr.matches.map((m) => m.id))); const ca = criteriaAverage(model, player.id, new Set(pr.matches.map((m) => m.id)));
   const bySeason = useMemo(() => { const g = new Map(); pr.rows.forEach((r) => { const k = r.seasonId || ''; if (!g.has(k)) g.set(k, []); g.get(k).push(r); }); return Array.from(g.entries()).map(([k, rs]) => ({ k, name: k ? (model.seasons.find((s) => s.id === k) || {}).name : 'Sin temporada', agg: aggregateRows(rs) })); }, [pr, model]);
   const labels = pr.rows.map((r) => fmtDate(r.date).slice(0, 5));
-  async function pdf() { try { const b = buildPlayerReport(model, player.id, filters); if (!b) return; await saveFile('Informe-' + slug(player.nick) + '-' + stamp() + '.pdf', 'application/pdf', b); toast('Informe PDF guardado'); } catch (e) { toast('No se pudo crear el informe'); } }
+  async function pdf() { if (!(await askExport('¿Sacar el informe en PDF de «' + player.nick + '»? Se descargará en tu dispositivo.', 'Sí, sacar PDF'))) return; try { const b = buildPlayerReport(model, player.id, filters); if (!b) return; await saveFile('Informe-' + slug(player.nick) + '-' + stamp() + '.pdf', 'application/pdf', b); } catch (e) { toast('No se pudo crear el informe'); } }
   return (
     <div className="sc-view">
       <button className="sc-link back" onClick={onBack}>‹ Jugadores</button>

@@ -42,5 +42,12 @@ const { chromium } = require('playwright'); const assert = require('assert');
   await page.click('.sc-tabs button:has-text("Más")'); await page.click('.sc-menu button:has-text("Red de pases")'); await page.waitForTimeout(400);
   await page.locator('svg.sc-net line[stroke=transparent]').first().click({ force: true }); await page.waitForTimeout(200); assert.ok(await page.$('text=/pases?:/') || await page.$('.sc-note b'), 'flecha'); await page.screenshot({ path: 'shots/v2-net.png' });
   await page.click('.sc-link.back'); await page.click('.sc-menu button:has-text("Copia")'); assert.ok(await page.$('button:has-text("Crear copia")')); console.log('OK pases/copia');
+  // Descargas: primero se pregunta, y al terminar se avisa con el nombre del archivo
+  await page.click('button:has-text("Crear copia")'); await page.waitForSelector('.sc-sheet-foot'); assert.ok(await page.$('text=¿Crear la copia de seguridad?')); await page.click('.sc-sheet-foot .sc-btn.ghost'); await page.waitForTimeout(200);
+  assert.strictEqual(await page.evaluate(() => (window.__saved || []).length), 0, 'cancelar no descarga');
+  await page.click('button:has-text("Crear copia")'); await page.click('.sc-sheet-foot .sc-btn:not(.ghost)'); await page.waitForTimeout(500);
+  assert.strictEqual(await page.evaluate(() => (window.__saved || []).length), 1); assert.ok(/✓ .*\.fenixscout/.test(await page.$eval('.sc-toast', (e) => e.innerText)), 'aviso de descarga'); await page.screenshot({ path: 'shots/v2-saved.png' });
+  await page.click('.sc-tabs button:has-text("Partidos")'); await page.click('.sc-list li >> nth=0'); await page.waitForTimeout(300); await page.click('button:has-text("Informe PDF")'); await page.waitForSelector('.sc-sheet-foot');
+  await page.click('.sc-sheet-foot .sc-btn:not(.ghost)'); await page.waitForTimeout(700); assert.strictEqual(await page.evaluate(() => (window.__saved || []).length), 2); assert.ok(/✓ .*\.pdf/.test(await page.$eval('.sc-toast', (e) => e.innerText)), 'aviso PDF'); console.log('OK avisos de descarga');
   console.log('ERRORS', errors); assert.deepStrictEqual(errors, []); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

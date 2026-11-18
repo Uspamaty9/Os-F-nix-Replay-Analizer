@@ -1,7 +1,7 @@
 // Menú «Más»: secciones secundarias (Pases, Informes), papelera y copia de seguridad.
 import React, { useState } from 'react';
 import * as db from './db';
-import { Card, Empty, Sheet, Avatar, useConfirm, toast, saveFile, textBytes, pickFile, stamp } from './ui';
+import { Card, Empty, Sheet, Avatar, useConfirm, toast, saveFile, askExport, textBytes, pickFile, stamp } from './ui';
 import { fmtDate, teamName } from './model';
 
 const ICON = (d) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
@@ -46,7 +46,7 @@ export function Trash({ model }) {
 }
 
 export function Backup() {
-  async function backup() { try { await saveFile('OsFenix-scouting-' + stamp() + '.fenixscout', 'application/octet-stream', textBytes(await db.exportScouting())); toast('Copia guardada'); } catch (e) { toast('No se pudo crear la copia'); } }
+  async function backup() { if (!(await askExport('¿Crear la copia de seguridad? Se descargará un archivo con todos los datos del Centro de análisis.', 'Sí, crear copia'))) return; try { await saveFile('OsFenix-scouting-' + stamp() + '.fenixscout', 'application/octet-stream', textBytes(await db.exportScouting())); } catch (e) { toast('No se pudo crear la copia'); } }
   async function restore() { const f = await pickFile('.fenixscout,.json,application/json'); if (!f) return; try { const n = await db.importScouting(await f.text()); toast(n + ' registros restaurados'); } catch (e) { toast('Archivo no válido'); } }
   return (
     <div className="sc-view">
