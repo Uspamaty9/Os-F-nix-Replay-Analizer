@@ -11,13 +11,14 @@ const errs = []; pg.on('pageerror', (e) => errs.push('pageerror: ' + e)); pg.on(
 await pg.goto('http://localhost:8770/index.html');
 await pg.waitForSelector('.tx-root[data-ready="1"]');
 const $ = (s, o) => pg.locator(s, o);
+const menu = async () => { if (!(await $('.tx-menubar').count())) await $('button[aria-label="Menú"]').click(); };
 const stage = async () => (await $('.tx-canvas').boundingBox());
 const clickW = async (x, y, opt = {}) => { const p = await pg.evaluate(([x, y]) => { const c = window.__ctl; return null; }, [x, y]); };
 // la vista es la de ajuste: conversión mundo->pantalla igual que geometry.fitView
 const toPx = async (x, y) => { const bb = await stage(); return await pg.evaluate(([x, y, w, h]) => { const r = { x0: -430, x1: 430, y0: -210, y1: 210 }; const pad = 12; const k = Math.min((w - 2 * pad) / (r.x1 - r.x0), (h - 2 * pad) / (r.y1 - r.y0)); return { x: w / 2 + x * k, y: h / 2 + y * k }; }, [x, y, bb.width, bb.height]).then((p) => ({ x: bb.x + p.x, y: bb.y + p.y })); };
 const click = async (x, y, mods = []) => { const p = await toPx(x, y); for (const m of mods) await pg.keyboard.down(m); await pg.mouse.click(p.x, p.y); for (const m of mods) await pg.keyboard.up(m); };
 
-assert.equal(await $('.tx-panel').isVisible(), false, 'el panel empieza cerrado para dar espacio al campo'); await $('[aria-label="Panel"]').click(); assert.equal(await $('.tx-panel').isVisible(), true, 'el botón abre el panel');
+assert.equal(await $('.tx-panel').isVisible(), false, 'el panel empieza cerrado para dar espacio al campo'); await $('button[aria-label="Menú"]').click(); await $('[aria-label="Panel"]').click(); await $('button[aria-label="Herramientas"]').dispatchEvent('click'); assert.equal(await $('.tx-panel').isVisible(), true, 'el botón abre el panel');
 // 1) pantalla inicial: panel de pizarra, herramientas, barra de pasos
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 1');
 assert.ok(await $('.tx-db').count() >= 8, 'botones del dock');
@@ -88,7 +89,7 @@ await $('.tx-db', { hasText: 'Rehacer' }).click(); await pg.waitForFunction(() =
 for (const l of ['Media cancha izquierda', 'Media cancha derecha', 'Cancha completa']) await $('[aria-label="' + l + '"]:visible').click();
 await $('[aria-label="Acercar"]:visible').click(); await $('[aria-label="Ajustar"]:visible').click();
 // 10) biblioteca: carpeta, nueva pizarra, duplicar, mover, eliminar
-await $('[aria-label="Biblioteca"]').click();
+await menu(); await $('[aria-label="Biblioteca"]').click();
 await $('.tx-lib').waitFor();
 await $('.tx-lib-bar button', { hasText: 'Nueva carpeta' }).click();
 await $('.tx-inline input').fill('Presión alta'); await $('.tx-inline button[type="submit"]').click();
@@ -96,7 +97,7 @@ await $('.tx-folders button', { hasText: 'Presión alta' }).waitFor();
 await $('.tx-lib-bar button', { hasText: 'Nueva pizarra' }).click(); // crea dentro de la carpeta
 await $('.tx-lib').waitFor({ state: 'detached' });
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 2');
-await $('[aria-label="Biblioteca"]').click();
+await menu(); await $('[aria-label="Biblioteca"]').click();
 await $('.tx-folders button', { hasText: 'Todas' }).click();
 assert.equal(await $('.tx-card').count(), 2);
 await $('.tx-card', { hasText: 'Pizarra 2' }).locator('[aria-label="Más acciones"]').click();
@@ -112,14 +113,14 @@ await $('.tx-card', { hasText: 'Pizarra 1' }).locator('.tx-card-main').click();
 await $('.tx-lib').waitFor({ state: 'detached' });
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 1');
 // 11) exportación: PNG, esquema, secuencia, proyecto y vídeo
-await $('[aria-label="Exportar"]').click();
+await menu(); await $('button[aria-label="Exportar"]').click();
 for (const [label, ext] of [['Imagen del paso actual', '.png'], ['Esquema táctico', '.png'], ['Secuencia por pasos', '.png'], ['Jugada individual', '.json']]) {
-  const [dl] = await Promise.all([pg.waitForEvent('download'), $('.tx-menu button', { hasText: label }).click()]);
+  const [dl] = await Promise.all([pg.waitForEvent('download'), $('.tx-field-opt', { hasText: label }).click()]);
   assert.ok(dl.suggestedFilename().endsWith(ext), label + ' -> ' + dl.suggestedFilename());
-  if (label !== 'Jugada individual') await $('[aria-label="Exportar"]').click();
+  if (label !== 'Jugada individual') { await menu(); await $('button[aria-label="Exportar"]').click(); }
 }
-await $('[aria-label="Exportar"]').click();
-const [vdl] = await Promise.all([pg.waitForEvent('download', { timeout: 20000 }), $('.tx-menu button', { hasText: 'Animación' }).click()]);
+await menu(); await $('button[aria-label="Exportar"]').click();
+const [vdl] = await Promise.all([pg.waitForEvent('download', { timeout: 20000 }), $('.tx-field-opt', { hasText: 'Animación' }).click()]);
 assert.ok(vdl.suggestedFilename().endsWith('.webm'));
 // 12) guardado persistente: recargar y comprobar
 await pg.waitForFunction(() => /Guardado/.test(document.querySelector('.tx-save').innerText), null, { timeout: 5000 });
@@ -131,7 +132,7 @@ assert.equal(await $('.tx-step:not(.add):not(.opts)').count(), 2, 'recupera los 
 await pg.keyboard.press('Control+a');
 assert.ok(/4|3|5/.test(await $('.tx-panel-head h3').innerText() + '4'), 'recupera fichas');
 // 13) botón atrás (Android): cierra biblioteca primero y luego la pizarra
-await $('[aria-label="Biblioteca"]').click(); await $('.tx-lib').waitFor();
+await menu(); await $('[aria-label="Biblioteca"]').click(); await $('.tx-lib').waitFor();
 assert.equal(await pg.evaluate(() => window.__fenixBack()), 'ok'); await $('.tx-lib').waitFor({ state: 'detached' });
 assert.equal(await pg.evaluate(() => window.__closed), 0);
 await pg.evaluate(() => window.__fenixBack()); await pg.waitForFunction(() => window.__closed === 1);
@@ -139,15 +140,15 @@ await pg.evaluate(() => window.__fenixBack()); await pg.waitForFunction(() => wi
 const m = await b.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 const mp = await m.newPage(); mp.on('pageerror', (e) => errs.push('mobile pageerror: ' + e));
 await mp.goto('http://localhost:8770/index.html'); await mp.waitForSelector('.tx-root[data-ready="1"]');
-assert.ok(await mp.locator('.tx-title b').isVisible() && (await mp.locator('.tx-title b').boundingBox()).width > 60, 'título visible en móvil');
-assert.ok(await mp.locator('.tx-viewbar').isVisible(), 'controles de vista sobre el campo en móvil');
+assert.ok(await mp.locator('.tx-title b').isVisible() && (await mp.locator('.tx-title b').boundingBox()).width > 40, 'título visible en móvil');
+assert.ok(await mp.locator('.tx-hud').isVisible(), 'controles de vista sobre el campo en móvil');
 const cv = await mp.locator('.tx-canvas').boundingBox(); assert.ok(cv.width >= 380 && cv.height > 150, 'campo en móvil ' + JSON.stringify(cv));
 assert.ok(await mp.locator('.tx-dock').isVisible(), 'dock visible en móvil');
 await mp.locator('.tx-db.anim').tap(); await mp.locator('.tx-transport').waitFor();
-await mp.locator('[aria-label="Panel"]').click(); assert.ok(await mp.locator('.tx-panel').isVisible());
+await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('[aria-label="Panel"]').click(); await mp.locator('button[aria-label="Herramientas"]').dispatchEvent('click'); assert.ok(await mp.locator('.tx-panel').isVisible());
 await mp.locator('[aria-label="Cerrar panel"]').click();
 await mp.locator('.tx-step.opts').tap(); assert.ok(await mp.locator('.tx-stepops').isVisible(), 'opciones del paso plegables'); await mp.locator('.tx-step.opts').tap();
-await mp.locator('[aria-label="Panel"]').click();
+await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('[aria-label="Panel"]').click(); await mp.locator('button[aria-label="Herramientas"]').dispatchEvent('click');
 await mp.screenshot({ path: shots + '/ui-mobile.png' });
 await mp.locator('[aria-label="Cerrar panel"]').click();
 // dedo: colocar ficha y arrastrar
@@ -158,7 +159,7 @@ assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'colocar una ficha no ab
 await mp.locator('.tx-db:has-text("Mover")').tap(); await mp.keyboard.press('Escape');
 await mp.locator('.tx-canvas').tap({ position: { x: 150, y: cv.height / 2 } });
 assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'seleccionar no tapa el campo con el panel');
-await mp.locator('[aria-label="Panel"]').click();
+await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('[aria-label="Panel"]').click(); await mp.locator('button[aria-label="Herramientas"]').dispatchEvent('click');
 assert.ok(await mp.locator('.tx-panel').isVisible(), 'el panel se abre con su botón');
 await mp.screenshot({ path: shots + '/ui-mobile-player.png' });
 const real = errs.filter((e) => !/favicon|Download the React DevTools/.test(e));

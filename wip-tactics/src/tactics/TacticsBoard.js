@@ -50,6 +50,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   const [panel, setPanel] = useState(false);
   const [cat, setCat] = useState(null);
   const [anim, setAnim] = useState(false);
+  const [bar, setBar] = useState('tools'); // 'tools' | 'menu' | 'red' | 'blue' | null (barra inferior oculta)
   const [fieldOpen, setFieldOpen] = useState(false);
   const [stadiums, setStadiums] = useState([]);
   const matches = useSelector((st) => (st.gameStats ? st.gameStats.matches : null));
@@ -256,6 +257,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
     body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['rect', 'oval', 'polygon'].includes(s.tool)} />; title = 'Dibujo';
   } else { body = <DocPanel ctl={ctl} s={s} folders={folders} registry={registry} onAddRegistered={addRegistered} />; title = 'Pizarra'; }
 
+  const toggleBar = (k) => { setCat(null); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
   const views = [['full', 'full', 'Cancha completa'], ['left', 'halfl', 'Media cancha izquierda'], ['right', 'halfr', 'Media cancha derecha']];
@@ -279,43 +281,25 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   useEffect(() => { const h = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => { document.removeEventListener('fullscreenchange', h); try { if (document.fullscreenElement) document.exitFullscreen(); window.screen.orientation.unlock(); } catch (e) { /* nada */ } }; }, []);
   const tree = (
     <div className={'tx-root' + (panel ? ' panel-open' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
-      <header className='tx-top'>
-        <button type='button' className='tx-icon' onClick={requestClose} title='Volver al inicio' aria-label='Volver'><Icon name='back' /></button>
-        <div className='tx-title'>
-          <b title={s.doc.name}>{s.doc.name}</b>
-          <small className={'tx-save ' + saveState}>{SAVE_TXT[saveState]}</small>
-        </div>
-        <div className='tx-top-actions'>
-          <button type='button' className='tx-chipbtn' onClick={() => setFieldOpen(true)} title='Cambiar de cancha' aria-label='Cancha'><Icon name='board' size={18} /><span>{s.doc.field ? s.doc.field.name : 'Classic'}</span></button>
-          <div className='tx-viewctl hide-sm'>{viewControls}</div>
-          <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1 / 1.25)} title='Alejar (−)' aria-label='Alejar'><Icon name='zoomout' /></button>
-          <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1.25)} title='Acercar (+)' aria-label='Acercar'><Icon name='zoomin' /></button>
-          <span className='tx-sep hide-sm' />
-          <button type='button' className='tx-icon' onClick={() => { flush(); setLib(true); }} title='Biblioteca' aria-label='Biblioteca'><Icon name='library' /></button>
-          <div className='tx-menu-wrap'>
-            <button type='button' className={'tx-icon' + (expOpen ? ' on' : '')} onClick={() => setExpOpen(!expOpen)} title='Exportar' aria-label='Exportar' aria-expanded={expOpen}><Icon name='download' /></button>
-            {expOpen && (
-              <>
-                <div className='tx-menu-back' onClick={() => setExpOpen(false)} />
-                <div className='tx-menu' role='menu'>
-                  <button type='button' role='menuitem' onClick={() => doExport('png')}><Icon name='image' size={18} /><span>Imagen del paso actual<small>PNG</small></span></button>
-                  <button type='button' role='menuitem' onClick={() => doExport('scheme')}><Icon name='trail' size={18} /><span>Esquema táctico<small>PNG con trayectorias</small></span></button>
-                  <button type='button' role='menuitem' onClick={() => doExport('sheet')}><Icon name='film' size={18} /><span>Secuencia por pasos<small>PNG con todos los pasos</small></span></button>
-                  <button type='button' role='menuitem' onClick={() => doExport('video')}><Icon name='play' size={18} /><span>Animación<small>{webmSupported() ? 'Vídeo WebM' : 'No disponible aquí'}</small></span></button>
-                  <button type='button' role='menuitem' onClick={() => doExport('json')}><Icon name='save' size={18} /><span>Jugada individual<small>Archivo de proyecto (.json)</small></span></button>
-                </div>
-              </>
-            )}
-          </div>
-          <button type='button' className={'tx-icon' + (full ? ' on' : '')} onClick={toggleFull} title='Pantalla completa y cancha horizontal' aria-label='Pantalla completa' aria-pressed={full}><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>{full ? <path d='M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' /> : <path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' />}</svg></button>
-          <button type='button' className={'tx-icon' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel de la jugada' aria-label='Panel'><Icon name='panel' /></button>
-        </div>
-      </header>
-
       <div className='tx-body'>
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
-          <div className='tx-viewbar show-sm'>{viewControls}</div>
+          <div className='tx-hud'>
+            <div className='tx-title'><b title={s.doc.name}>{s.doc.name}</b><small className={'tx-save ' + saveState}>{SAVE_TXT[saveState]}</small></div>
+            <span className='tx-sep' />
+            {viewControls}
+            <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1 / 1.25)} title='Alejar (−)' aria-label='Alejar'><Icon name='zoomout' /></button>
+            <button type='button' className='tx-icon hide-sm' onClick={() => ctl.zoomBy(1.25)} title='Acercar (+)' aria-label='Acercar'><Icon name='zoomin' /></button>
+          </div>
+          {[['red', 'Rojo', nRed, 'tl'], ['blue', 'Azul', nBlue, 'tr']].map(([t, lbl, n, pos]) => (
+            <button type='button' key={t} className={'tx-corner tx-team ' + t + ' ' + pos + (bar === t ? ' on' : '')} onClick={() => toggleBar(t)} aria-pressed={bar === t} aria-label={'Jugadores ' + lbl.toLowerCase() + 's'} title={'Equipo ' + lbl.toLowerCase() + ': toca para ver sus fichas'}>
+              <span className='tx-chev'><Icon name={t === 'red' ? 'next' : 'prev'} size={16} /></span>
+              <span className='tx-badge'><Icon name='team' size={26} /></span>
+              <small>{lbl} {n}/{MAX_PER_TEAM}</small>
+            </button>
+          ))}
+          <button type='button' className={'tx-corner tx-cbtn bl' + (bar === 'menu' ? ' on' : '')} onClick={() => toggleBar('menu')} aria-pressed={bar === 'menu'} aria-label='Menú' title='Menú: nueva, abrir, guardar, cancha, exportar'><Icon name='board' size={26} /><span>Menú</span></button>
+          <button type='button' className={'tx-corner tx-cbtn br' + (bar === 'tools' ? ' on' : '')} onClick={() => toggleBar('tools')} aria-pressed={bar === 'tools'} aria-label='Herramientas' title='Herramientas de dibujo y animación'><Icon name='pen' size={26} /><span>Herramientas</span></button>
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
             <span>{dis ? 'Animación en curso: pausa para editar' : s.multi && s.tool === 'select' ? 'Selección múltiple activa: toca varias fichas' : tool ? tool.hint : ''}</span>
@@ -346,9 +330,10 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
         </aside>
       </div>
 
-      <div className='tx-dockwrap'>
-        {anim && <Timeline ctl={ctl} s={s} progress={progress} />}
-        {cat && cat !== 'more' && (
+      {bar && (
+        <div className={'tx-dockwrap bar-' + bar}>
+          {bar === 'tools' && anim && <Timeline ctl={ctl} s={s} progress={progress} />}
+          {cat && cat !== 'more' && (
           <div className='tx-fly' role='group' aria-label={CATS.find((c) => c.id === cat).label}>
             {cat === 'add' && (
               <>
@@ -370,7 +355,13 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
             <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
           </div>
         )}
-        <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
+          {bar === 'tools' && (
+            <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
+              <div className='tx-dg tx-dg-tabs'>
+                <button type='button' className={'tx-db tab' + (!anim ? ' on' : '')} onClick={() => { if (anim && ctl) ctl.stop(); setAnim(false); }} aria-pressed={!anim} title='Editar la jugada'><Icon name='pen' size={22} /><span>Edición</span></button>
+                <button type='button' className={'tx-db tab anim' + (anim ? ' on' : '')} onClick={() => { setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
+              </div>
+              <span className='tx-dsep' />
           <div className='tx-dg tx-dg-act'>
             <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar fichas y figuras'><Icon name='select' size={22} /><span>Mover</span></button>
             <button type='button' className={'tx-db' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
@@ -391,10 +382,53 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
               );
             })}
           </div>
-          <span className='tx-dsep' />
-          <button type='button' className={'tx-db anim' + (anim ? ' on' : '')} onClick={() => { if (anim && ctl) ctl.stop(); setAnim(!anim); setCat(null); }} aria-pressed={anim} title='Mostrar u ocultar la animación (pasos y reproducción)'><Icon name='film' size={22} /><span>Animar</span></button>
+            </div>
+          )}
+          {bar === 'menu' && (
+            <div className='tx-dock tx-menubar' role='toolbar' aria-label='Menú'>
+              <button type='button' className='tx-db' onClick={() => newBoard()} title='Pizarra nueva'><Icon name='plus' size={22} /><span>Nueva</span></button>
+              <button type='button' className='tx-db' onClick={() => { flush(); setLib(true); }} title='Abrir una pizarra guardada' aria-label='Biblioteca'><Icon name='folder' size={22} /><span>Abrir</span></button>
+              <button type='button' className='tx-db' onClick={() => { flush(); flash('Guardado'); }} title='Guardar ahora'><Icon name='save' size={22} /><span>Guardar</span></button>
+              <button type='button' className='tx-db' onClick={() => setFieldOpen(true)} title='Cambiar de cancha'><Icon name='board' size={22} /><span>Cancha</span></button>
+              <button type='button' className='tx-db' onClick={() => setExpOpen(true)} title='Exportar imagen, esquema, secuencia o animación' aria-label='Exportar'><Icon name='download' size={22} /><span>Compartir</span></button>
+              <button type='button' className={'tx-db' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} aria-pressed={panel} aria-label='Panel' title='Panel de la jugada: ajustes, plantel y notas'><Icon name='panel' size={22} /><span>Ajustes</span></button>
+              <button type='button' className={'tx-db' + (full ? ' on' : '')} onClick={toggleFull} aria-pressed={full} aria-label='Pantalla completa' title='Pantalla completa y cancha horizontal'><Icon name='fit' size={22} /><span>Pantalla</span></button>
+              <button type='button' className='tx-db' onClick={requestClose} aria-label='Volver' title='Volver al inicio'><Icon name='back' size={22} /><span>Salir</span></button>
+            </div>
+          )}
+          {(bar === 'red' || bar === 'blue') && (
+            <div className='tx-dock tx-roster' role='toolbar' aria-label={'Fichas del equipo ' + (bar === 'red' ? 'rojo' : 'azul')}>
+              <button type='button' className={'tx-tok ball'} onClick={() => ctl.placeBall(0, 0)} title='Poner el balón en el centro'><i><Icon name='ball' size={22} /></i><span>Balón</span></button>
+              {Array.from({ length: MAX_PER_TEAM }, (_, i) => i + 1).map((n) => {
+                const used = s.doc.players.some((q) => (q.team || 'red') === bar && Number(q.num) === n);
+                return (
+                  <button type='button' key={n} className={'tx-tok ' + bar + (used ? ' used' : '')} onClick={() => ctl.addPlayerCenter({ team: bar, num: n })} title={'Ficha ' + n + (used ? ' (ya está en el campo)' : '')}>
+                    <i>{n}</i><span>Jugador {n}</span>
+                  </button>
+                );
+              })}
+              {registry.filter((r) => (r.team || 'neutral') === bar).map((r) => (
+                <button type='button' key={r.key} className={'tx-tok reg ' + bar} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}><i>{String(r.nick || '?').slice(0, 2)}</i><span>{r.nick}</span></button>
+              ))}
+              <button type='button' className='tx-tok gear' onClick={() => setPanel(!panel)} title='Panel de la jugada y plantel'><i><Icon name='panel' size={22} /></i><span>Ajustes</span></button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+      {expOpen && (
+        <div className='tx-overlay' onClick={() => setExpOpen(false)}>
+          <div className='tx-sheet tx-fieldsheet' role='menu' aria-label='Exportar' onClick={(e) => e.stopPropagation()}>
+            <div className='tx-sheet-head'><h3>Compartir</h3><button type='button' className='tx-icon' onClick={() => setExpOpen(false)} aria-label='Cerrar'><Icon name='close' /></button></div>
+            <div className='tx-fieldlist tx-explist'>
+              <button type='button' role='menuitem' className='tx-field-opt' onClick={() => doExport('png')}><b>Imagen del paso actual</b><small>PNG</small><Icon name='image' size={20} /></button>
+              <button type='button' role='menuitem' className='tx-field-opt' onClick={() => doExport('scheme')}><b>Esquema táctico</b><small>PNG con trayectorias</small><Icon name='trail' size={20} /></button>
+              <button type='button' role='menuitem' className='tx-field-opt' onClick={() => doExport('sheet')}><b>Secuencia por pasos</b><small>PNG con todos los pasos</small><Icon name='film' size={20} /></button>
+              <button type='button' role='menuitem' className='tx-field-opt' onClick={() => doExport('video')}><b>Animación</b><small>{webmSupported() ? 'Vídeo WebM' : 'No disponible aquí'}</small><Icon name='play' size={20} /></button>
+              <button type='button' role='menuitem' className='tx-field-opt' onClick={() => doExport('json')}><b>Jugada individual</b><small>Archivo de proyecto (.json)</small><Icon name='save' size={20} /></button>
+            </div>
+          </div>
+        </div>
+      )}
       {fieldOpen && (
         <div className='tx-overlay' onClick={() => setFieldOpen(false)}>
           <div className='tx-sheet tx-fieldsheet' role='dialog' aria-label='Elegir cancha' onClick={(e) => e.stopPropagation()}>

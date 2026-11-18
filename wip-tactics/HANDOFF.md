@@ -64,3 +64,9 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Pruebas puras: `tests/ui/geo-test.mjs` (empaquetar con esbuild `--platform=node --format=esm` y ejecutar).
 - **Zonas eliminadas** (presión/defensa/cobertura/espacio libre): herramientas, `ZONES`, render y paneles; las zonas de jugadas antiguas se descartan en `normalizeDoc`.
 - **Óvalo** (`type:'oval'`): 8 puntos de control en elipse, dibujado como curva cerrada suave; cada punto es un tirador, así que se deforma a gusto. En la capa sobre la repetición es una elipse por caja.
+
+## Pizarra con diseño tipo TacticalPad (pedido directo del usuario)
+- `TacticsBoard.js`: se quitó la cabecera. Cancha a pantalla completa; `.tx-hud` flotante (nombre, vistas, zoom); insignias de equipo arriba izq./der. (abren la bandeja de fichas Rojo/Azul: Balón, Jugador 1–5, registrados, Ajustes); botón **Menú** (abajo izq.: Nueva, Abrir, Guardar, Cancha, Compartir, Ajustes, Pantalla, Salir) y **Herramientas** (abajo der.: pestañas Edición/Animación + dock de herramientas). Estado `bar`: `'tools'|'menu'|'red'|'blue'`.
+- Las fichas de la bandeja se colocan en el centro y se arrastran. No se implementó el diálogo de ajustes de equipo.
+- `tactics.scss`: bloque nuevo al final (`.tx-corner`, `.tx-team`, `.tx-cbtn`, `.tx-roster`, `.tx-tok`); CSS de la antigua cabecera (`.tx-top`, `.tx-menu`, `.tx-viewbar`) queda sin uso.
+- Tests actualizados: el panel se abre con Menú → Ajustes; exportar/biblioteca desde Menú.
