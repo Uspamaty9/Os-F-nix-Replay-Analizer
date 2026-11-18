@@ -1,8 +1,8 @@
 // Paneles contextuales de la pizarra. Reciben el controlador (ctl) y el snapshot (s); no guardan estado del documento.
 import React, { useEffect, useState } from 'react';
 import Icon from './icons';
-import { PALETTE, TEAM_COLORS, CATEGORIES, ZONES, shapePts, resolvedPos } from './model';
-import { FILLABLE, describe, ZONE_TOOLS } from './shapes';
+import { PALETTE, TEAM_COLORS, CATEGORIES, shapePts, resolvedPos } from './model';
+import { FILLABLE, describe } from './shapes';
 import { PROV_LABEL, POSITIONS, NO_RATING, findRegistered } from './players';
 
 // ---------- controles básicos ----------
@@ -64,16 +64,16 @@ function Section({ title, children }) {
 }
 
 // ---------- panel de estilo (herramienta de dibujo activa) ----------
-export function StylePanel({ ctl, s, st, title, fillable, zoneKind }) {
+export function StylePanel({ ctl, s, st, title, fillable }) {
   return (
     <>
       <Section title={title}>
-        {!zoneKind && <Swatches value={st.color} onChange={(c) => ctl.setStyle({ color: c })} />}
+        <Swatches value={st.color} onChange={(c) => ctl.setStyle({ color: c })} />
         <Range label='Grosor' value={st.width} min={1} max={14} onChange={(v) => ctl.setStyle({ width: v })} unit=' px' />
         <Range label='Transparencia' value={Math.round((1 - st.opacity) * 100)} min={0} max={90} step={5} onChange={(v) => ctl.setStyle({ opacity: 1 - v / 100 })} unit=' %' />
         <div className='tx-row'>
           {fillable && <Toggle on={st.fill} onClick={() => ctl.setStyle({ fill: !st.fill })} icon='square'>Relleno</Toggle>}
-          {!zoneKind && <Toggle on={st.dashed} onClick={() => ctl.setStyle({ dashed: !st.dashed })} icon='dline'>Discontinua</Toggle>}
+          <Toggle on={st.dashed} onClick={() => ctl.setStyle({ dashed: !st.dashed })} icon='dline'>Discontinua</Toggle>
         </div>
       </Section>
     </>
@@ -89,12 +89,11 @@ export function ShapePanel({ ctl, s }) {
   const closed = FILLABLE.has(sh.type);
   const st = { color: sh.color, width: sh.width, opacity: sh.opacity != null ? sh.opacity : 1, fill: !!sh.fill, dashed: !!sh.dashed };
   const nPl = s.selPlayers.filter((i) => i !== 'ball').length;
-  const zone = sh.zone ? ZONES[sh.zone] : null;
   return (
     <>
-      <Section title={one ? describe(sh) + (zone ? ' · ' + zone.label : '') : shapes.length + ' figuras'}>
+      <Section title={one ? describe(sh) : shapes.length + ' figuras'}>
         {sh.attach && <p className='tx-note'><Icon name='link' size={14} /> Vinculada a {sh.attach.length} jugadores: se actualiza cuando se mueven.</p>}
-        <StylePanel ctl={ctl} s={s} st={st} fillable={closed && !sh.zone} zoneKind={false} />
+        <StylePanel ctl={ctl} s={s} st={st} fillable={closed} />
         {one && <TextField label={sh.type === 'text' ? 'Texto' : 'Etiqueta'} value={sh.label} onChange={(v) => ctl.updateSelShapes({ label: v })} placeholder={sh.type === 'text' ? 'Escribe una nota…' : 'Opcional'} id='tx-shape-label' />}
       </Section>
       <Section title='Orientación y tamaño'>
@@ -316,5 +315,4 @@ export function DocPanel({ ctl, s, folders, registry, onAddRegistered }) {
   );
 }
 
-export const ZONE_LABELS = ZONES;
-export { ZONE_TOOLS, shapePts };
+export { shapePts };

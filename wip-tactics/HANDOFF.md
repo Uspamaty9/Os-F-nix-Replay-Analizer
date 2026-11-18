@@ -62,3 +62,5 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Eliminados círculo, cuadrado y triángulo (herramientas, botones, render e iconos); en jugadas antiguas pasan a polígono. En la capa sobre la repetición se quitaron círculo y triángulo y la curva también elige lado.
 - Polígono/zona libre: si los vértices se tocan en un orden que cruza la figura, `geometry.untangle` (2-opt) los reordena.
 - Pruebas puras: `tests/ui/geo-test.mjs` (empaquetar con esbuild `--platform=node --format=esm` y ejecutar).
+- **Zonas eliminadas** (presión/defensa/cobertura/espacio libre): herramientas, `ZONES`, render y paneles; las zonas de jugadas antiguas se descartan en `normalizeDoc`.
+- **Óvalo** (`type:'oval'`): 8 puntos de control en elipse, dibujado como curva cerrada suave; cada punto es un tirador, así que se deforma a gusto. En la capa sobre la repetición es una elipse por caja.

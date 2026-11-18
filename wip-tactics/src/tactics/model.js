@@ -4,7 +4,7 @@
 //  {
 //    id, name, description, category, folderId, createdAt, updatedAt,
 //    players: [{ id, nick, num, team: 'red'|'blue'|'neutral', color, role, regKey }],
-//    shapes:  [{ id, type, pts, color, width, opacity, fill, dashed, label, attach, zone, rot }],
+//    shapes:  [{ id, type, pts, color, width, opacity, fill, dashed, label, attach, rot }],
 //    frames:  [{ id, name, pos: { [playerId|'ball']: {x, y} } }],   // frames[0] = posiciones iniciales
 //    stepMs: 1200
 //  }
@@ -18,13 +18,6 @@ export const CATEGORIES = [
   'General', 'Salida desde defensa', 'Circulación de balón', 'Triangulación', 'Rotación',
   'Desmarque', 'Presión', 'Transición', 'Ataque organizado', 'Movimiento defensivo'
 ];
-
-export const ZONES = {
-  press: { label: 'Zona de presión', color: '#FF5A4F', opacity: 0.28 },
-  defense: { label: 'Zona defensiva', color: '#5689E5', opacity: 0.28 },
-  cover: { label: 'Zona de cobertura', color: '#F5C542', opacity: 0.26 },
-  custom: { label: 'Espacio personalizado', color: '#4CC38A', opacity: 0.26 }
-};
 
 // Máximo de fichas por equipo (el campo es de HaxBall: más jugadores no se pueden leer ni animar)
 export const MAX_PER_TEAM = 5;
@@ -163,7 +156,7 @@ export function setBall(doc, fi, p) {
 export function addShape(doc, shape) {
   const s = {
     id: uid(), type: 'line', pts: [], color: '#F5C542', width: 3, opacity: 1, fill: false, dashed: false,
-    label: '', attach: null, zone: null, rot: 0, ...shape
+    label: '', attach: null, rot: 0, ...shape
   };
   return { doc: touch({ ...doc, shapes: [...doc.shapes, s] }), id: s.id };
 }
@@ -278,8 +271,9 @@ export function normalizeDoc(d) {
   doc.frames = Array.isArray(doc.frames) && doc.frames.length ? doc.frames : base.frames;
   doc.stepMs = clamp(Number(doc.stepMs) || 1200, 200, 8000);
   // Jugadas guardadas con versiones anteriores
-  doc.shapes = doc.shapes.map((s) => {
-    if (!s || !Array.isArray(s.pts)) return s;
+  // las zonas ya no existen: se descartan de las jugadas antiguas
+  doc.shapes = doc.shapes.filter((s) => s && s.type !== 'zone').map((s) => {
+    if (!Array.isArray(s.pts)) return s;
     if (s.type === 'circle' && s.pts.length >= 2) { // el círculo ya no existe como herramienta: pasa a polígono
       const r = Math.hypot(s.pts[1].x - s.pts[0].x, s.pts[1].y - s.pts[0].y), c = s.pts[0];
       return { ...s, type: 'polygon', pts: ellipsePts({ x: c.x - r, y: c.y - r }, { x: c.x + r, y: c.y + r }) };

@@ -15,7 +15,6 @@ import { saveBlob, fileName } from './exporter';
 
 const COLORS = ['#F5C542', '#FFFFFF', '#E56E6E', '#5689E5', '#4CC38A', '#B07CFF'];
 const TEAM = { red: '#E56E6E', blue: '#5689E5' };
-const ZONE = { press: { c: '#E56E6E', t: 'Presión' }, defense: { c: '#5689E5', t: 'Defensa' }, cover: { c: '#4CC38A', t: 'Cobertura' } };
 const WIDTHS = [2, 3.5, 6];
 const TOOLS = [
   { id: 'hand', icon: 'pan', label: 'Mover vista' },
@@ -26,17 +25,15 @@ const TOOLS = [
   { id: 'arrow', icon: 'arrow', label: 'Flecha' },
   { id: 'carrow', icon: 'carrow', label: 'Flecha curva' },
   { id: 'rect', icon: 'rect', label: 'Rectángulo' },
-  { id: 'press', icon: 'press', label: 'Zona de presión' },
-  { id: 'defense', icon: 'defense', label: 'Zona defensiva' },
-  { id: 'cover', icon: 'cover', label: 'Zona de cobertura' },
+  { id: 'oval', icon: 'oval', label: 'Óvalo' },
   { id: 'red', team: 'red', label: 'Ficha roja' },
   { id: 'blue', team: 'blue', label: 'Ficha azul' },
   { id: 'ball', icon: 'ball', label: 'Balón' },
   { id: 'text', icon: 'text', label: 'Texto' },
   { id: 'erase', icon: 'erase', label: 'Borrador' }
 ];
-const SHORT = { hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', press: 'Presión', defense: 'Defensa', cover: 'Cobertura', red: 'Roja', blue: 'Azul', rect: 'Rect.' };
-const DRAG = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'press', 'defense', 'cover']);
+const SHORT = { hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', red: 'Roja', blue: 'Azul', rect: 'Rect.', oval: 'Óvalo' };
+const DRAG = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval']);
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 function segDist(p, a, b) {
@@ -71,11 +68,11 @@ export function drawItems(ctx, items, T, draft) {
   const P = (p) => ({ x: T.sx(p.x), y: T.sy(p.y) });
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const it of all) {
-    const col = it.type === 'zone' ? ZONE[it.kind].c : it.color;
+    const col = it.color;
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.setLineDash([]);
     ctx.lineWidth = Math.max(2, (it.w || 3.5) * T.s);
     const lw = ctx.lineWidth;
-    const fillShape = () => { ctx.save(); ctx.globalAlpha = it.type === 'zone' ? 0.28 : 0.24; ctx.fill(); ctx.restore(); };
+    const fillShape = () => { ctx.save(); ctx.globalAlpha = 0.24; ctx.fill(); ctx.restore(); };
     if (it.type === 'pen' && it.pts.length) {
       ctx.beginPath(); it.pts.forEach((q, i) => { const p = P(q); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); });
       if (it.pts.length === 1) { const p = P(it.pts[0]); ctx.lineTo(p.x + 0.1, p.y); }
@@ -91,15 +88,13 @@ export function drawItems(ctx, items, T, draft) {
       const ex = b.x - Math.cos(ang) * hd * 0.6, ey = b.y - Math.sin(ang) * hd * 0.6;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); if (c) ctx.quadraticCurveTo(c.x, c.y, ex, ey); else ctx.lineTo(ex, ey); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - hd * Math.cos(ang - 0.45), b.y - hd * Math.sin(ang - 0.45)); ctx.lineTo(b.x - hd * Math.cos(ang + 0.45), b.y - hd * Math.sin(ang + 0.45)); ctx.closePath(); ctx.fill();
-    } else if (it.type === 'rect' || it.type === 'zone') {
+    } else if (it.type === 'rect' || it.type === 'oval') {
       const A = P(it.a), B = P(it.b), x0 = Math.min(A.x, B.x), x1 = Math.max(A.x, B.x), y0 = Math.min(A.y, B.y), y1 = Math.max(A.y, B.y);
       if (x1 - x0 < 2 && y1 - y0 < 2) continue;
       ctx.beginPath();
-      ctx.rect(x0, y0, x1 - x0, y1 - y0);
-      if (it.type === 'zone' || it.fill) fillShape();
-      if (it.type === 'zone') ctx.setLineDash([lw * 2.6, lw * 1.8]);
-      ctx.stroke(); ctx.setLineDash([]);
-      if (it.type === 'zone') { ctx.fillStyle = col; ctx.font = '700 ' + Math.max(10, Math.min(15, (x1 - x0) / 7)) + 'px Poppins, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(ZONE[it.kind].t, (x0 + x1) / 2, y0 + 4); }
+      if (it.type === 'oval') ctx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.max(1, (x1 - x0) / 2), Math.max(1, (y1 - y0) / 2), 0, 0, Math.PI * 2); else ctx.rect(x0, y0, x1 - x0, y1 - y0);
+      if (it.fill) fillShape();
+      ctx.stroke();
     } else if (it.type === 'token') {
       const p = P(it.p), r = Math.max(9, 17 * T.s);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = TEAM[it.team]; ctx.fill();
@@ -125,10 +120,10 @@ function hit(it, q, T, tol) {
   if (it.type === 'ball') return dist(q, P(it.p)) <= Math.max(6, 10 * T.s) + tol;
   if (it.type === 'text') { const p = P(it.p), fs = Math.max(13, 22 * T.s); return Math.abs(q.x - p.x) <= it.text.length * fs * 0.35 + tol && Math.abs(q.y - p.y) <= fs * 0.7 + tol; }
   if (it.type === 'line' || it.type === 'dline' || it.type === 'arrow' || it.type === 'carrow') return segDist(q, P(it.a), P(it.b)) <= tol + (it.type === 'carrow' ? Math.max(6, dist(P(it.a), P(it.b)) * 0.5 * Math.abs(it.bend != null ? it.bend : 0.2)) : 0);
-  if (it.type === 'rect' || it.type === 'zone') {
+  if (it.type === 'rect' || it.type === 'oval') {
     const A = P(it.a), B = P(it.b), x0 = Math.min(A.x, B.x) - tol, x1 = Math.max(A.x, B.x) + tol, y0 = Math.min(A.y, B.y) - tol, y1 = Math.max(A.y, B.y) + tol;
     const inside = q.x >= x0 && q.x <= x1 && q.y >= y0 && q.y <= y1;
-    if (it.type === 'zone' || it.fill) return inside;
+    if (it.fill) return inside;
     return inside && !(q.x > x0 + 2 * tol && q.x < x1 - 2 * tol && q.y > y0 + 2 * tol && q.y < y1 - 2 * tol);
   }
   if (it.type === 'pen') { for (let i = 0; i < it.pts.length; i++) { if (segDist(q, P(it.pts[i]), P(it.pts[Math.min(i + 1, it.pts.length - 1)])) <= tol) return true; } }
@@ -200,7 +195,7 @@ function makeLayer(host, canvas) {
     e.stopPropagation();
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.tool) { st.tool = b.dataset.tool; st.confirm = false; renderUi(); say(TOOLS.find((t) => t.id === st.tool).label); return; }
-    if (b.dataset.color) { st.color = b.dataset.color; if (['red', 'blue', 'ball', 'erase', 'hand', 'select', 'press', 'defense', 'cover'].includes(st.tool)) st.tool = 'pen'; renderUi(); return; }
+    if (b.dataset.color) { st.color = b.dataset.color; if (['red', 'blue', 'ball', 'erase', 'hand', 'select'].includes(st.tool)) st.tool = 'pen'; renderUi(); return; }
     const a = b.dataset.act;
     if (a === 'undo') undo();
     else if (a === 'redo') redo();
@@ -247,8 +242,7 @@ function makeLayer(host, canvas) {
     st.drawing = { id: e.pointerId };
     const base = { id: uid++, color: st.color, w, fill: st.fill };
     if (tool === 'pen') st.draft = { ...base, type: 'pen', pts: [p] };
-    else if (tool === 'rect') st.draft = { ...base, type: tool, a: p, b: p };
-    else if (ZONE[tool]) st.draft = { ...base, type: 'zone', kind: tool, a: p, b: p };
+    else if (tool === 'rect' || tool === 'oval') st.draft = { ...base, type: tool, a: p, b: p };
     else st.draft = { ...base, type: tool, a: p, b: p };
     mark();
   });

@@ -12,7 +12,7 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   assert.ok(early, 'el botón aparece a la vez que los demás');
   await pg.locator('.rb-btn').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
   // el botón y la barra: la barra queda por encima de cualquier botón de la repetición; el de zoom/restablecer sigue visible
-  await pg.evaluate(() => { const z = document.createElement('button'); z.className = 'zz'; z.style.cssText = 'position:absolute;left:40px;bottom:30px;width:60px;height:40px;z-index:30'; document.getElementById('host').appendChild(z); });
+  await pg.evaluate(() => { const bar = document.querySelector('.rb-bar').getBoundingClientRect(), host = document.getElementById('host').getBoundingClientRect(); const z = document.createElement('button'); z.className = 'zz'; z.style.cssText = 'position:absolute;width:20px;height:20px;z-index:30;left:' + (bar.left - host.left + bar.width / 2 - 10) + 'px;top:' + (bar.top - host.top + bar.height / 2 - 10) + 'px'; document.getElementById('host').appendChild(z); });
   await pg.waitForTimeout(100);
   const topIsBar = await pg.evaluate(() => { const r = document.querySelector('.zz').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(el && el.closest('.rb-bar')); });
   assert.ok(topIsBar, 'la barra queda por encima de cualquier botón');
@@ -40,7 +40,7 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   // modo mover: el clic atraviesa la capa
   await tool('hand'); assert.equal(await pg.locator('.rb-canvas').evaluate((c) => getComputedStyle(c).pointerEvents), 'none', 'mover deja pasar');
   // más herramientas
-  const n0 = await n(); await tool('rect'); await drag([0.1, 0.6], [0.25, 0.7]); await tool('press'); await drag([0.6, 0.6], [0.8, 0.7]); await tool('carrow'); await drag([0.05, 0.42], [0.2, 0.42]); await tool('dline'); await drag([0.5, 0.1], [0.9, 0.1]);
+  const n0 = await n(); await tool('rect'); await drag([0.1, 0.6], [0.25, 0.7]); await tool('oval'); await drag([0.6, 0.6], [0.8, 0.7]); await tool('carrow'); await drag([0.05, 0.42], [0.2, 0.42]); await tool('dline'); await drag([0.5, 0.1], [0.9, 0.1]);
   assert.equal(await n(), n0 + 4, 'rect, zona, flecha curva, discontinua');
   // mover una marca
   await tool('select'); const tk0 = await pg.evaluate(() => window.__fenixReplayBoard.st.items.find((i) => i.type === 'token').p); await drag([0.3, 0.5], [0.3, 0.3]);

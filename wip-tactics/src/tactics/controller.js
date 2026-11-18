@@ -5,8 +5,8 @@ import * as M from './model';
 import { drawScene } from './render';
 import { pickShape, shapeInRect, handlesOf, isClosed } from './shapes';
 
-const DRAW_TOOLS = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'press', 'defense', 'cover']);
-const POLY_TOOLS = new Set(['polygon', 'custom']);
+const DRAW_TOOLS = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval']);
+const POLY_TOOLS = new Set(['polygon']);
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3, 4];
 
 export class TacticsController {
@@ -612,7 +612,7 @@ export class TacticsController {
 
   _mkDraft(t, a, b, bend = 0) {
     const st = this.style;
-    const base = { id: 'draft', color: st.color, width: st.width, opacity: st.opacity, fill: st.fill, dashed: st.dashed, label: '', attach: null, zone: null, rot: 0 };
+    const base = { id: 'draft', color: st.color, width: st.width, opacity: st.opacity, fill: st.fill, dashed: st.dashed, label: '', attach: null, rot: 0 };
     switch (t) {
       case 'pen': return { ...base, type: 'pen', pts: [a] };
       case 'line': return { ...base, type: 'line', pts: [a, b] };
@@ -620,9 +620,7 @@ export class TacticsController {
       case 'arrow': return { ...base, type: 'arrow', pts: [a, b] };
       case 'carrow': return { ...base, type: 'carrow', thru: true, pts: [a, G.curveMid(a, b, bend), b] };
       case 'rect': return { ...base, type: 'rect', pts: G.boxPts(a, b) };
-      case 'defense': return { ...base, type: 'zone', zone: 'defense', color: M.ZONES.defense.color, fill: true, width: 2, pts: G.boxPts(a, b) };
-      case 'press': return { ...base, type: 'zone', zone: 'press', color: M.ZONES.press.color, fill: true, width: 2, pts: G.ellipsePts(a, b) };
-      case 'cover': return { ...base, type: 'zone', zone: 'cover', color: M.ZONES.cover.color, fill: true, width: 2, pts: G.ellipsePts(a, b) };
+      case 'oval': return { ...base, type: 'oval', pts: G.ellipsePts(a, b, 8) };
       default: return null;
     }
   }
@@ -657,11 +655,8 @@ export class TacticsController {
     while (pts.length > 1 && G.dist(pts[pts.length - 1], pts[pts.length - 2]) < this._tol(6)) pts.pop();
     if (pts.length < 3) { this.toast('Un polígono necesita al menos 3 vértices'); this.draw(); this.emit(); return; }
     if (G.selfIntersects(pts)) { pts = G.untangle(pts); this.toast('Ordené los vértices para que la figura no se cruce'); }
-    const zone = this.tool === 'custom';
     const st = this.style;
-    const r = M.addShape(this.doc, zone
-      ? { type: 'zone', zone: 'custom', pts, color: M.ZONES.custom.color, fill: true, width: 2, opacity: st.opacity }
-      : { type: 'polygon', pts, color: st.color, width: st.width, opacity: st.opacity, fill: st.fill, dashed: st.dashed });
+    const r = M.addShape(this.doc, { type: 'polygon', pts, color: st.color, width: st.width, opacity: st.opacity, fill: st.fill, dashed: st.dashed });
     this._apply(r.doc); this.sel = { players: new Set(), shapes: new Set([r.id]) };
     this.setTool('select');
   }
@@ -846,7 +841,7 @@ export class TacticsController {
     if (k === 'p' || k === 'P') { this.toggle(); return; }
     if (k === ',') { this.stepBy(-1); return; }
     if (k === '.') { this.stepBy(1); return; }
-    const map = { v: 'select', h: 'pan', b: 'pen', l: 'line', a: 'arrow', c: 'carrow', r: 'rect', g: 'polygon', f: 'player', n: 'text' };
+    const map = { v: 'select', h: 'pan', b: 'pen', l: 'line', a: 'arrow', c: 'carrow', r: 'rect', o: 'oval', g: 'polygon', f: 'player', n: 'text' };
     const t = map[k.toLowerCase()]; if (t) { this.setTool(t); }
   }
 
@@ -867,7 +862,7 @@ export class TacticsController {
     let poly = null;
     if (this.poly) {
       const pts = this.poly.pts.concat(this.poly.cursor && this.poly.cursor !== this.poly.pts[this.poly.pts.length - 1] ? [this.poly.cursor] : []);
-      poly = { id: 'poly', type: pts.length >= 3 ? 'polygon' : 'line', pts, color: this.tool === 'custom' ? M.ZONES.custom.color : this.style.color, width: 2, opacity: 0.9, fill: pts.length >= 3, dashed: true, label: '', attach: null, zone: null };
+      poly = { id: 'poly', type: pts.length >= 3 ? 'polygon' : 'line', pts, color: this.style.color, width: 2, opacity: 0.9, fill: pts.length >= 3, dashed: true, label: '', attach: null };
     }
     drawScene(ctx, this.view, this.w, this.h2, {
       doc: d, fi, pos, selPlayers: playing ? null : this.sel.players, selShapes: playing ? null : this.sel.shapes,

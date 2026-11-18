@@ -9,8 +9,8 @@ import Library from './Library';
 import Timeline from './Timeline';
 import { DocPanel, PlayerPanel, MultiPanel, ShapePanel, StylePanel } from './panels';
 import { TacticsController } from './controller';
-import { TOOLS, ZONE_TOOLS } from './shapes';
-import { newDoc, TEAM_COLORS, ZONES, MAX_PER_TEAM, teamCount } from './model';
+import { TOOLS } from './shapes';
+import { newDoc, TEAM_COLORS, MAX_PER_TEAM, teamCount } from './model';
 import { listDocs, saveDoc, listFolders, listRoster, saveRosterPlayer, getKv, setKv, serializeDoc } from './storage';
 import { collectFromMatches, mergeRegistry, keyOf } from './players';
 import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, webmSupported, saveBlob, fileName, projectBlob } from './exporter';
@@ -19,12 +19,11 @@ import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, 
 const CATS = [
   { id: 'add', label: 'Añadir', icon: 'plus', tools: ['player', 'ball'] },
   { id: 'lines', label: 'Líneas', icon: 'pen', tools: ['pen', 'line', 'dline', 'arrow', 'carrow'] },
-  { id: 'shapes', label: 'Formas', icon: 'polygon', tools: ['rect', 'polygon'] },
-  { id: 'zones', label: 'Zonas', icon: 'press', tools: ['press', 'defense', 'cover', 'custom'] },
+  { id: 'shapes', label: 'Formas', icon: 'polygon', tools: ['rect', 'oval', 'polygon'] },
   { id: 'more', label: 'Más', icon: 'more', tools: [] }
 ];
 const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
-const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'polygon', ...ZONE_TOOLS]);
+const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval', 'polygon']);
 // Estado mostrado mientras se abre el proyecto: el árbol de la interfaz es siempre el mismo (el canvas no se recrea)
 const EMPTY = {
   doc: newDoc('Cargando…'), fi: 0, tool: 'select', multi: false, snap: true, names: true, trails: false, ghost: true, newTeam: 'red',
@@ -254,8 +253,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   if (nShapes) { body = <ShapePanel ctl={ctl} s={s} />; title = 'Figura'; } else if (nPl >= 2) { body = <MultiPanel ctl={ctl} s={s} />; title = 'Selección'; } else if (nPl === 1) { body = <PlayerPanel ctl={ctl} s={s} registry={registry} onSaveRoster={saveToRoster} onNotes={saveNotes} />; title = 'Jugador'; } else if (ballSel) {
     body = (<section className='tx-sec'><h4>Balón</h4><button type='button' className='tx-btn danger' onClick={() => ctl.removeBall()}><Icon name='trash' size={16} /><span>Quitar balón</span></button></section>); title = 'Balón';
   } else if (DRAWING.has(s.tool)) {
-    const z = ZONE_TOOLS.includes(s.tool);
-    body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['rect', 'polygon'].includes(s.tool)} zoneKind={z} />; title = 'Dibujo';
+    body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['rect', 'oval', 'polygon'].includes(s.tool)} />; title = 'Dibujo';
   } else { body = <DocPanel ctl={ctl} s={s} folders={folders} registry={registry} onAddRegistered={addRegistered} />; title = 'Pizarra'; }
 
   const dis = s.play.state !== 'stopped';
@@ -433,4 +431,4 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   return typeof document !== 'undefined' && document.body ? createPortal(tree, document.body) : tree;
 }
 
-export { serializeDoc, ZONES };
+export { serializeDoc };

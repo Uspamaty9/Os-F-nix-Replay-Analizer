@@ -1,6 +1,6 @@
 // Dibujado de la pizarra en canvas 2D. Sin dependencias de React: se usa en pantalla y para exportar imágenes/vídeo.
 import { PITCH, getField, toScreen, dist, quadAt, curveCtrl } from './geometry';
-import { ZONES, shapePts, resolvedPos } from './model';
+import { shapePts, resolvedPos } from './model';
 import { handlesOf, labelAnchor, isClosed } from './shapes';
 
 export const FIELD = {
@@ -145,13 +145,12 @@ function smoothPath(ctx, pts) {
 export function drawShape(ctx, v, shape, pts, opts = {}) {
   if (!pts || !pts.length) return;
   const sp = pts.map((p) => toScreen(v, p));
-  const zone = shape.zone ? ZONES[shape.zone] : null;
-  const color = shape.color || (zone && zone.color) || '#F5C542';
+  const color = shape.color || '#F5C542';
   const lw = Math.max(1, (shape.width || 3) * Math.max(v.k, 0.6));
   ctx.save();
   ctx.globalAlpha = shape.opacity != null ? shape.opacity : 1;
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.setLineDash(shape.dashed || shape.type === 'dline' || zone ? [lw * 2.6, lw * 1.8] : []);
+  ctx.setLineDash(shape.dashed || shape.type === 'dline' ? [lw * 2.6, lw * 1.8] : []);
   const t = shape.type;
   if (t === 'text') {
     ctx.setLineDash([]);
@@ -175,11 +174,16 @@ export function drawShape(ctx, v, shape, pts, opts = {}) {
   } else if (t === 'line' || t === 'dline' || t === 'link') {
     ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y); ctx.stroke();
   } else if (isClosed(t)) {
-    ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y); ctx.closePath();
-    if (shape.fill || zone) {
+    ctx.beginPath();
+    if (t === 'oval' && sp.length >= 3) { // curva cerrada suave por los puntos de control: un óvalo que se deforma a gusto
+      const n = sp.length, mid = (i, j) => ({ x: (sp[i].x + sp[j].x) / 2, y: (sp[i].y + sp[j].y) / 2 });
+      const m0 = mid(n - 1, 0); ctx.moveTo(m0.x, m0.y);
+      for (let i = 0; i < n; i++) { const m = mid(i, (i + 1) % n); ctx.quadraticCurveTo(sp[i].x, sp[i].y, m.x, m.y); }
+    } else { ctx.moveTo(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y); }
+    ctx.closePath();
+    if (shape.fill) {
       ctx.save();
-      const base = shape.opacity != null ? shape.opacity : 1;
-      ctx.globalAlpha = zone ? Math.min(1, (zone.opacity + 0.0) * base) : 0.24 * base;
+      ctx.globalAlpha = 0.24 * (shape.opacity != null ? shape.opacity : 1);
       ctx.fill(); ctx.restore();
     }
     ctx.stroke();
