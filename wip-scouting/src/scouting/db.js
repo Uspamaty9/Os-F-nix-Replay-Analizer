@@ -1,8 +1,8 @@
 // Almacenamiento persistente del módulo de análisis y scouting (IndexedDB).
 // Base de datos propia: NO toca el historial de repeticiones ('os-fenix-replays').
 const DB_NAME = 'os-fenix-scouting';
-const DB_VERSION = 1;
-export const STORES = ['teams', 'players', 'seasons', 'competitions', 'fixtures', 'matches', 'ratings', 'kv'];
+const DB_VERSION = 2;
+export const STORES = ['teams', 'players', 'seasons', 'competitions', 'fixtures', 'matches', 'ratings', 'trash', 'kv'];
 export const CHANGED = 'fenix-scouting-changed';
 
 let dbPromise = null;
@@ -65,4 +65,21 @@ export async function importScouting(text) {
     await putMany(s, toPut); n += toPut.length;
   }
   return n;
+}
+
+// ---------- Papelera: partidos y equipos borrados se pueden restaurar ----------
+const TRASH_MAX = 40;
+export async function toTrash(kind, rec, extra) {
+  const entry = { id: uid('tr'), kind, name: rec.name || rec.nick || '—', rec, extra: extra || {}, at: Date.now() };
+  await put('trash', entry);
+  const list = (await all('trash')).sort((a, b) => b.at - a.at);
+  if (list.length > TRASH_MAX) await delMany('trash', list.slice(TRASH_MAX).map((t) => t.id));
+  return entry;
+}
+export async function restoreTrash(entry) {
+  const st = { match: 'matches', team: 'teams' }[entry.kind]; if (!st) return;
+  await put(st, entry.rec, true);
+  if (entry.extra && entry.extra.ratings && entry.extra.ratings.length) await putMany('ratings', entry.extra.ratings);
+  if (entry.extra && entry.extra.players && entry.extra.players.length) await putMany('players', entry.extra.players);
+  await del('trash', entry.id);
 }

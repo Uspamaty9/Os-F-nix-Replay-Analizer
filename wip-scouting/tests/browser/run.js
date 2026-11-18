@@ -23,7 +23,7 @@ const { chromium } = require('playwright');
   });
   console.log('seed', info.matches, 'partidos', info.players, 'jugadores; teamAuto', info.sample.teamAuto, info.sample.redTeamId, info.sample.blueTeamId);
   await page.waitForTimeout(400);
-  const tabs = ['Panel', 'Jugadores', 'Scouting', 'Partidos', 'Pases', 'Equipos', 'Informes'];
+  const tabs = ['Panel', 'Jugadores', 'Scouting', 'Partidos', 'Equipos', 'Más'];
   for (let i = 0; i < tabs.length; i++) { await page.click('.sc-tabs button:nth-child(' + (i + 1) + ')'); await page.waitForTimeout(300); await page.screenshot({ path: 'shots/1' + i + '-' + tabs[i] + '.png', fullPage: false }); }
   console.log('ERRORS', JSON.stringify(errors));
   await b.close();

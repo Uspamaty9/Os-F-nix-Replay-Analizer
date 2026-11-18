@@ -16,12 +16,12 @@ const { chromium } = require('playwright'); const assert = require('assert');
   const base = await snap(); assert.strictEqual(base.matches, 4);
   // 1) excluir un partido desde la lista: deja de contar, se puede ver y volver a incluir
   await page.click('.sc-tabs button:nth-child(4)'); await page.waitForTimeout(250);
-  await page.click('.sc-list li:first-child button:has-text("Excluir")'); await page.waitForTimeout(400);
+  await page.click('button:has-text("Seleccionar")'); await page.click('.sc-list li:first-child'); await page.click('button:has-text("Excluir (1)")'); await page.waitForTimeout(400);
   let s1 = await snap(); assert.strictEqual(s1.matches, 3); assert.strictEqual(s1.excluded, 1); assert.ok(s1.rows < base.rows, 'filas bajan');
   assert.strictEqual(await page.$$eval('.sc-list li', (l) => l.length), 3);
   await page.click('button:has-text("Mostrar excluidos")'); await page.waitForTimeout(200);
   assert.strictEqual(await page.$$eval('.sc-list li', (l) => l.length), 4); assert.ok(await page.$('.sc-list li.off'), 'fila excluida marcada');
-  await page.click('.sc-list li.off button:has-text("Incluir")'); await page.waitForTimeout(400);
+  await page.click('.sc-list li.off'); await page.click('button:has-text("Incluir (1)")'); await page.waitForTimeout(400); await page.click('button:has-text("Listo")');
   assert.strictEqual((await snap()).matches, 4); console.log('OK excluir/incluir desde la lista');
   // detalle de partido excluido sigue abriendo
   await page.evaluate(async () => { const m = (await window.__db.all('matches'))[0]; await window.__db.put('matches', { ...m, excluded: true }); });
@@ -30,7 +30,7 @@ const { chromium } = require('playwright'); const assert = require('assert');
   await page.click('button:has-text("Incluir en las estad")'); await page.waitForTimeout(300); assert.strictEqual((await snap()).matches, 4); console.log('OK detalle excluido');
   // 2) borrar desde la lista
   await page.click('.sc-link.back'); await page.waitForTimeout(250);
-  await page.click('.sc-list li:first-child button:has-text("Borrar")'); await page.waitForTimeout(250); await page.click('.sc-sheet-foot .sc-btn.danger'); await page.waitForTimeout(400);
+  await page.click('button:has-text("Seleccionar")'); await page.click('.sc-list li:first-child'); await page.click('button:has-text("Borrar (1)")'); await page.waitForTimeout(250); await page.click('.sc-sheet-foot .sc-btn.danger'); await page.waitForTimeout(400);
   assert.strictEqual((await snap()).matches, 3); console.log('OK borrar desde la lista');
   // 3) elegir jugadores: quitar 2 -> no cuentan en lista ni en filas ni en la red
   await page.click('.sc-tabs button:nth-child(2)'); await page.waitForTimeout(250);

@@ -9,19 +9,38 @@ import { buildMatchReport } from './report';
 export default function Matches({ model, view, nav, params, openReplay }) {
   const sel = params && params.matchId && model.matchById.get(params.matchId);
   const [q, setQ] = useState(''); const [showEx, setShowEx] = useState(false); const [confirm, confirmEl] = useConfirm();
+  const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set());
   if (sel) return <Detail model={model} m={sel} nav={nav} openReplay={openReplay} />;
-  const toggleEx = async (m) => { await db.put('matches', { ...m.rec, excluded: !m.rec.excluded }); toast(m.rec.excluded ? 'Partido incluido de nuevo' : 'Partido excluido: ya no cuenta en las estadísticas'); };
-  const removeM = async (m) => { if (await confirm('Se borrarán las estadísticas guardadas de «' + m.rec.name + '» (calificaciones incluidas). La repetición seguirá en el historial. Si la vuelves a abrir, se analizará de nuevo; para que no cuente sin borrarla, usa «Excluir».', 'Borrar')) { await db.delMany('ratings', model.ratings.filter((r) => r.matchId === m.id).map((r) => r.id)); await db.del('matches', m.id); toast('Partido borrado'); } };
+  // Borrar: van a la papelera (con sus calificaciones) y se pueden restaurar con «Deshacer» o desde Más > Papelera.
+  const trashMatches = async (ms) => {
+    if (!ms.length) return;
+    if (!(await confirm(ms.length === 1 ? 'Se borrarán las estadísticas guardadas de «' + ms[0].rec.name + '» (calificaciones incluidas). La repetición seguirá en el historial. Podrás restaurarlo desde la papelera.' : '¿Borrar las estadísticas de ' + ms.length + ' partidos? La repetición seguirá en el historial y podrás restaurarlos desde la papelera.', 'Borrar'))) return;
+    const entries = [];
+    for (const m of ms) { const rts = model.ratings.filter((r) => r.matchId === m.id); entries.push(await db.toTrash('match', m.rec, { ratings: rts })); await db.delMany('ratings', rts.map((r) => r.id)); await db.del('matches', m.id); }
+    setChk(new Set());
+    toast(ms.length === 1 ? 'Partido borrado' : ms.length + ' partidos borrados', { label: 'Deshacer', fn: async () => { for (const e of entries) await db.restoreTrash(e); toast('Restaurado'); } });
+  };
+  const setEx = async (ms, ex) => {
+    if (!ms.length) return; const prev = ms.map((m) => m.rec);
+    await db.putMany('matches', ms.map((m) => ({ ...m.rec, excluded: ex }))); setChk(new Set());
+    toast(ex ? ms.length + ' excluido(s): ya no cuentan' : ms.length + ' incluido(s) de nuevo', { label: 'Deshacer', fn: () => db.putMany('matches', prev) });
+  };
   const list = (showEx ? view.matches.concat(model.excluded).sort((a, b) => b.date - a.date) : view.matches).filter((m) => !q || (m.rec.name + ' ' + teamName(model, m.redTeamId, '') + ' ' + teamName(model, m.blueTeamId, '')).toLowerCase().includes(q.toLowerCase()));
   return (
     <div className="sc-view"><Card title="Partidos analizados" right={<span className="sc-sub">{view.matches.length} cuentan{model.excluded.length ? ' · ' + model.excluded.length + ' excluidos' : ''}</span>}>
       <input className="sc-search" placeholder="Buscar partido o equipo…" value={q} onChange={(e) => setQ(e.target.value)} />
-      {model.excluded.length > 0 && <div className="sc-row wrap"><button className={'sc-btn small' + (showEx ? '' : ' ghost')} onClick={() => setShowEx(!showEx)}>{showEx ? 'Ocultar excluidos' : 'Mostrar excluidos (' + model.excluded.length + ')'}</button></div>}
+      <div className="sc-selbar">
+        <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>
+        {model.excluded.length > 0 && <button className={'sc-btn small' + (showEx ? '' : ' ghost')} onClick={() => setShowEx(!showEx)}>{showEx ? 'Ocultar excluidos' : 'Mostrar excluidos (' + model.excluded.length + ')'}</button>}
+        {selMode && <><button className="sc-btn small ghost" onClick={() => setChk(new Set(list.map((m) => m.id)))}>Todos</button><button className="sc-btn small ghost" onClick={() => setChk(new Set())}>Ninguno</button>
+          {(() => { const picked = list.filter((m) => chk.has(m.id)); const allEx = picked.length > 0 && picked.every((m) => m.excluded); return <><button className="sc-btn small ghost" disabled={!picked.length} onClick={() => setEx(picked, !allEx)}>{allEx ? 'Incluir' : 'Excluir'} ({picked.length})</button><button className="sc-btn small danger" disabled={!picked.length} onClick={() => trashMatches(picked)}>Borrar ({picked.length})</button></>; })()}</>}
+      </div>
       {!list.length ? <Empty>{model.matches.length ? 'Ningún partido coincide con los filtros.' : 'Aún no hay partidos. Abre una repetición desde el historial y, cuando termine de analizarse, aparecerá aquí con todas sus estadísticas.'}</Empty> : (
-        <ul className="sc-list">{list.map((m) => <li key={m.id} className={m.excluded ? 'off' : ''} style={m.excluded ? { opacity: 0.55 } : undefined} onClick={() => nav('matches', { matchId: m.id })}>
+        <ul className="sc-list">{list.map((m) => <li key={m.id} className={m.excluded ? 'off' : ''} style={m.excluded ? { opacity: 0.55 } : undefined} onClick={() => (selMode ? setChk((c) => { const n = new Set(c); n.has(m.id) ? n.delete(m.id) : n.add(m.id); return n; }) : nav('matches', { matchId: m.id }))}>
+          {selMode && <span className={'sc-check' + (chk.has(m.id) ? ' on' : '')}>{chk.has(m.id) ? '✓' : ''}</span>}
           <div className="sc-score"><i className="r" />{m.score[0]}<em>–</em>{m.score[1]}<i className="b" /></div>
           <div className="mid"><b>{teamName(model, m.redTeamId, 'Rojo')} vs {teamName(model, m.blueTeamId, 'Azul')}</b><small>{m.rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{m.rec.parts.length > 1 ? ' · ' + m.rec.parts.length + ' tramos' : ''}{m.excluded ? ' · EXCLUIDO' : ''}</small></div>
-          <div className="sc-col" onClick={(e) => e.stopPropagation()}><button className="sc-btn small ghost" onClick={() => toggleEx(m)}>{m.excluded ? 'Incluir' : 'Excluir'}</button><button className="sc-btn small ghost danger" onClick={() => removeM(m)}>Borrar</button></div></li>)}</ul>)}
+          {!selMode && <span className="chev" style={{ color: 'var(--sc-mute)', fontSize: 20 }}>›</span>}</li>)}</ul>)}
       {confirmEl}
     </Card></div>
   );
@@ -39,7 +58,7 @@ function Detail({ model, m, nav, openReplay }) {
   const cmpRows = [['Posesión', R.possession, B.possession, 'auto', fmtPct], ['Goles', R.goals, B.goals, 'auto'], ['Tiros a puerta', R.shotsOT, B.shotsOT, 'auto'], ['Conversión', R.conversion, B.conversion, 'calc', fmtPct], ['Toques', R.kicks, B.kicks, 'auto'], ['Pases completados', R.passesCompleted, B.passesCompleted, 'calc'], ['Pases fallidos', R.passesFailed, B.passesFailed, 'calc'], ['Precisión de pases', R.passAccuracy, B.passAccuracy, 'calc', fmtPct], ['Pérdidas', R.turnovers, B.turnovers, 'calc'], ['Recuperaciones', R.recoveries, B.recoveries, 'calc'], ['Intercepciones', R.interceptions, B.interceptions, 'calc'], ['Bloqueos', R.blocks, B.blocks, 'calc'], ['Pases clave', R.keyPasses, B.keyPasses, 'calc'], ['Tiros a puerta evitados', R.savesImplied, B.savesImplied, 'calc'], ['Tercios (def·med·ata)', R.thirds.join(' · '), B.thirds.join(' · '), 'auto']];
   const dateStr = rec.date ? toInputDate(rec.date) : '';
   async function pdf() { try { const b = buildMatchReport(model, m.id); await saveFile('Partido-' + slug(rn + '-' + bn) + '-' + stamp() + '.pdf', 'application/pdf', b); toast('Informe PDF guardado'); } catch (e) { toast('No se pudo crear el informe'); } }
-  async function remove() { if (await confirm('Se borrarán las estadísticas guardadas de este partido (calificaciones incluidas). La repetición seguirá en el historial y podrás volver a analizarla.', 'Borrar estadísticas')) { await db.delMany('ratings', model.ratings.filter((r) => r.matchId === m.id).map((r) => r.id)); await db.del('matches', m.id); nav('matches', {}); } }
+  async function remove() { if (await confirm('Se borrarán las estadísticas guardadas de este partido (calificaciones incluidas). La repetición seguirá en el historial. Podrás restaurarlo desde Más > Papelera.', 'Borrar estadísticas')) { const rts = model.ratings.filter((r) => r.matchId === m.id); const e = await db.toTrash('match', rec, { ratings: rts }); await db.delMany('ratings', rts.map((r) => r.id)); await db.del('matches', m.id); nav('matches', {}); toast('Partido borrado', { label: 'Deshacer', fn: async () => { await db.restoreTrash(e); toast('Restaurado'); } }); } }
   function suggest() { const s = suggestTeams(rec.parts[rec.partIdx], model.players); if (!s.R && !s.B) { toast('No hay suficientes jugadores con equipo para sugerir'); return; } upd({ redTeamId: s.R, blueTeamId: s.B, teamAuto: true }); toast('Equipos asignados según las plantillas'); }
   return (
     <div className="sc-view">

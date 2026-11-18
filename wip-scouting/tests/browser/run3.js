@@ -33,7 +33,7 @@ const { chromium } = require('playwright'); const assert = require('assert');
   await page.click('button:has-text("Comparar")'); await page.click('.sc-list li:nth-child(1)'); await page.click('.sc-list li:nth-child(2)'); await page.click('button:has-text("Comparar (2)")'); await page.waitForTimeout(300);
   assert(await page.$('.sc-table.cmp'), 'tabla comparativa'); assert(await page.$('svg[aria-label="Gráfico radar"]'), 'radar'); console.log('OK comparar');
   // 4) jornada manual + clasificación + H2H
-  await page.click('.sc-tabs button:nth-child(6)'); await page.waitForTimeout(200); await page.click('.sc-seg button:has-text("Jornadas")'); await page.click('button:has-text("+ Programar")'); await page.waitForTimeout(200);
+  await page.click('.sc-tabs button:has-text("Equipos")'); await page.waitForTimeout(200); await page.click('.sc-seg button:has-text("Jornadas")'); await page.click('button:has-text("+ Programar")'); await page.waitForTimeout(200);
   const sels = await page.$$('.sc-sheet select'); await sels[0].selectOption('c1'); await page.fill('.sc-sheet input[type=text]', '1'); await sels[1].selectOption('t_f'); await sels[2].selectOption('t_r');
   const nums = await page.$$('.sc-sheet input[type=number]'); await nums[0].fill('3'); await nums[1].fill('3'); await page.click('.sc-sheet-foot .sc-btn:last-child'); await page.waitForTimeout(400);
   const res = await page.evaluate(() => window.__db.loadAll().then((st) => { const md = window.__model.buildModel(st); return { manual: md.results.filter((r) => r.source === 'manual').length, st: md.results.length, h: window.__model.headToHead(md, 't_f', 't_r') }; }));

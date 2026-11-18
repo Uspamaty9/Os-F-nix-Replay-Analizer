@@ -39,7 +39,15 @@ export function resizeImage(file, size) {
 export function Prov({ k }) { if (!k) return null; return <span className={'sc-prov ' + k} title={PROV_LABEL[k]}>{k === 'auto' ? 'E' : k === 'calc' ? 'C' : 'M'}</span>; }
 export function Card({ title, right, children, className }) { return <section className={'sc-card ' + (className || '')}>{(title || right) && <header><h3>{title}</h3>{right}</header>}{children}</section>; }
 export function Empty({ children, small }) { return <div className={'sc-empty' + (small ? ' small' : '')}>{children}</div>; }
-export function Kpi({ label, value, sub, prov, tone }) { return <div className={'sc-kpi' + (tone ? ' ' + tone : '')}><b>{value}</b><span>{label}{prov && <Prov k={prov} />}</span>{sub && <small>{sub}</small>}</div>; }
+// La etiqueta de origen (E extraído · C calculado · M manual) solo se muestra al tocar la tarjeta.
+export function Kpi({ label, value, sub, prov, tone }) {
+  const [open, setOpen] = useState(false);
+  return <div className={'sc-kpi' + (tone ? ' ' + tone : '') + (prov ? ' tap' : '')} onClick={prov ? () => setOpen(!open) : undefined}><b>{value}</b><span>{label}{prov && open && <Prov k={prov} />}</span>{sub && <small>{sub}</small>}{prov && open && <small className="why">{PROV_LABEL[prov]}</small>}</div>;
+}
+// Texto de ayuda plegado tras un icono «?»
+export function Hint({ children }) { const [o, setO] = useState(false); return <span className="sc-hint"><button className={'sc-q' + (o ? ' on' : '')} onClick={() => setO(!o)} aria-label="Ayuda" aria-expanded={o}>?</button>{o && <span className="sc-note">{children}</span>}</span>; }
+// Bloque plegable (acordeón)
+export function Fold({ title, children, open }) { return <details className="sc-fold" open={open}><summary>{title}</summary><div>{children}</div></details>; }
 export function Seg({ value, onChange, options }) { return <div className="sc-seg" role="tablist">{options.map((o) => <button key={o[0]} role="tab" aria-selected={value === o[0]} className={value === o[0] ? 'on' : ''} onClick={() => onChange(o[0])}>{o[1]}</button>)}</div>; }
 const hue = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; };
 export function Avatar({ player, size = 40 }) {
@@ -63,6 +71,14 @@ export function useConfirm() {
   const el = st ? <Sheet title="Confirmar" onClose={() => { st.res(false); setSt(null); }} foot={<><button className="sc-btn ghost" onClick={() => { st.res(false); setSt(null); }}>Cancelar</button><button className="sc-btn danger" onClick={() => { st.res(true); setSt(null); }}>{st.okLabel}</button></>}><p>{st.text}</p></Sheet> : null;
   return [ask, el];
 }
-export function toast(msg) { try { const t = document.createElement('div'); t.className = 'sc-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2400); } catch (e) { } }
+export function toast(msg, action) {
+  try {
+    document.querySelectorAll('.sc-toast').forEach((x) => x.remove());
+    const t = document.createElement('div'); t.className = 'sc-toast'; const sp = document.createElement('span'); sp.textContent = msg; t.appendChild(sp);
+    const kill = () => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); };
+    if (action) { const b = document.createElement('button'); b.className = 'sc-toast-act'; b.textContent = action.label || 'Deshacer'; b.onclick = () => { try { action.fn(); } finally { kill(); } }; t.appendChild(b); }
+    document.body.appendChild(t); setTimeout(() => t.classList.add('show'), 10); setTimeout(kill, action ? 7000 : 2400);
+  } catch (e) { }
+}
 
 export const POSITIONS = ['Portero', 'Defensa', 'Mediocentro', 'Delantero', 'Polivalente'];

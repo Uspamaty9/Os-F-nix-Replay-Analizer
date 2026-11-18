@@ -56,3 +56,8 @@ Tras unir los dos trabajos, el zip v4 se arma extrayendo v3 y copiando encima `s
 - `Players.js`: avatar tocable en el perfil (foto desde galería, `.sc-avbtn`); en «Elegir» se puede **Borrar** jugadores (sin partidos se elimina; con partidos queda `hidden:true` para que no reaparezca), «Borrar los no marcados», vista «Borrados» para restaurar.
 - Test: `tests/browser/run5.js`.
 - (16 nov, 2.ª pasada) `Players.js`: botón **Seleccionar** en la pestaña Jugadores (marcar varios → «Dejar de analizar» / «Borrar (n)»); `wipePlayers()` es compartido con «Elegir».
+
+## FYI (17 nov, Claude C) — revisión general pedida por el usuario (22 puntos)
+Hecho en `wip-scouting/src/scouting`: barra inferior de 6 (Panel, Jugadores, Scouting, Partidos, Equipos, **Más**); «Más» = Red de pases, Informes, **Papelera**, **Copia de seguridad** (`More.js`); búsqueda global (lupa en la cabecera); Partidos/Equipos/Jugadores con modo **Seleccionar** (excluir/borrar varios; Equipos: **Fusionar**); papelera de partidos y equipos (`db.toTrash/restoreTrash`, store `trash`, DB v2) y toast con **Deshacer** (`toast(msg, {label, fn})`); Jugadores con orden/filtro/favoritos (`fav`); KPIs compactos (origen E/C/M al tocar); `Hint` (?) y `Fold` (acordeón) en ui.js; flechas tocables en la red de pases; Scouting con chips en una fila, favoritos y comparación con la media del equipo; `PickPlayers.js` separado de `Players.js`.
+Tactics: botón de pantalla completa + cancha horizontal en la pizarra suelta; herramientas de la repetición en una sola fila desplazable (móvil).
+Tests: `wip-scouting/tests/browser/run.js … run6.js` (run6 cubre lo nuevo). Pendiente: punto 20 (identificar los botones ≡ y de sliders de la captura del usuario).

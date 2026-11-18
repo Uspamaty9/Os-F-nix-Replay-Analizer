@@ -22,21 +22,46 @@ export default function Teams({ model, nav }) {
 
 function TeamsTab({ model, nav }) {
   const [edit, setEdit] = useState(null); const [open, setOpen] = useState(null); const [pe, setPe] = useState(null);
+  const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [merge, setMerge] = useState(false); const [keepId, setKeepId] = useState('');
   const [confirm, confirmEl] = useConfirm();
+  const stats = (id) => { let w = 0, d = 0, l = 0; model.matches.forEach((m) => { const r = m.redTeamId === id, b = m.blueTeamId === id; if (!r && !b) return; const gf = m.score[r ? 0 : 1], ga = m.score[r ? 1 : 0]; if (gf > ga) w++; else if (gf < ga) l++; else d++; }); return { pj: w + d + l, w, d, l }; };
+  const inUse = (t) => model.matches.some((m) => m.redTeamId === t.id || m.blueTeamId === t.id) || model.fixtures.some((f) => f.homeId === t.id || f.awayId === t.id);
+  // Borrado de varios equipos: solo los que no tienen partidos ni jornadas (para esos, usa «Fusionar»). Van a la papelera.
+  async function bulkDelete() {
+    const picked = model.teams.filter((t) => chk.has(t.id)); const ok = picked.filter((t) => !inUse(t)); const skipped = picked.length - ok.length;
+    if (!ok.length) { toast('Los equipos elegidos tienen partidos o jornadas: usa «Fusionar» para unirlos con otro'); return; }
+    if (!(await confirm('¿Eliminar ' + ok.length + (ok.length === 1 ? ' equipo' : ' equipos') + '? Sus jugadores quedarán sin equipo.' + (skipped ? ' (' + skipped + ' con partidos o jornadas se conservan.)' : ''), 'Eliminar'))) return;
+    const entries = [];
+    for (const t of ok) { const pl = model.allPlayers.filter((p) => p.teamId === t.id).map((p) => ({ ...p })); entries.push(await db.toTrash('team', t, { players: pl })); await db.putMany('players', pl.map((p) => ({ ...p, teamId: null, updatedAt: Date.now() }))); await db.del('teams', t.id); }
+    setChk(new Set());
+    toast(ok.length + (ok.length === 1 ? ' equipo eliminado' : ' equipos eliminados'), { label: 'Deshacer', fn: async () => { for (const e of entries) await db.restoreTrash(e); toast('Restaurado'); } });
+  }
+  // Fusionar: el equipo elegido absorbe jugadores, partidos, jornadas y competiciones de los demás, que desaparecen.
+  async function doMerge() {
+    const ids = [...chk].filter((i) => i !== keepId); if (!keepId || !ids.length) return; const set = new Set(ids); const fix = (x) => (set.has(x) ? keepId : x);
+    await db.putMany('players', model.allPlayers.filter((p) => set.has(p.teamId)).map((p) => ({ ...p, teamId: keepId, updatedAt: Date.now() })));
+    await db.putMany('matches', model.matches.concat(model.excluded).filter((m) => set.has(m.rec.redTeamId) || set.has(m.rec.blueTeamId)).map((m) => ({ ...m.rec, redTeamId: fix(m.rec.redTeamId), blueTeamId: fix(m.rec.blueTeamId) })));
+    await db.putMany('fixtures', model.fixtures.filter((f) => set.has(f.homeId) || set.has(f.awayId)).map((f) => ({ ...f, homeId: fix(f.homeId), awayId: fix(f.awayId) })));
+    await db.putMany('competitions', model.competitions.filter((c) => (c.teamIds || []).some((t) => set.has(t))).map((c) => ({ ...c, teamIds: [...new Set((c.teamIds || []).map(fix))] })));
+    await db.delMany('teams', ids); setMerge(false); setChk(new Set()); setSelMode(false); toast('Equipos fusionados en «' + teamName(model, keepId) + '»');
+  }
   async function remove(t) {
     const used = model.matches.some((m) => m.redTeamId === t.id || m.blueTeamId === t.id) || model.fixtures.some((f) => f.homeId === t.id || f.awayId === t.id);
     if (used) { toast('El equipo tiene partidos o jornadas: no se puede eliminar'); return; }
     if (!(await confirm('¿Eliminar el equipo «' + t.name + '»? Sus jugadores quedarán sin equipo.', 'Eliminar'))) return;
-    await db.putMany('players', model.players.filter((p) => p.teamId === t.id).map((p) => ({ ...p, teamId: null, updatedAt: Date.now() }))); await db.del('teams', t.id);
+    const pl = model.allPlayers.filter((p) => p.teamId === t.id).map((p) => ({ ...p })); const e = await db.toTrash('team', t, { players: pl });
+    await db.putMany('players', pl.map((p) => ({ ...p, teamId: null, updatedAt: Date.now() }))); await db.del('teams', t.id);
+    toast('Equipo eliminado', { label: 'Deshacer', fn: async () => { await db.restoreTrash(e); toast('Restaurado'); } });
   }
   async function setOwn(t) { await db.putMany('teams', model.teams.map((x) => ({ ...x, own: x.id === t.id ? !x.own : false }))); }
   return (
     <>
-      <Card title="Equipos" right={<button className="sc-btn small" onClick={() => setEdit({})}>+ Nuevo equipo</button>}>
+      <Card title="Equipos" right={<div className="sc-row"><button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button><button className="sc-btn small" onClick={() => setEdit({})}>+ Nuevo</button></div>}>
+        {selMode && <div className="sc-selbar"><button className="sc-btn small ghost" onClick={() => setChk(new Set(model.teams.map((t) => t.id)))}>Todos</button><button className="sc-btn small ghost" onClick={() => setChk(new Set())}>Ninguno</button><button className="sc-btn small ghost" disabled={chk.size < 2} onClick={() => { setKeepId([...chk][0]); setMerge(true); }}>Fusionar ({chk.size})</button><button className="sc-btn small danger" disabled={!chk.size} onClick={bulkDelete}>Borrar ({chk.size})</button></div>}
         {!model.teams.length ? <Empty>Crea tus equipos y asígnales jugadores para obtener victorias, derrotas y plantillas. Marca uno como «Mi equipo» para ver sus resultados en el panel.</Empty> : (
           <ul className="sc-list">{model.teams.map((t) => { const roster = model.players.filter((p) => p.teamId === t.id); return (
-            <li key={t.id} className="col"><div className="row" onClick={() => setOpen(open === t.id ? null : t.id)}><span className="sc-swatch" style={{ background: t.color || 'var(--sc-acc)' }} /><div className="mid"><b>{t.name}{t.own ? ' ★' : ''}</b><small>{roster.length} jugadores{t.own ? ' · Mi equipo' : ''}</small></div><span className="chev">{open === t.id ? '⌄' : '›'}</span></div>
-              {open === t.id && <div className="sc-roster">
+            <li key={t.id} className="col"><div className="row" onClick={() => (selMode ? setChk((c) => { const n = new Set(c); n.has(t.id) ? n.delete(t.id) : n.add(t.id); return n; }) : setOpen(open === t.id ? null : t.id))}>{selMode && <span className={'sc-check' + (chk.has(t.id) ? ' on' : '')}>{chk.has(t.id) ? '✓' : ''}</span>}<span className="sc-swatch" style={{ background: t.color || 'var(--sc-acc)' }} /><div className="mid"><b>{t.name}{t.own ? ' ★' : ''}</b><small>{(() => { const st = stats(t.id); return roster.length + ' jug.' + (st.pj ? ' · ' + st.pj + ' PJ · ' + st.w + 'V ' + st.d + 'E ' + st.l + 'D' : '') + (t.own ? ' · Mi equipo' : ''); })()}</small></div>{!selMode && <span className="chev">{open === t.id ? '⌄' : '›'}</span>}</div>
+              {open === t.id && !selMode && <div className="sc-roster">
                 <div className="sc-row wrap"><button className="sc-btn small" onClick={() => setEdit(t)}>Editar</button><button className="sc-btn small ghost" onClick={() => setOwn(t)}>{t.own ? 'Quitar «Mi equipo»' : 'Marcar «Mi equipo»'}</button><button className="sc-btn small ghost danger" onClick={() => remove(t)}>Eliminar</button></div>
                 <h4>Plantilla</h4>{roster.length ? <ul className="sc-list">{roster.map((p) => <li key={p.id} onClick={() => nav('players', { playerId: p.id })}><Avatar player={p} size={30} /><div className="mid"><b>{p.nick}</b><small>{p.position || 'Posición sin definir'}</small></div></li>)}</ul> : <Empty small>Sin jugadores.</Empty>}
                 <Select label="Añadir jugador a la plantilla" value="" onChange={async (v) => { const p = model.playerById.get(v); if (p) await db.put('players', { ...p, teamId: t.id, updatedAt: Date.now() }); }} placeholder="Elegir jugador…" options={model.players.filter((p) => p.teamId !== t.id).map((p) => [p.id, p.nick + (p.teamId ? ' (' + teamName(model, p.teamId) + ')' : '')])} />
@@ -46,6 +71,7 @@ function TeamsTab({ model, nav }) {
       </Card>
       {edit && <TeamEditor team={edit.id ? edit : null} onClose={() => setEdit(null)} />}
       {pe && <PlayerEditor model={model} player={null} onClose={() => setPe(null)} onSaved={async (p) => { if (p && open) await db.put('players', { ...p, teamId: open }); }} />}
+      {merge && <Sheet title="Fusionar equipos" onClose={() => setMerge(false)} foot={<><button className="sc-btn ghost" onClick={() => setMerge(false)}>Cancelar</button><button className="sc-btn" onClick={doMerge}>Fusionar</button></>}><div className="sc-form"><p className="sc-note">Se unen {chk.size} equipos en uno: sus jugadores, partidos, jornadas y competiciones pasan al equipo que elijas y los demás desaparecen.</p><Select label="Conservar el equipo" value={keepId} onChange={setKeepId} options={model.teams.filter((t) => chk.has(t.id)).map((t) => [t.id, t.name])} /></div></Sheet>}
       {confirmEl}
     </>
   );

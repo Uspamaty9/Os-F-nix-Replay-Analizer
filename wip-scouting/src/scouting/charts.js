@@ -135,7 +135,7 @@ export function Radar({ axes, series, max = 10, size = 260 }) {
 
 // ---------- Red de pases ----------
 // layout: 'campo' (posición media de toques) | 'circulo'
-export function NetworkGraph({ nodes, edges, layout = 'campo', selected, onSelect, minEdge = 1, height = 300 }) {
+export function NetworkGraph({ nodes, edges, layout = 'campo', selected, onSelect, selectedEdge, onSelectEdge, minEdge = 1, height = 300 }) {
   const W = 360, H = height, P = 34;
   if (!nodes.length) return <div className="sc-empty small">Sin jugadores.</div>;
   const pos = {};
@@ -162,8 +162,10 @@ export function NetworkGraph({ nodes, edges, layout = 'campo', selected, onSelec
         const ra = 12 + (nodes.find((n) => n.id === e.a).conn / mk) * 8, rb = 12 + (nodes.find((n) => n.id === e.b).conn / mk) * 8;
         const nx = -uy * 3, ny = ux * 3; // desplaza para distinguir A→B de B→A
         const x1 = a[0] + ux * ra + nx, y1 = a[1] + uy * ra + ny, x2 = b[0] - ux * (rb + 4) + nx, y2 = b[1] - uy * (rb + 4) + ny;
-        const on = !selected || selected === e.a || selected === e.b;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--sc-acc)" strokeWidth={0.8 + (e.n / mx) * 5} opacity={on ? 0.35 + 0.55 * (e.n / mx) : 0.08} markerEnd="url(#arr)"><title>{(nodes.find((n) => n.id === e.a) || {}).nick + ' → ' + (nodes.find((n) => n.id === e.b) || {}).nick + ': ' + e.n + ' pases'}</title></line>;
+        const isSel = selectedEdge && selectedEdge.a === e.a && selectedEdge.b === e.b;
+        const on = selectedEdge ? isSel : (!selected || selected === e.a || selected === e.b);
+        return <g key={i}><line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--sc-acc)" strokeWidth={(isSel ? 2 : 0.8) + (e.n / mx) * 5} opacity={on ? (isSel ? 1 : 0.35 + 0.55 * (e.n / mx)) : 0.08} markerEnd="url(#arr)"><title>{(nodes.find((n) => n.id === e.a) || {}).nick + ' → ' + (nodes.find((n) => n.id === e.b) || {}).nick + ': ' + e.n + ' pases'}</title></line>
+          {onSelectEdge && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="16" style={{ cursor: 'pointer' }} onClick={() => onSelectEdge(isSel ? null : e)} />}</g>;
       })}
       {nodes.map((n) => {
         const p = pos[n.id]; const r = 12 + (n.conn / mk) * 8; const on = !selected || selected === n.id;

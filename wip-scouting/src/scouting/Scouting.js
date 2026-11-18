@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
-import { Card, Kpi, Empty, Avatar, Seg, Select, Prov, toast } from './ui';
+import { Card, Kpi, Empty, Avatar, Seg, Select, Prov, Hint, toast } from './ui';
 import { Radar } from './charts';
 import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, teamName, fmtNum, fmtDate, fmtPct } from './model';
 import { CRITERIA, finalRatings } from './analysis';
@@ -25,7 +25,7 @@ function Evaluate({ model, view, params, nav }) {
   const [playerId, setPlayerId] = useState((params && params.playerId) || '');
   useEffect(() => { if (params && params.matchId) setMatchId(params.matchId); if (params && params.playerId) setPlayerId(params.playerId); }, [params]);
   const m = model.matchById.get(matchId) || matches[0];
-  const players = useMemo(() => (m ? model.rows.filter((r) => r.matchId === m.id && r.playerId).sort((a, b) => (a.side === b.side ? a.nick.localeCompare(b.nick) : a.side === 'R' ? -1 : 1)) : []), [model, m]);
+  const players = useMemo(() => (m ? model.rows.filter((r) => r.matchId === m.id && r.playerId).sort((a, b) => (!!(model.playerById.get(b.playerId) || {}).fav - !!(model.playerById.get(a.playerId) || {}).fav) || (a.side === b.side ? a.nick.localeCompare(b.nick) : a.side === 'R' ? -1 : 1)) : []), [model, m]);
   const cur = players.find((r) => r.playerId === playerId) || null;
   useEffect(() => { if (m && !cur && players[0]) setPlayerId(players[0].playerId); }, [m, cur, players]);
   const rt = m && cur ? getRating(model, m.id, cur.playerId) : null;
@@ -43,17 +43,19 @@ function Evaluate({ model, view, params, nav }) {
     await db.put('ratings', { id: key, matchId: m.id, playerId: cur.playerId, manual, notes: draft.notes.trim(), updatedAt: Date.now() }); setDirty(false); toast('Calificación guardada');
   }
   async function clearAll() { await db.del('ratings', key); toast('Calificación manual borrada'); }
+  const mates = cur ? players.filter((r) => r.side === cur.side && r.playerId !== cur.playerId).map((r) => { const g = getRating(model, m.id, r.playerId); return g && g.final && g.final.values.overall != null ? g.final.values.overall : null; }).filter((v) => v != null) : [];
+  const mateAvg = mates.length ? mates.reduce((a, b) => a + b, 0) / mates.length : null;
   const sides = { R: teamName(model, m.redTeamId, 'Rojo'), B: teamName(model, m.blueTeamId, 'Azul') };
   return (
     <>
       <Card title="Partido y jugador">
         <Select label="Partido" value={m.id} onChange={(v) => { setMatchId(v); setPlayerId(''); }} options={matches.map((x) => [x.id, fmtDate(x.date) + ' · ' + sides_label(model, x)])} />
-        <div className="sc-chips">{players.map((r) => <button key={r.playerId} className={'sc-chip' + (r.playerId === playerId ? ' on' : '') + (r.side === 'R' ? ' r' : ' b')} onClick={() => setPlayerId(r.playerId)}>{r.nick}</button>)}</div>
+        <div className="sc-chips one">{players.map((r) => <button key={r.playerId} className={'sc-chip' + (r.playerId === playerId ? ' on' : '') + (r.side === 'R' ? ' r' : ' b')} onClick={() => setPlayerId(r.playerId)}>{(model.playerById.get(r.playerId) || {}).fav ? '★ ' : ''}{r.nick}</button>)}</div>
         {!players.length && <Empty small>Este partido no tiene jugadores vinculados.</Empty>}
       </Card>
       {cur && <>
         <Card className="sc-phead"><Avatar player={model.playerById.get(cur.playerId)} size={52} /><div className="mid"><h2>{cur.nick}</h2><small>{sides[cur.side]} · {m.score[0]}–{m.score[1]} · {fmtDate(m.date)}</small></div>
-          <div className="sc-bigrate"><b>{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}</b><small>{preview && preview.sources.overall ? (preview.sources.overall === 'manual' ? 'Manual' : 'Calculada') : 'sin nota'}</small></div></Card>
+          <div className="sc-bigrate"><b>{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}</b><small>{preview && preview.sources.overall ? (preview.sources.overall === 'manual' ? 'Manual' : 'Calculada') : 'sin nota'}</small>{mateAvg != null && preview && preview.values.overall != null && <small className="sc-vs2">Equipo: {fmtNum(mateAvg, 1)} ({preview.values.overall - mateAvg >= 0 ? '+' : ''}{fmtNum(preview.values.overall - mateAvg, 1)})</small>}</div></Card>
         <div className="sc-kpis small"><Kpi label="Goles" value={cur.goals} prov="auto" /><Kpi label="Asist." value={cur.assists} prov="auto" /><Kpi label="Toques" value={cur.kicks} prov="auto" /><Kpi label="Pases" value={cur.passesCompleted + '/' + (cur.passesCompleted + cur.passesFailed)} prov="calc" sub={fmtPct(cur.passAccuracy)} /><Kpi label="Rec.+Int." value={cur.recoveries + cur.interceptions} prov="calc" /></div>
         {auto && !auto.enough && <p className="sc-note warn">Valoración automática no disponible. {auto.reason}</p>}
         <Card title="Criterios (0–10)" right={<span className="sc-sub">manual prevalece sobre automático</span>}>

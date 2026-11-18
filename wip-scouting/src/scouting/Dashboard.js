@@ -38,7 +38,7 @@ export default function Dashboard({ model, view: baseView, nav, openReplay }) {
       </div>
       {hasTeam && d.manualResults > 0 && <p className="sc-note">Incluye {d.manualResults} resultados introducidos manualmente (sin repetición).</p>}
 
-      <Card title="Promedios de rendimiento" right={<span className="sc-sub">por equipo y partido</span>}>
+      <Card title="Promedios por partido">
         <div className="sc-kpis small">
           <Kpi label="Goles" value={fmtNum(d.perMatch.goals, 2)} prov="auto" />
           <Kpi label="Tiros a puerta" value={fmtNum(d.perMatch.shotsOT, 2)} prov="auto" />

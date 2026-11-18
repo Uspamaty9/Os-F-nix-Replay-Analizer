@@ -9,6 +9,7 @@ import Matches from './Matches';
 import Network from './Network';
 import Teams from './Teams';
 import Reports from './Reports';
+import More, { Trash, Backup, SearchSheet } from './More';
 
 class Boundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -17,12 +18,13 @@ class Boundary extends React.Component {
   render() { return this.state.err ? <div className="sc-card"><div className="sc-empty">Algo falló al mostrar esta sección. Tus datos están a salvo. <small>{String(this.state.err.message || this.state.err)}</small></div></div> : this.props.children; }
 }
 
-const TABS = [['dash', 'Panel', 'M4 20V10M10 20V4M16 20v-7M22 20H2'], ['players', 'Jugadores', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['scouting', 'Scouting', 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z'], ['matches', 'Partidos', 'M3 5h18v14H3zM12 5v14M3 12h18'], ['network', 'Pases', 'M5 6a2 2 0 100-4 2 2 0 000 4zM19 8a2 2 0 100-4 2 2 0 000 4zM12 21a2 2 0 100-4 2 2 0 000 4zM7 5l10 2M6 7l5 11M18 9l-5 8'], ['teams', 'Equipos', 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6'], ['reports', 'Informes', 'M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6']];
+const TABS = [['dash', 'Panel', 'M4 20V10M10 20V4M16 20v-7M22 20H2'], ['players', 'Jugadores', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['scouting', 'Scouting', 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z'], ['matches', 'Partidos', 'M3 5h18v14H3zM12 5v14M3 12h18'], ['teams', 'Equipos', 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6'], ['more', 'Más', 'M5 12h.01M12 12h.01M19 12h.01']];
+const MORE = ['more', 'network', 'reports', 'trash', 'backup']; // pantallas dentro de «Más»
 
 export default function ScoutingApp({ onClose, openReplay }) {
   const { model, error } = useModel();
   const [tab, setTab] = useState('dash'); const [params, setParams] = useState({});
-  const [filters, setFilters] = useLocal('sc-filters', EMPTY_FILTERS); const [fopen, setFopen] = useState(false);
+  const [filters, setFilters] = useLocal('sc-filters', EMPTY_FILTERS); const [fopen, setFopen] = useState(false); const [search, setSearch] = useState(false);
   const nav = useCallback((t, p) => { setTab(t); setParams(p || {}); const el = document.querySelector('.sc-main'); if (el) el.scrollTop = 0; }, []);
   const open = useCallback((id) => { onClose(); openReplay(id); }, [onClose, openReplay]);
   let f = filters;
@@ -33,12 +35,13 @@ export default function ScoutingApp({ onClose, openReplay }) {
   const view = model ? applyFilters(model, f) : null;
   const active = Object.values(f).filter(Boolean).length;
   const set = (k) => (v) => setFilters({ ...f, [k]: v });
-  const showFilters = tab !== 'teams' && tab !== 'reports';
+  const showFilters = !['teams', 'reports', 'more', 'trash', 'backup'].includes(tab);
   return (
     <div className="sc-root sc-overlay-full" role="dialog" aria-label="Centro de análisis">
       <header className="sc-top">
         <button className="sc-x" onClick={onClose} aria-label="Volver">‹</button>
         <h1>Centro de análisis</h1>
+        {model && <button className="sc-iconbtn" onClick={() => setSearch(true)} aria-label="Buscar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg></button>}
         {showFilters && <button className={'sc-filterbtn' + (active ? ' on' : '')} onClick={() => setFopen(!fopen)} aria-expanded={fopen}>Filtros{active ? ' · ' + active : ''}</button>}
       </header>
       {showFilters && fopen && model && (
@@ -57,6 +60,10 @@ export default function ScoutingApp({ onClose, openReplay }) {
             {tab === 'players' && <Players model={model} view={view} filters={f} nav={nav} params={params} />}
             {tab === 'scouting' && <Scouting model={model} view={view} nav={nav} params={params} />}
             {tab === 'matches' && <Matches model={model} view={view} nav={nav} params={params} openReplay={open} />}
+            {MORE.includes(tab) && tab !== 'more' && <button className="sc-link back" onClick={() => nav('more', {})}>‹ Más</button>}
+            {tab === 'more' && <More model={model} nav={nav} />}
+            {tab === 'trash' && <Trash model={model} />}
+            {tab === 'backup' && <Backup />}
             {tab === 'network' && <Network model={model} view={view} filters={f} nav={nav} params={params} />}
             {tab === 'teams' && <Teams model={model} nav={nav} />}
             {tab === 'reports' && <Reports model={model} view={view} filters={f} />}
@@ -64,8 +71,9 @@ export default function ScoutingApp({ onClose, openReplay }) {
         )}
       </main>
       <nav className="sc-tabs" aria-label="Secciones">
-        {TABS.map(([id, label, d]) => <button key={id} className={tab === id ? 'on' : ''} onClick={() => nav(id, {})} aria-current={tab === id ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg><span>{label}</span></button>)}
+        {TABS.map(([id, label, d]) => <button key={id} className={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'on' : ''} onClick={() => nav(id, {})} aria-current={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg><span>{label}</span></button>)}
       </nav>
+      {search && model && <SearchSheet model={model} nav={nav} onClose={() => setSearch(false)} />}
     </div>
   );
 }

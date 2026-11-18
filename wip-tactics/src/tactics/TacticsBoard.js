@@ -269,6 +269,15 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
     </>
   );
 
+  // Pantalla completa + cancha horizontal (mejor uso del espacio en el móvil). Depende del dispositivo: si no se puede girar, solo pasa a pantalla completa.
+  const [full, setFull] = useState(false);
+  const toggleFull = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) { await document.documentElement.requestFullscreen(); setFull(true); try { await window.screen.orientation.lock('landscape'); } catch (e) { /* sin permiso para girar */ } }
+      else { try { window.screen.orientation.unlock(); } catch (e) { /* nada */ } await document.exitFullscreen(); setFull(false); }
+    } catch (e) { setFull(false); }
+  }, []);
+  useEffect(() => { const h = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => { document.removeEventListener('fullscreenchange', h); try { if (document.fullscreenElement) document.exitFullscreen(); window.screen.orientation.unlock(); } catch (e) { /* nada */ } }; }, []);
   const tree = (
     <div className={'tx-root' + (panel ? ' panel-open' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
       <header className='tx-top'>
@@ -299,7 +308,12 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
               </>
             )}
           </div>
+<<<<<<< HEAD
           <button type='button' className={'tx-icon' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel de la jugada' aria-label='Panel'><Icon name='panel' /></button>
+=======
+          <button type='button' className={'tx-icon' + (full ? ' on' : '')} onClick={toggleFull} title='Pantalla completa y cancha horizontal' aria-label='Pantalla completa' aria-pressed={full}><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>{full ? <path d='M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' /> : <path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' />}</svg></button>
+          <button type='button' className={'tx-icon show-sm' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel' aria-label='Panel'><Icon name='panel' /></button>
+>>>>>>> 06260a6 (Revision general: pestaña Mas, papelera, deshacer, seleccion multiple, fusionar equipos, busqueda, favoritos, compactar espacios, pizarra fullscreen)
         </div>
       </header>
 

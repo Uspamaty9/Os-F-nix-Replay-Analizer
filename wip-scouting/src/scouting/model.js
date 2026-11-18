@@ -15,7 +15,7 @@ export const ratingKey = (matchId, playerId) => matchId + '|' + playerId;
 export const outcomeOf = (gf, ga) => (gf > ga ? 'W' : gf < ga ? 'L' : 'D');
 
 export function buildModel(store) {
-  const { teams = [], players: allPlayers = [], seasons = [], competitions = [], fixtures = [], matches = [], ratings = [] } = store;
+  const { teams = [], players: allPlayers = [], seasons = [], competitions = [], fixtures = [], matches = [], ratings = [], trash = [] } = store;
   // Jugadores "ignorados" (no elegidos para analizar): siguen reconocidos por su nick, pero no cuentan en ninguna cifra ni lista.
   const players = allPlayers.filter((p) => !p.ignored);
   const idx = playerIndex(allPlayers);
@@ -54,7 +54,7 @@ export function buildModel(store) {
     results.push({ key: f.id + 'H', source: 'manual', fixtureId: f.id, teamId: f.homeId, oppId: f.awayId, gf: hg, ga: ag, outcome: outcomeOf(hg, ag), date: f.date || 0, seasonId: (competitions.find((c) => c.id === f.competitionId) || {}).seasonId || null, competitionId: f.competitionId, round: f.round });
     results.push({ key: f.id + 'A', source: 'manual', fixtureId: f.id, teamId: f.awayId, oppId: f.homeId, gf: ag, ga: hg, outcome: outcomeOf(ag, hg), date: f.date || 0, seasonId: (competitions.find((c) => c.id === f.competitionId) || {}).seasonId || null, competitionId: f.competitionId, round: f.round });
   });
-  const model = { store, teams, players, allPlayers, excluded, seenCount: seen, seasons, competitions, fixtures, ratings, teamById, playerById, idx, matches: ms, rows, results, ratingMap };
+  const model = { store, teams, players, allPlayers, excluded, seenCount: seen, seasons, competitions, fixtures, ratings, trash, teamById, playerById, idx, matches: ms, rows, results, ratingMap };
   model.matchById = new Map(ms.concat(excluded).map((m) => [m.id, m]));
   return model;
 }

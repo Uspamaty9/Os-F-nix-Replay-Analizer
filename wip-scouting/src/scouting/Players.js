@@ -6,6 +6,7 @@ import { playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum
 import { aggregateRows, CRITERIA } from './analysis';
 import { buildPlayerReport } from './report';
 import { normNick } from './ingest';
+import { PickPlayers, wipePlayers } from './PickPlayers';
 
 export function PlayerEditor({ model, player, onClose, onSaved }) {
   const isNew = !player;
@@ -57,80 +58,29 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
   );
 }
 
-// Borrar jugadores: quita del análisis y de las listas. Sin partidos guardados se elimina del todo; con partidos se conservan los partidos,
-// pero el perfil (foto, notas, equipo, calificaciones) se borra y queda oculto (restaurable desde «Elegir» > «Borrados»). Devuelve los ids borrados o null.
-async function wipePlayers(model, list, confirm) {
-  if (!list.length) return null;
-  const ids = new Set(list.map((p) => p.id));
-  const ok = await confirm(list.length === 1 ? '¿Borrar a «' + list[0].nick + '»? Se eliminan su foto, notas y calificaciones y deja de contar en el análisis. Sus partidos se conservan.' : '¿Borrar a ' + list.length + ' jugadores? Se eliminan sus fotos, notas y calificaciones y dejan de contar en el análisis. Los partidos se conservan.', 'Borrar');
-  if (!ok) return null;
-  await db.delMany('ratings', model.ratings.filter((r) => ids.has(r.playerId)).map((r) => r.id));
-  await db.delMany('players', list.filter((p) => !model.seenCount.get(p.id)).map((p) => p.id));
-  await db.putMany('players', list.filter((p) => model.seenCount.get(p.id)).map((p) => ({ ...p, hidden: true, ignored: true, avatar: null, notes: '', position: '', teamId: null, updatedAt: Date.now() })));
-  toast(list.length === 1 ? 'Jugador borrado' : list.length + ' jugadores borrados');
-  return ids;
-}
-
-// Elegir qué jugadores se analizan: los no marcados siguen reconocidos pero no cuentan ni aparecen en ninguna lista.
-function PickPlayers({ model, onClose }) {
-  const [q, setQ] = useState(''); const [hideNew, setHideNew] = useState(true); const [teamId, setTeamId] = useState(''); const [showDel, setShowDel] = useState(false);
-  const [confirm, confirmEl] = useConfirm();
-  const nDel = model.allPlayers.filter((p) => p.hidden).length;
-  const [sel, setSel] = useState(() => new Set(model.allPlayers.filter((p) => !p.ignored).map((p) => p.id)));
-  useEffect(() => { db.getKv('hideNewPlayers', true).then(setHideNew); }, []);
-  const rows = useMemo(() => model.allPlayers.filter((p) => !!p.hidden === showDel).filter((p) => !q || normNick(p.nick).includes(normNick(q))).slice().sort((a, b) => ((model.seenCount.get(b.id) || 0) - (model.seenCount.get(a.id) || 0)) || a.nick.localeCompare(b.nick)), [model, q, showDel]);
-  const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const setMany = (list, on) => setSel((s) => { const n = new Set(s); list.forEach((p) => (on ? n.add(p.id) : n.delete(p.id))); return n; });
-  // Borrar: quita al jugador de las listas y de todas las cifras. Sin partidos guardados se elimina del todo; con partidos se conservan
-  // los partidos, pero el perfil (foto, notas, equipo, calificaciones) se borra y queda oculto. Se puede restaurar desde «Borrados».
-  async function wipe(list) {
-    const ids = await wipePlayers(model, list, confirm); if (!ids) return;
-    setSel((s0) => { const n = new Set(s0); ids.forEach((i) => n.delete(i)); return n; });
-  }
-  async function restore(list) { await db.putMany('players', list.map((p) => ({ ...p, hidden: false, updatedAt: Date.now() }))); toast('Jugadores restaurados (sin elegir)'); }
-  async function save() {
-    const changed = model.allPlayers.filter((p) => !p.hidden && !!p.ignored !== !sel.has(p.id)).map((p) => ({ ...p, ignored: !sel.has(p.id), updatedAt: Date.now() }));
-    await db.setKv('hideNewPlayers', hideNew); await db.putMany('players', changed); toast(sel.size + ' jugadores se analizan'); onClose();
-  }
-  return (
-    <>
-    <Sheet title="Elegir jugadores a analizar" onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar ({sel.size})</button></>}>
-      <div className="sc-form">
-        <p className="sc-note">Solo los jugadores marcados cuentan en goles, asistencias, rankings, red de pases e informes. Los demás no se pierden: puedes marcarlos cuando quieras.</p>
-        <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
-        {(nDel > 0 || showDel) && <Seg value={showDel ? 'del' : 'act'} onChange={(v) => setShowDel(v === 'del')} options={[['act', 'Jugadores'], ['del', 'Borrados (' + nDel + ')']]} />}
-        {!showDel ? <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={() => setMany(rows, true)}>Marcar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small ghost" onClick={() => setMany(rows, false)}>Quitar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small danger" disabled={!rows.some((p) => !sel.has(p.id))} onClick={() => wipe(rows.filter((p) => !sel.has(p.id)))}>Borrar los no marcados</button></div>
-          : <div className="sc-row wrap"><button className="sc-btn small" disabled={!rows.length} onClick={() => restore(rows)}>Restaurar todos</button></div>}
-        {model.teams.length > 0 && <Select label="Marcar solo los de un equipo" value={teamId} onChange={(v) => { setTeamId(v); if (v) setSel(new Set(model.allPlayers.filter((p) => p.teamId === v).map((p) => p.id))); }} placeholder="Elegir equipo…" options={model.teams.map((t) => [t.id, t.name])} />}
-        <label className="sc-row"><input type="checkbox" checked={hideNew} onChange={(e) => setHideNew(e.target.checked)} /><span>Los jugadores nuevos que aparezcan en repeticiones quedan sin elegir hasta que los marque</span></label>
-        <ul className="sc-list">{rows.map((p) => { const on = sel.has(p.id); return (
-          <li key={p.id} className={on ? 'sel' : ''} onClick={() => (showDel ? restore([p]) : toggle(p.id))}>{!showDel && <span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span>}<Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{showDel ? 'Toca para restaurar' : teamName(model, p.teamId, 'Sin equipo') + ' · ' + (model.seenCount.get(p.id) || 0) + ' partidos'}</small></div>{!showDel && <button className="sc-btn small ghost sc-del" aria-label={'Borrar a ' + p.nick} onClick={(e) => { e.stopPropagation(); wipe([p]); }}>Borrar</button>}</li>); })}</ul>
-        {!rows.length && showDel && <p className="sc-note">No hay jugadores borrados.</p>}
-      </div>
-    </Sheet>
-    {confirmEl}
-    </>
-  );
-}
-
 const METRICS = [['goals', 'Goles', 'auto'], ['assists', 'Asistencias', 'auto'], ['kicks', 'Toques', 'auto'], ['shotsOT', 'Tiros a puerta', 'auto'], ['passesCompleted', 'Pases completados', 'calc'], ['passesReceived', 'Pases recibidos', 'calc'], ['passesFailed', 'Pases fallidos', 'calc'], ['turnovers', 'Pérdidas', 'calc'], ['recoveries', 'Recuperaciones', 'calc'], ['interceptions', 'Intercepciones', 'calc'], ['blocks', 'Bloqueos', 'calc'], ['keyPasses', 'Pases clave', 'calc'], ['goalInvolvements', 'Participaciones en gol', 'calc'], ['ownGoals', 'Goles en propia', 'auto']];
 
 export default function Players({ model, view, filters, nav, params }) {
-  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
+  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [sortBy, setSortBy] = useState('inv'); const [teamF, setTeamF] = useState(''); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
   const sel = params && params.playerId; const setSel = (id) => nav('players', { playerId: id });
   const ids = useMemo(() => new Set(view.matches.map((m) => m.id)), [view]);
   const list = useMemo(() => {
     const by = new Map(); view.rowsScope.forEach((r) => { if (!r.playerId) return; if (!by.has(r.playerId)) by.set(r.playerId, []); by.get(r.playerId).push(r); });
-    return model.players.filter((p) => !q || normNick(p.nick).includes(normNick(q))).map((p) => ({ p, agg: aggregateRows(by.get(p.id) || []) })).sort((a, b) => (b.agg.goalInvolvements - a.agg.goalInvolvements) || (b.agg.matches - a.agg.matches) || a.p.nick.localeCompare(b.p.nick));
-  }, [model, view, q]);
+    const SORT = { inv: (a, b) => (b.agg.goalInvolvements - a.agg.goalInvolvements) || (b.agg.matches - a.agg.matches), goals: (a, b) => b.agg.goals - a.agg.goals, assists: (a, b) => b.agg.assists - a.agg.assists, matches: (a, b) => b.agg.matches - a.agg.matches, rating: (a, b) => ((b.ra ? b.ra.avg : -1) - (a.ra ? a.ra.avg : -1)), name: () => 0 };
+    return model.players.filter((p) => (!q || normNick(p.nick).includes(normNick(q))) && (!teamF || (teamF === '__fav' ? p.fav : p.teamId === teamF))).map((p) => ({ p, agg: aggregateRows(by.get(p.id) || []), ra: sortBy === 'rating' ? ratingAverage(model, p.id, ids) : null })).sort((a, b) => (SORT[sortBy] || SORT.inv)(a, b) || a.p.nick.localeCompare(b.p.nick));
+  }, [model, view, q, sortBy, teamF, ids]);
 
   if (cmpMode && cmp.length >= 2 && params && params.compare) return <Compare model={model} view={view} filters={filters} players={cmp.map((id) => model.playerById.get(id)).filter(Boolean)} onBack={() => nav('players', {})} />;
   if (sel && model.playerById.get(sel)) return <Profile model={model} view={view} filters={filters} player={model.playerById.get(sel)} ids={ids} tab={tab} setTab={setTab} nav={nav} onBack={() => nav('players', {})} onEdit={() => setEdit(model.playerById.get(sel))} edit={edit} setEdit={setEdit} />;
 
   return (
     <div className="sc-view">
-      <Card title="Jugadores" right={<div className="sc-row">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" onClick={() => setEdit({})}>+ Nuevo</button></div>}>
+      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setEdit({})}>+ Nuevo</button></div>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="sc-grid2" style={{ marginBottom: 8 }}>
+          <Select label="Ordenar por" value={sortBy} onChange={setSortBy} options={[['inv', 'Goles + asist.'], ['goals', 'Goles'], ['assists', 'Asistencias'], ['rating', 'Nota'], ['matches', 'Partidos'], ['name', 'Nombre']]} />
+          <Select label="Mostrar" value={teamF} onChange={setTeamF} placeholder="Todos" options={[['__fav', '★ Favoritos']].concat(model.teams.map((t) => [t.id, t.name]))} />
+        </div>
         {model.allPlayers.length > model.players.length && <p className="sc-note">{model.allPlayers.length - model.players.length} jugador(es) sin elegir no se cuentan. <button className="sc-link" onClick={() => setPick(true)}>Elegir jugadores</button></p>}
         {selMode && <div className="sc-row wrap" style={{ marginBottom: 8 }}>
           <button className="sc-btn small ghost" onClick={() => setChk(new Set(list.map(({ p }) => p.id)))}>Todos</button>
@@ -144,7 +94,9 @@ export default function Players({ model, view, filters, nav, params }) {
             <li key={p.id} className={on ? 'sel' : ''} onClick={() => { if (selMode) setChk((c) => { const n = new Set(c); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; }); else if (cmpMode) setCmp((c) => (on ? c.filter((x) => x !== p.id) : c.length < 4 ? [...c, p.id] : c)); else setSel(p.id); }}>
               {(cmpMode || selMode) && <span className={'sc-check' + (on ? ' on' : '')}>{on ? '✓' : ''}</span>}
               <Avatar player={p} size={40} /><div className="mid"><b>{p.nick}</b><small>{teamName(model, p.teamId, 'Sin equipo')}{p.position ? ' · ' + p.position : ''}</small></div>
+              
               <div className="nums"><span><b>{agg.matches}</b> PJ</span><span><b>{agg.goals}</b> G</span><span><b>{agg.assists}</b> A</span>{ra && <span className="rt"><b>{fmtNum(ra.avg, 1)}</b></span>}</div>
+              {!selMode && !cmpMode && <button className={'sc-star' + (p.fav ? ' on' : '')} aria-label="Favorito" onClick={(e) => { e.stopPropagation(); db.put('players', { ...p, fav: !p.fav, updatedAt: Date.now() }); }}>{p.fav ? '★' : '☆'}</button>}
             </li>); })}</ul>)}
       </Card>
       {edit && <PlayerEditor model={model} player={edit.id ? edit : null} onClose={() => setEdit(null)} onSaved={(r) => r && setSel(r.id)} />}

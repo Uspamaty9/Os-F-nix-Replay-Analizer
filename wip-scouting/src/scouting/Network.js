@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Kpi, Empty, Seg, Select } from './ui';
+import { Card, Kpi, Empty, Seg, Select, Hint } from './ui';
 import { NetworkGraph, PassMatrix, HBars } from './charts';
 import { passNetwork, goalLinks, passChains, teamName, fmtPct, fmtNum, fmtDate } from './model';
 
 export default function Network({ model, view, filters, params, nav }) {
   const matches = view.matches; const [matchId, setMatchId] = useState((params && params.matchId) || '');
-  const [teamSide, setTeamSide] = useState(filters.teamId || ''); const [layout, setLayout] = useState('campo'); const [minE, setMinE] = useState(1); const [selNode, setSelNode] = useState(null);
+  const [teamSide, setTeamSide] = useState(filters.teamId || ''); const [layout, setLayout] = useState('campo'); const [minE, setMinE] = useState(1); const [selNode, setSelNode] = useState(null); const [selEdge, setSelEdge] = useState(null);
   const scope = useMemo(() => (matchId ? matches.filter((m) => m.id === matchId) : matches), [matches, matchId]);
   const teamId = teamSide;
   const net = useMemo(() => passNetwork(model, scope, teamId), [model, scope, teamId]);
@@ -25,8 +25,9 @@ export default function Network({ model, view, filters, params, nav }) {
           <Select label="Equipo" value={teamSide} onChange={(v) => { setTeamSide(v); setSelNode(null); }} placeholder="Ambos bandos" options={model.teams.map((t) => [t.id, t.name])} />
         </div>
         <div className="sc-filters2"><Seg value={layout} onChange={setLayout} options={[['campo', 'En el campo'], ['circulo', 'Círculo']]} /><label className="sc-field"><span>Mín. pases por conexión: {minE}</span><input type="range" min="1" max={Math.max(1, maxE)} value={Math.min(minE, Math.max(1, maxE))} onChange={(e) => setMinE(+e.target.value)} /></label></div>
-        {!net.edges.length ? <Empty>No hay pases completados con esta selección.</Empty> : <NetworkGraph nodes={net.nodes} edges={net.edges} layout={layout} selected={selNode} onSelect={setSelNode} minEdge={minE} height={320} />}
-        <p className="sc-note">Flechas A → B: A pasa a B. Grosor = nº de pases. Tamaño del nodo = conexiones. «En el campo» sitúa cada jugador en su zona media de toques (el rival siempre se ve invertido). Toca un jugador para resaltarlo.</p>
+        {!net.edges.length ? <Empty>No hay pases completados con esta selección.</Empty> : <NetworkGraph nodes={net.nodes} edges={net.edges} layout={layout} selected={selNode} onSelect={(id) => { setSelNode(id); setSelEdge(null); }} selectedEdge={selEdge} onSelectEdge={(e) => { setSelEdge(e); setSelNode(null); }} minEdge={minE} height={320} />}
+        {selEdge && (() => { const rev = net.edges.find((x) => x.a === selEdge.b && x.b === selEdge.a); return <p className="sc-note" style={{ color: 'var(--sc-txt)' }}><b>{nm(selEdge.a)}</b> → <b>{nm(selEdge.b)}</b>: <b>{selEdge.n}</b> {selEdge.n === 1 ? 'pase' : 'pases'}{rev ? ' · en sentido contrario: ' + rev.n : ''} <button className="sc-link" onClick={() => setSelEdge(null)}>Quitar</button></p>; })()}
+        <Hint>Flechas A → B: A pasa a B. Grosor = nº de pases. Tamaño del nodo = conexiones. «En el campo» sitúa cada jugador en su zona media de toques (el rival siempre se ve invertido). Toca un jugador para resaltarlo o una flecha para ver sus pases.</Hint>
       </Card>
       {net.edges.length > 0 && <>
         <div className="sc-kpis small"><Kpi label="Pases completados" value={net.totalPasses} prov="calc" /><Kpi label="Pases fallidos" value={net.failedTotal} prov="calc" /><Kpi label="Precisión" value={fmtPct(attempts ? net.totalPasses / attempts : null)} prov="calc" /><Kpi label="Conexiones" value={net.edges.length} /></div>
