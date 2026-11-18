@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Sheet, Avatar, useConfirm, toast, saveFile, askExport, textBytes, pickFile, stamp } from './ui';
-import { fmtDate, teamName } from './model';
+import { fmtDate, teamName, ownTeamId } from './model';
 
 const ICON = (d) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 
@@ -75,6 +75,26 @@ export function SearchSheet({ model, nav, onClose }) {
       {pl.length > 0 && <><h4>Jugadores</h4><ul className="sc-list">{pl.map((p) => <li key={p.id} onClick={() => go('players', { playerId: p.id })}><Avatar player={p} size={30} /><div className="mid"><b>{p.nick}</b><small>{teamName(model, p.teamId, 'Sin equipo')}</small></div></li>)}</ul></>}
       {tm.length > 0 && <><h4>Equipos</h4><ul className="sc-list">{tm.map((t) => <li key={t.id} onClick={() => go('teams', {})}><span className="sc-swatch" style={{ background: t.color || 'var(--sc-acc)', height: 26 }} /><div className="mid"><b>{t.name}</b></div></li>)}</ul></>}
       {ms.length > 0 && <><h4>Partidos</h4><ul className="sc-list">{ms.map((m) => <li key={m.id} onClick={() => go('matches', { matchId: m.id })}><div className="sc-score"><i className="r" />{m.score[0]}<em>–</em>{m.score[1]}<i className="b" /></div><div className="mid"><b>{teamName(model, m.redTeamId, 'Rojo')} vs {teamName(model, m.blueTeamId, 'Azul')}</b><small>{m.rec.name} · {fmtDate(m.date)}</small></div></li>)}</ul></>}
+    </Sheet>
+  );
+}
+
+// Tras analizar repeticiones aparecen jugadores nuevos: se pregunta cuáles son de tu equipo (los demás quedan ignorados).
+export function NewPlayersSheet({ model, ids, onClose }) {
+  const list = model.allPlayers.filter((p) => ids.includes(p.id) && !p.hidden);
+  const own = ownTeamId(model);
+  const [on, setOn] = useState(() => new Set(list.filter((p) => !p.ignored).map((p) => p.id)));
+  const toggle = (id) => setOn((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  async function save() {
+    await db.putMany('players', list.map((p) => ({ ...p, ignored: !on.has(p.id), teamId: on.has(p.id) && own && !p.teamId ? own : p.teamId, updatedAt: Date.now() })));
+    const pend = await db.getKv('pendingNewPlayers', []); await db.setKv('pendingNewPlayers', pend.filter((i) => !ids.includes(i)));
+    toast(on.size + ' se analizan · ' + (list.length - on.size) + ' ignorados (se cambia en «Elegir»)'); onClose(true);
+  }
+  return (
+    <Sheet title="Jugadores nuevos" onClose={() => onClose(false)} foot={<><button className="sc-btn ghost" onClick={() => onClose(false)}>Más tarde</button><button className="sc-btn" onClick={save}>Guardar ({on.size})</button></>}>
+      <p className="sc-note" style={{ marginTop: 0 }}>Aparecieron {list.length} {list.length === 1 ? 'jugador nuevo' : 'jugadores nuevos'} en tus repeticiones. Marca los que son de tu equipo: {own ? 'se añadirán a «' + teamName(model, own) + '». ' : ''}Los demás se ignoran (no cuentan en ninguna cifra) y puedes cambiarlo cuando quieras.</p>
+      <div className="sc-selbar" style={{ marginTop: 8 }}><button className="sc-btn small ghost" onClick={() => setOn(new Set(list.map((p) => p.id)))}>Todos</button><button className="sc-btn small ghost" onClick={() => setOn(new Set())}>Ninguno</button></div>
+      <ul className="sc-list">{list.map((p) => <li key={p.id} onClick={() => toggle(p.id)}><span className={'sc-check' + (on.has(p.id) ? ' on' : '')}>{on.has(p.id) ? '✓' : ''}</span><Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{on.has(p.id) ? 'De mi equipo' : 'Ignorar'}</small></div></li>)}</ul>
     </Sheet>
   );
 }

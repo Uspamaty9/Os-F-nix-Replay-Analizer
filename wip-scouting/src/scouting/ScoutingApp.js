@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import * as db from './db';
 import './scouting.scss';
 import { useModel, useLocal, Select, Seg } from './ui';
 import { applyFilters, EMPTY_FILTERS, teamName } from './model';
@@ -9,7 +10,7 @@ import Matches from './Matches';
 import Network from './Network';
 import Teams from './Teams';
 import Reports from './Reports';
-import More, { Trash, Backup, SearchSheet } from './More';
+import More, { Trash, Backup, SearchSheet, NewPlayersSheet } from './More';
 
 class Boundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -24,7 +25,9 @@ const MORE = ['more', 'network', 'reports', 'trash', 'backup']; // pantallas den
 export default function ScoutingApp({ onClose, openReplay }) {
   const { model, error } = useModel();
   const [tab, setTab] = useState('dash'); const [params, setParams] = useState({});
-  const [filters, setFilters] = useLocal('sc-filters', EMPTY_FILTERS); const [fopen, setFopen] = useState(false); const [search, setSearch] = useState(false);
+  const [filters, setFilters] = useLocal('sc-filters', EMPTY_FILTERS); const [fopen, setFopen] = useState(false); const [search, setSearch] = useState(false); const [newIds, setNewIds] = useState(null); const askedNew = useRef(false);
+  // al abrir el Centro: ¿hay jugadores nuevos pendientes de decidir?
+  useEffect(() => { if (!model || askedNew.current) return; askedNew.current = true; db.getKv('pendingNewPlayers', []).then((ids) => { const live = ids.filter((i) => model.allPlayers.some((p) => p.id === i && !p.hidden)); if (live.length) setNewIds(live); }); }, [model]);
   const nav = useCallback((t, p) => { setTab(t); setParams(p || {}); const el = document.querySelector('.sc-main'); if (el) el.scrollTop = 0; }, []);
   const open = useCallback((id) => { onClose(); openReplay(id); }, [onClose, openReplay]);
   let f = filters;
@@ -73,6 +76,7 @@ export default function ScoutingApp({ onClose, openReplay }) {
       <nav className="sc-tabs" aria-label="Secciones">
         {TABS.map(([id, label, d]) => <button key={id} className={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'on' : ''} onClick={() => nav(id, {})} aria-current={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg><span>{label}</span></button>)}
       </nav>
+      {newIds && model && <NewPlayersSheet model={model} ids={newIds} onClose={() => setNewIds(null)} />}
       {search && model && <SearchSheet model={model} nav={nav} onClose={() => setSearch(false)} />}
     </div>
   );

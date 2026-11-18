@@ -62,3 +62,4 @@ Hecho en `wip-scouting/src/scouting`: barra inferior de 6 (Panel, Jugadores, Sco
 Tactics: botón de pantalla completa + cancha horizontal en la pizarra suelta; herramientas de la repetición en una sola fila desplazable (móvil).
 Tests: `wip-scouting/tests/browser/run.js … run6.js` (run6 cubre lo nuevo). Pendiente: punto 20 (identificar los botones ≡ y de sliders de la captura del usuario).
 - (17 nov, Claude C) Descargas: `askExport()` (ui.js) pregunta antes de sacar PDF/copia; `saveFile()` avisa «✓ Descargado/Guardado en Descargas: nombre». Pizarra: `saved()` en TacticsBoard y aviso «✓ Captura…» en replayBoard. Regla: todo archivo que se genere debe avisar al terminar.
+- (17 nov, Claude C) Jugadores: botón «Solo mi equipo» (ignora a los que no son de «Mi equipo», con Deshacer). `ingest.js` guarda en kv `pendingNewPlayers` los jugadores nuevos; al abrir el Centro sale `NewPlayersSheet` (More.js) para elegir cuáles son de tu equipo. Test: `tests/browser/run7.js`.

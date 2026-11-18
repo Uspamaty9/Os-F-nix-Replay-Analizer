@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
-import { playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
+import { ownTeamId, playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
 import { aggregateRows, CRITERIA } from './analysis';
 import { buildPlayerReport } from './report';
 import { normNick } from './ingest';
@@ -70,12 +70,19 @@ export default function Players({ model, view, filters, nav, params }) {
     return model.players.filter((p) => (!q || normNick(p.nick).includes(normNick(q))) && (!teamF || (teamF === '__fav' ? p.fav : p.teamId === teamF))).map((p) => ({ p, agg: aggregateRows(by.get(p.id) || []), ra: sortBy === 'rating' ? ratingAverage(model, p.id, ids) : null })).sort((a, b) => (SORT[sortBy] || SORT.inv)(a, b) || a.p.nick.localeCompare(b.p.nick));
   }, [model, view, q, sortBy, teamF, ids]);
 
+  // Un toque: ignora a todos los que no son de «Mi equipo» (se recuperan con «Deshacer» o desde «Elegir»).
+  async function onlyMine() {
+    const own = ownTeamId(model); const others = model.players.filter((p) => p.teamId !== own);
+    if (!others.length) { toast('Ya solo se analizan los de tu equipo'); return; }
+    await db.putMany('players', others.map((p) => ({ ...p, ignored: true, updatedAt: Date.now() })));
+    toast(others.length + ' jugadores ignorados: solo cuenta ' + teamName(model, own), { label: 'Deshacer', fn: async () => { await db.putMany('players', others); toast('Restaurado'); } });
+  }
   if (cmpMode && cmp.length >= 2 && params && params.compare) return <Compare model={model} view={view} filters={filters} players={cmp.map((id) => model.playerById.get(id)).filter(Boolean)} onBack={() => nav('players', {})} />;
   if (sel && model.playerById.get(sel)) return <Profile model={model} view={view} filters={filters} player={model.playerById.get(sel)} ids={ids} tab={tab} setTab={setTab} nav={nav} onBack={() => nav('players', {})} onEdit={() => setEdit(model.playerById.get(sel))} edit={edit} setEdit={setEdit} />;
 
   return (
     <div className="sc-view">
-      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setEdit({})}>+ Nuevo</button></div>
+      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>}{!selMode && !cmpMode && ownTeamId(model) && <button className="sc-btn small ghost" onClick={onlyMine}>Solo mi equipo</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setEdit({})}>+ Nuevo</button></div>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="sc-grid2" style={{ marginBottom: 8 }}>
           <Select label="Ordenar por" value={sortBy} onChange={setSortBy} options={[['inv', 'Goles + asist.'], ['goals', 'Goles'], ['assists', 'Asistencias'], ['rating', 'Nota'], ['matches', 'Partidos'], ['name', 'Nombre']]} />

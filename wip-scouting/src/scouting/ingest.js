@@ -79,6 +79,7 @@ export async function ingestStats(replayId, stats) {
     idx.set(normNick(p.nick), np); fresh.push(np); players.push(np);
   }));
   if (fresh.length) await db.putMany('players', fresh);
+  if (fresh.length) { try { const pend = await db.getKv('pendingNewPlayers', []); await db.setKv('pendingNewPlayers', pend.concat(fresh.map((p) => p.id))); } catch (e) { /* no crítico */ } } // se le preguntará al usuario cuáles son de su equipo
   const old = await db.get('matches', replayId);
   const partIdx = old && old.partIdx < parts.length ? old.partIdx : mainPartIndex(parts);
   const rec = Object.assign({
