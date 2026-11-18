@@ -308,12 +308,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
               </>
             )}
           </div>
-<<<<<<< HEAD
-          <button type='button' className={'tx-icon' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel de la jugada' aria-label='Panel'><Icon name='panel' /></button>
-=======
           <button type='button' className={'tx-icon' + (full ? ' on' : '')} onClick={toggleFull} title='Pantalla completa y cancha horizontal' aria-label='Pantalla completa' aria-pressed={full}><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>{full ? <path d='M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5' /> : <path d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5' />}</svg></button>
-          <button type='button' className={'tx-icon show-sm' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel' aria-label='Panel'><Icon name='panel' /></button>
->>>>>>> 06260a6 (Revision general: pestaña Mas, papelera, deshacer, seleccion multiple, fusionar equipos, busqueda, favoritos, compactar espacios, pizarra fullscreen)
+          <button type='button' className={'tx-icon' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} title='Panel de la jugada' aria-label='Panel'><Icon name='panel' /></button>
         </div>
       </header>
 
