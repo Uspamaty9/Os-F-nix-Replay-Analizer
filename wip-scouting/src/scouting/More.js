@@ -29,16 +29,18 @@ export function Trash({ model }) {
   const label = { match: 'Partido', team: 'Equipo' };
   async function restore(e) { await db.restoreTrash(e); toast('Restaurado'); }
   async function purge(e) { if (await confirm('¿Eliminar «' + e.name + '» para siempre? Ya no se podrá restaurar.', 'Eliminar')) await db.del('trash', e.id); }
-  async function empty() { if (await confirm('¿Vaciar la papelera? Los partidos y equipos que contiene se perderán para siempre.', 'Vaciar')) await db.delMany('trash', items.map((e) => e.id)); }
+  async function empty() { if (await confirm('¿Vaciar la papelera? Todo lo que contiene (partidos, equipos y jugadores) se eliminará para siempre.', 'Vaciar todo')) { await db.delMany('trash', items.map((e) => e.id)); await db.delMany('players', hidden.map((p) => p.id)); toast('Papelera vaciada'); } }
+  // Un jugador borrado se elimina del todo. Si vuelve a salir en una repetición nueva, se creará de nuevo (como «sin elegir»).
+  async function purgePlayer(p) { if (await confirm('¿Eliminar a «' + p.nick + '» para siempre? Ya no se podrá restaurar. Si aparece en una repetición nueva, volverá a crearse sin elegir.', 'Eliminar')) { await db.del('players', p.id); toast('Jugador eliminado'); } }
   return (
     <div className="sc-view">
-      <Card title="Papelera" right={items.length > 0 && <button className="sc-btn small ghost danger" onClick={empty}>Vaciar</button>}>
+      <Card title="Papelera" right={(items.length > 0 || hidden.length > 0) && <button className="sc-btn small ghost danger" onClick={empty}>Vaciar todo</button>}>
         {!items.length && !hidden.length ? <Empty>La papelera está vacía. Lo que borres de Partidos, Equipos o Jugadores aparece aquí para poder restaurarlo.</Empty> : (
           <ul className="sc-list">
             {items.map((e) => <li key={e.id} style={{ cursor: 'default' }}><div className="mid"><b>{e.name}</b><small>{label[e.kind] || e.kind} · borrado {fmtDate(e.at)}</small></div><button className="sc-btn small" onClick={() => restore(e)}>Restaurar</button><button className="sc-btn small ghost danger" onClick={() => purge(e)}>✕</button></li>)}
-            {hidden.map((p) => <li key={p.id} style={{ cursor: 'default' }}><Avatar player={p} size={30} /><div className="mid"><b>{p.nick}</b><small>Jugador · se conserva su historial de partidos</small></div><button className="sc-btn small" onClick={async () => { await db.put('players', { ...p, hidden: false, updatedAt: Date.now() }); toast('Jugador restaurado (sin elegir: actívalo en «Elegir»)'); }}>Restaurar</button></li>)}
+            {hidden.map((p) => <li key={p.id} style={{ cursor: 'default' }}><Avatar player={p} size={30} /><div className="mid"><b>{p.nick}</b><small>Jugador · se conserva su historial de partidos</small></div><button className="sc-btn small" onClick={async () => { await db.put('players', { ...p, hidden: false, updatedAt: Date.now() }); toast('Jugador restaurado (sin elegir: actívalo en «Elegir»)'); }}>Restaurar</button><button className="sc-btn small ghost danger" aria-label="Eliminar para siempre" onClick={() => purgePlayer(p)}>✕</button></li>)}
           </ul>)}
-        <p className="sc-note">La papelera guarda los últimos 40 partidos y equipos borrados.</p>
+        <p className="sc-note">La papelera guarda los últimos 40 partidos y equipos borrados. Con ✕ eliminas uno para siempre; «Vaciar todo» elimina todo.</p>
       </Card>
       {confirmEl}
     </div>

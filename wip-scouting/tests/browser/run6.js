@@ -49,5 +49,10 @@ const { chromium } = require('playwright'); const assert = require('assert');
   assert.strictEqual(await page.evaluate(() => (window.__saved || []).length), 1); assert.ok(/✓ .*\.fenixscout/.test(await page.$eval('.sc-toast', (e) => e.innerText)), 'aviso de descarga'); await page.screenshot({ path: 'shots/v2-saved.png' });
   await page.click('.sc-tabs button:has-text("Partidos")'); await page.click('.sc-list li >> nth=0'); await page.waitForTimeout(300); await page.click('button:has-text("Informe PDF")'); await page.waitForSelector('.sc-sheet-foot');
   await page.click('.sc-sheet-foot .sc-btn:not(.ghost)'); await page.waitForTimeout(700); assert.strictEqual(await page.evaluate(() => (window.__saved || []).length), 2); assert.ok(/✓ .*\.pdf/.test(await page.$eval('.sc-toast', (e) => e.innerText)), 'aviso PDF'); console.log('OK avisos de descarga');
+  // Papelera: eliminar jugadores para siempre
+  await page.evaluate(async () => { const p = (await window.__db.all('players')).find((x) => x.id === 'q0'); await window.__db.put('players', { ...p, hidden: true, ignored: true }); });
+  await page.click('.sc-tabs button:has-text("Más")'); await page.click('.sc-menu button:has-text("Papelera")'); await page.waitForTimeout(250);
+  await page.click('.sc-list li:has-text("Rojas") button[aria-label="Eliminar para siempre"]'); await page.waitForTimeout(150); await page.click('.sc-sheet-foot .sc-btn.danger'); await page.waitForTimeout(400);
+  assert.ok(!(await page.evaluate(() => window.__db.all('players').then((l) => l.some((p) => p.id === 'q0')))), 'jugador eliminado del todo'); console.log('OK papelera: eliminar para siempre');
   console.log('ERRORS', errors); assert.deepStrictEqual(errors, []); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
