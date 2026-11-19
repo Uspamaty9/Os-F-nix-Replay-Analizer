@@ -75,3 +75,4 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Fila única: Mover · Añadir · Dibujar · Borrador · Eliminar/Deshacer/Rehacer (solo icono en móvil) · Más.
 - «Dibujar» agrupa Líneas, Formas y Texto; «Más» agrupa Animación (`.tx-ft.anim`), Mano, Varios y Vaciar todo. Se quitaron las pestañas Edición/Animación y CATS `lines/shapes`.
 - Tests ajustados (`.tx-db.cat:has-text("Más")` → `.tx-ft.anim`).
+- Opciones desplegadas (Dibujar/Añadir/Más): una fila flotante deslizable sin recuadro de fondo (`.tx-fly` absoluta sobre el dock).
