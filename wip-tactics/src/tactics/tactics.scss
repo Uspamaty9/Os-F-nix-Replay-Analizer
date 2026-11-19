@@ -359,3 +359,14 @@
 @media (max-width: 760px) {
   .tx-root .tx-db.ico { flex: 0 0 40px; span { display: none; } svg { width: 23px; height: 23px; } }
 }
+
+// ---- Espacio para la barra del celular y sin superposiciones (18 nov) ----
+// Sin barra inferior abierta, el campo y los botones Menú/Herramientas dejan libre la zona de la barra de navegación de Android.
+.tx-root.nobar { padding-bottom: var(--inb, 0px); }
+// La fila de opciones desplegadas sube por encima de los botones Menú/Herramientas (antes se montaba sobre ellos).
+.tx-root .tx-fly { bottom: calc(100% + 76px); background: transparent !important; border: 0 !important; box-shadow: none !important; }
+// Cada opción: gris translúcido (no negro) y sin recuadro de fondo.
+.tx-root .tx-fly .tx-ft { background: rgba(80, 80, 80, .55); border-color: rgba(255, 255, 255, .22); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.tx-root .tx-fly .tx-ft.on { background: var(--tx-acc); color: var(--tx-btn); border-color: transparent; }
+.tx-root .tx-cbtn:not(.on) { background: rgba(80, 80, 80, .55); border-color: rgba(255, 255, 255, .22); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.tx-root .tx-cbtn.br, .tx-root .tx-cbtn.bl { width: auto; min-width: 60px; padding: 0 7px; }

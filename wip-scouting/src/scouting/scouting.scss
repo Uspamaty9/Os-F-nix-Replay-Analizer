@@ -25,7 +25,7 @@
 .sc-overlay-full {
   position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
   background: var(--sc-bg); overflow: hidden;
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(env(safe-area-inset-top, 0px), var(--int, 0px));
 }
 .sc-top {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; flex: none;
@@ -41,7 +41,7 @@
 .sc-view { display: flex; flex-direction: column; gap: 10px; max-width: 920px; margin: 0 auto; }
 .sc-tabs {
   flex: none; display: flex; background: var(--sc-card); border-top: 1px solid var(--sc-line);
-  padding-bottom: env(safe-area-inset-bottom); overflow-x: auto; scrollbar-width: none;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--inb, 0px)); overflow-x: auto; scrollbar-width: none;
   button { flex: 1 0 auto; min-width: 62px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px 7px; border: 0; background: transparent; color: var(--sc-mute); font: 500 10px 'Poppins', sans-serif; cursor: pointer; border-top: 2px solid transparent; }
   button.on { color: var(--sc-acc); border-top-color: var(--sc-acc); }
 }
@@ -217,7 +217,7 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; } .sc-sheet-head h3 { font-family: 'Oswald', 'Poppins', sans-serif; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: var(--sc-acc); }
 .sc-sheet-body { padding: 6px 16px 14px; overflow-y: auto; flex: 1; } .sc-sheet-body p { font-size: 14px; line-height: 1.5; }
 .sc-sheet-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 10px 16px 14px; border-top: 1px solid var(--sc-line); }
-.sc-toast { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); opacity: 0; transition: .25s; z-index: 120; background: #111; color: #F7F3E8; border: 1px solid #C89A3D; padding: 10px 16px; border-radius: 12px; font: 600 13px 'Poppins', sans-serif; max-width: 88vw; text-align: center; pointer-events: none; }
+.sc-toast { position: fixed; left: 50%; bottom: calc(80px + max(env(safe-area-inset-bottom, 0px), var(--inb, 0px))); transform: translate(-50%, 12px); opacity: 0; transition: .25s; z-index: 120; background: #111; color: #F7F3E8; border: 1px solid #C89A3D; padding: 10px 16px; border-radius: 12px; font: 600 13px 'Poppins', sans-serif; max-width: 88vw; text-align: center; pointer-events: none; }
 .sc-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- Pantallas anchas ---------- */

@@ -279,7 +279,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
   }, []);
   useEffect(() => { const h = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => { document.removeEventListener('fullscreenchange', h); try { if (document.fullscreenElement) document.exitFullscreen(); window.screen.orientation.unlock(); } catch (e) { /* nada */ } }; }, []);
   const tree = (
-    <div className={'tx-root' + (panel ? ' panel-open' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
+    <div className={'tx-root' + (panel ? ' panel-open' : '') + (bar ? '' : ' nobar')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
       <div className='tx-body'>
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />

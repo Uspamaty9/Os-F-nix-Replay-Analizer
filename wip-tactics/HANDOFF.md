@@ -76,3 +76,4 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - «Dibujar» agrupa Líneas, Formas y Texto; «Más» agrupa Animación (`.tx-ft.anim`), Mano, Varios y Vaciar todo. Se quitaron las pestañas Edición/Animación y CATS `lines/shapes`.
 - Tests ajustados (`.tx-db.cat:has-text("Más")` → `.tx-ft.anim`).
 - Opciones desplegadas (Dibujar/Añadir/Más): una fila flotante deslizable sin recuadro de fondo (`.tx-fly` absoluta sobre el dock).
+- (18 nov, Claude C) Pizarra: sin barra inferior los botones Menú/Herramientas respetan `--inb` (`.tx-root.nobar`); la fila de opciones desplegadas (`.tx-fly`) sube por encima de ellos (no se superpone) y las opciones/botones son gris translúcido, sin recuadro de fondo. Barra de la repetición y Centro de análisis también respetan `--inb`/`--int`.
