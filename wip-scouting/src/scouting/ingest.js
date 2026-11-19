@@ -44,13 +44,14 @@ export function stadiumGeo(st) {
       segs.push([r1(a.x), r1(a.y), r1(b.x), r1(b.y), r1(sg.curveS != null ? sg.curveS : 0), String(sg.color)]);
     });
     const goals = (st.goals || []).map((g) => [r1(g.p0[0]), r1(g.p0[1]), r1(g.p1[0]), r1(g.p1[1]), g.team === 'red' ? 'R' : 'B']);
-    const posts = (st.discs || []).filter((d) => d && d.pos && Number(d.invMass) === 0 && Number(d.radius) > 0 && Number(d.radius) <= 16 && d.color !== 'transparent'
-      && (st.goals || []).some((g) => [g.p0, g.p1].some((p) => Math.hypot(p[0] - d.pos[0], p[1] - d.pos[1]) < 25))).map((d) => [r1(d.pos[0]), r1(d.pos[1]), r1(d.radius), d.color ? String(d.color) : '']).slice(0, 8);
+    // discos fijos del mapa (postes de las porterías y adornos): se dibujan tal cual los trae el mapa, sin postes por defecto
+    const discs = (st.discs || []).filter((d) => d && d.pos && Number(d.radius) > 0 && d.color !== 'transparent' && Number(d.invMass) === 0)
+      .map((d) => [r1(d.pos[0]), r1(d.pos[1]), r1(d.radius), d.color ? String(d.color) : 'FFFFFF']).slice(0, 80);
     let ex = 0, ey = 0;
     segs.forEach((s) => { ex = Math.max(ex, Math.abs(s[0]), Math.abs(s[2])); ey = Math.max(ey, Math.abs(s[1]), Math.abs(s[3])); });
     goals.forEach((q) => { ex = Math.max(ex, Math.abs(q[0]), Math.abs(q[2])); ey = Math.max(ey, Math.abs(q[1]), Math.abs(q[3])); });
     return {
-      posts, name: String(st.name).slice(0, 40), bgType: bg.type || 'grass', halfW: r1(halfW), halfH: r1(halfH),
+      discs, name: String(st.name).slice(0, 40), bgType: bg.type || 'grass', halfW: r1(halfW), halfH: r1(halfH),
       boundW: r1(Math.max(boundW, halfW + 20, ex + 20)), boundH: r1(Math.max(boundH, halfH + 20, ey + 20)), kickOff: r1(bg.kickOffRadius || 0),
       bgColor: bg.color && bg.color !== 'transparent' ? String(bg.color) : '', segs: segs.slice(0, 300), goals: goals.slice(0, 4),
     };
@@ -61,7 +62,7 @@ async function saveStadiums(played) {
   try {
     const cur = (await db.getKv('stadiums', {})) || {};
     let ch = false;
-    played.forEach((m) => { const g = stadiumGeo(m.stadium); if (g && (!cur[g.name] || cur[g.name].segs.length < g.segs.length || (g.segs.some((x) => x[4]) && !cur[g.name].segs.some((x) => x[4])))) { cur[g.name] = g; ch = true; } });
+    played.forEach((m) => { const g = stadiumGeo(m.stadium); if (g && (!cur[g.name] || !cur[g.name].discs || cur[g.name].segs.length < g.segs.length || (g.segs.some((x) => x[4]) && !cur[g.name].segs.some((x) => x[4])))) { cur[g.name] = g; ch = true; } });
     if (ch) await db.setKv('stadiums', cur);
   } catch (e) { /* nunca debe afectar al análisis */ }
 }

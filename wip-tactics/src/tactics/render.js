@@ -74,15 +74,11 @@ function drawStadium(ctx, v, w, h, g) {
     }
     ctx.stroke();
   }
-  // En HaxBall la línea de gol no se dibuja: solo se ven los postes (discos fijos) y las paredes de la red
-  for (const gl of g.goals || []) {
-    const near = (q, x, y) => Math.hypot(q[0] - x, q[1] - y) < 30;
-    const ends = [[gl[0], gl[1]], [gl[2], gl[3]]];
-    ends.forEach(([x, y]) => {
-      const q = (g.posts || []).find((u) => near(u, x, y)); const p = px(q ? q[0] : x, q ? q[1] : y);
-      ctx.fillStyle = q && q[3] ? hexc(q[3]) : (gl[4] === 'R' ? FIELD.postRed : FIELD.postBlue); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 1.5 * v.k);
-      ctx.beginPath(); ctx.arc(p.x, p.y, (q && q[2] ? q[2] : 8) * v.k, 0, TAU); ctx.fill(); ctx.stroke();
-    });
+  // postes y discos fijos del mapa, con su color y tamaño reales (no hay postes por defecto)
+  for (const d of g.discs || []) {
+    const p = px(d[0], d[1]);
+    ctx.fillStyle = hexc(d[3] || 'FFFFFF'); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 2 * v.k);
+    ctx.beginPath(); ctx.arc(p.x, p.y, d[2] * v.k, 0, TAU); ctx.fill(); ctx.stroke();
   }
 }
 
