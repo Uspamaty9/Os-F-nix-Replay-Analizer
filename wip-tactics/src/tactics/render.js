@@ -74,11 +74,15 @@ function drawStadium(ctx, v, w, h, g) {
     }
     ctx.stroke();
   }
+  // En HaxBall la línea de gol no se dibuja: solo se ven los postes (discos fijos) y las paredes de la red
   for (const gl of g.goals || []) {
-    ctx.strokeStyle = gl[4] === 'R' ? 'rgba(255,170,170,.8)' : 'rgba(170,170,255,.8)'; ctx.lineWidth = Math.max(1.5, 3 * v.k);
-    const A = px(gl[0], gl[1]), B = px(gl[2], gl[3]); ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
-    const posts = (g.posts || []).filter((q) => Math.hypot(q[0] - gl[0], q[1] - gl[1]) < 30 || Math.hypot(q[0] - gl[2], q[1] - gl[3]) < 30).map((q) => px(q[0], q[1]));
-    for (const p of (posts.length ? posts : [A, B])) { ctx.fillStyle = gl[4] === 'R' ? FIELD.postRed : FIELD.postBlue; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 1.5 * v.k); ctx.beginPath(); ctx.arc(p.x, p.y, 8 * v.k, 0, TAU); ctx.fill(); ctx.stroke(); }
+    const near = (q, x, y) => Math.hypot(q[0] - x, q[1] - y) < 30;
+    const ends = [[gl[0], gl[1]], [gl[2], gl[3]]];
+    ends.forEach(([x, y]) => {
+      const q = (g.posts || []).find((u) => near(u, x, y)); const p = px(q ? q[0] : x, q ? q[1] : y);
+      ctx.fillStyle = q && q[3] ? hexc(q[3]) : (gl[4] === 'R' ? FIELD.postRed : FIELD.postBlue); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 1.5 * v.k);
+      ctx.beginPath(); ctx.arc(p.x, p.y, (q && q[2] ? q[2] : 8) * v.k, 0, TAU); ctx.fill(); ctx.stroke();
+    });
   }
 }
 

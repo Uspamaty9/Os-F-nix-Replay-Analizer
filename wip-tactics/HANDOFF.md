@@ -79,3 +79,4 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - (18 nov, Claude C) Pizarra: sin barra inferior los botones Menú/Herramientas respetan `--inb` (`.tx-root.nobar`); la fila de opciones desplegadas (`.tx-fly`) sube por encima de ellos (no se superpone) y las opciones/botones son gris translúcido, sin recuadro de fondo. Barra de la repetición y Centro de análisis también respetan `--inb`/`--int`.
 
 - FYI (pizarra): se quitó el HUD superior; modos de vista/Ajustar/nombre+estado van en la barra Menú. `.tx-fly` queda bajo los botones de esquina (que suben con `.flyopen`). Arcos: `setPitch` amplía bounds con segs/goals, curvas negativas se dibujan anticlockwise, `stadiumGeo` guarda `posts` (discos fijos junto a la portería).
+- FYI (pizarra): ya no se dibuja la línea rosa/azul de gol (HaxBall no la dibuja); postes con color/radio del disco real (`posts` en stadiumGeo).
