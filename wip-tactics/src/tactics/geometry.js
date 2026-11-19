@@ -17,6 +17,13 @@ export function setPitch(geo) {
   const g = ACTIVE;
   PITCH.halfW = g ? g.halfW : CLASSIC.halfW; PITCH.halfH = g ? g.halfH : CLASSIC.halfH;
   PITCH.boundW = g ? g.boundW : CLASSIC.boundW; PITCH.boundH = g ? g.boundH : CLASSIC.boundH;
+  if (g) { // que entren en pantalla las redes y los arcos aunque el mapa guardado no los incluya
+    let ex = 0, ey = 0;
+    const add = (x, y) => { ex = Math.max(ex, Math.abs(x)); ey = Math.max(ey, Math.abs(y)); };
+    for (const s of g.segs || []) { add(s[0], s[1]); add(s[2], s[3]); }
+    for (const q of g.goals || []) { add(q[0], q[1]); add(q[2], q[3]); }
+    PITCH.boundW = Math.max(PITCH.boundW, Math.ceil(ex + 20)); PITCH.boundH = Math.max(PITCH.boundH, Math.ceil(ey + 20));
+  }
   PITCH.kickOff = g ? (g.kickOff || 0) : CLASSIC.kickOff;
   PITCH.goalHalf = g && g.goals && g.goals[0] ? Math.abs(g.goals[0][3] - g.goals[0][1]) / 2 : CLASSIC.goalHalf;
   return true;
