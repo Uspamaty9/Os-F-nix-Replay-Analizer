@@ -366,7 +366,7 @@
 // La fila de opciones desplegadas sube por encima de los botones Menú/Herramientas (antes se montaba sobre ellos).
 .tx-root .tx-fly { bottom: calc(100% + 76px); background: transparent !important; border: 0 !important; box-shadow: none !important; }
 // Cada opción: gris translúcido (no negro) y sin recuadro de fondo.
-.tx-root .tx-fly .tx-ft { background: rgba(80, 80, 80, .55); border-color: rgba(255, 255, 255, .22); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.tx-root .tx-fly .tx-ft { background: rgba(22, 20, 16, .5); color: #F7F3E8; border-color: color-mix(in srgb, var(--tx-acc, #C89A3D) 45%, transparent); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .tx-root .tx-fly .tx-ft.on { background: var(--tx-acc); color: var(--tx-btn); border-color: transparent; }
-.tx-root .tx-cbtn:not(.on) { background: rgba(80, 80, 80, .55); border-color: rgba(255, 255, 255, .22); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.tx-root .tx-cbtn:not(.on) { background: rgba(22, 20, 16, .5); color: #F7F3E8; border-color: color-mix(in srgb, var(--tx-acc, #C89A3D) 45%, transparent); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .tx-root .tx-cbtn.br, .tx-root .tx-cbtn.bl { width: auto; min-width: 60px; padding: 0 7px; }
