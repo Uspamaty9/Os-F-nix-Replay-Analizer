@@ -297,13 +297,9 @@
 }
 @media (min-width: 761px) { .tx-root .tx-dock { justify-content: center; } }
 @media (max-width: 760px) {
-  // dos filas: acciones siempre visibles arriba; categorías y «Animar» debajo (sin desplazamiento horizontal)
-  .tx-root .tx-dock { flex-wrap: wrap; overflow: visible; gap: 0 4px; padding: 3px 4px 2px; }
-  .tx-root .tx-dg-act { flex: 1 1 100%; justify-content: space-between; }
-  .tx-root .tx-dg-cat { flex: 1 1 0; justify-content: space-between; }
-  .tx-root .tx-dsep { display: none; }
-  .tx-root .tx-db { min-width: 0; flex: 1 1 0; height: 44px; gap: 2px; padding: 0 1px; svg { width: 20px; height: 20px; } span { font-size: 10px; } }
-  .tx-root .tx-dg-act .tx-db, .tx-root .tx-dg-cat .tx-db { flex: 1 1 0; }
+  // una sola fila, con aire entre botones
+  .tx-root .tx-dock { flex-wrap: nowrap; overflow: visible; gap: 2px; padding: 8px 6px 10px; justify-content: space-between; }
+  .tx-root .tx-db { min-width: 0; flex: 1 1 0; height: 50px; gap: 3px; padding: 0 1px; border-radius: 12px; svg { width: 21px; height: 21px; } span { font-size: 9.5px; } }
   .tx-root .tx-transport { gap: 2px; .tx-icon { width: 34px; } .tx-icon.big { width: 44px; } .tx-time { display: none; } }
   .tx-root .tx-toast { bottom: calc(100px + var(--inb, 0px)); }
 }
@@ -352,4 +348,16 @@
     .tx-dg-act { order: 1; } .tx-dg-cat { order: 2; }
     .tx-dock .tx-dsep:first-of-type { display: none; }
   }
+}
+
+.tx-root .tx-fgrp { flex: 0 0 100%; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-muted, #9aa); padding: 2px 4px 0; }
+@media (max-width: 760px) {
+  .tx-root .tx-fly { flex-wrap: wrap; overflow: visible; justify-content: center; gap: 8px; padding: 12px 10px 10px; border-bottom: 0; }
+  .tx-root .tx-fly .tx-ft { flex: 0 0 auto; }
+}
+
+@media (max-width: 760px) {
+  .tx-root .tx-db.ico { flex: 0 0 40px; span { display: none; } svg { width: 23px; height: 23px; } }
+  .tx-root .tx-fly .tx-ft { min-height: 38px; padding: 0 11px 0 9px; font-size: 12px; gap: 5px; svg { width: 19px; height: 19px; } }
+  .tx-root .tx-fly { gap: 6px; padding: 10px 8px 8px; }
 }

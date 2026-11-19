@@ -18,8 +18,7 @@ import { renderImage, renderScheme, renderSheet, canvasToBlob, recordAnimation, 
 // Categorías del dock inferior: al tocarlas se despliegan sus herramientas
 const CATS = [
   { id: 'add', label: 'Añadir', icon: 'plus', tools: ['player', 'ball'] },
-  { id: 'lines', label: 'Líneas', icon: 'pen', tools: ['pen', 'line', 'dline', 'arrow', 'carrow'] },
-  { id: 'shapes', label: 'Formas', icon: 'polygon', tools: ['rect', 'oval', 'polygon'] },
+  { id: 'draw', label: 'Dibujar', icon: 'pen', tools: ['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval', 'polygon', 'text'] },
   { id: 'more', label: 'Más', icon: 'more', tools: [] }
 ];
 const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
@@ -344,44 +343,44 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
                 <button type='button' className='tx-ft' onClick={() => { ctl.setTool('select'); setPanel(true); setCat(null); }}><Icon name='user' size={22} /><span>Registrados</span></button>
               </>
             )}
-            {cat !== 'add' && CATS.find((c) => c.id === cat).tools.map((id) => (
-              <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
-            ))}
+            {cat === 'draw' && (
+              <>
+                <div className='tx-fgrp'>Líneas</div>
+                {['pen', 'line', 'dline', 'arrow', 'carrow'].map((id) => (
+                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
+                ))}
+                <div className='tx-fgrp'>Formas</div>
+                {['rect', 'oval', 'polygon', 'text'].map((id) => (
+                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
+                ))}
+              </>
+            )}
           </div>
         )}
         {cat === 'more' && (
           <div className='tx-fly' role='group' aria-label='Más'>
-            <button type='button' className={'tx-ft' + (s.tool === 'text' ? ' on' : '')} onClick={() => { ctl.setTool('text'); setCat(null); }}><Icon name='text' size={22} /><span>Texto</span></button>
+            <button type='button' className={'tx-ft anim' + (anim ? ' on' : '')} onClick={() => { if (anim) { if (ctl) ctl.stop(); setAnim(false); } else setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
+            <button type='button' className={'tx-ft' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
+            <button type='button' className={'tx-ft' + (s.multi ? ' on' : '')} onClick={() => { ctl.setTool('select'); ctl.setFlag('multi', !s.multi); setCat(null); }} aria-pressed={s.multi} title='Selección múltiple: toca varias fichas'><Icon name='multi' size={22} /><span>Varios</span></button>
             <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
           </div>
         )}
           {bar === 'tools' && (
             <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
-              <div className='tx-dg tx-dg-tabs'>
-                <button type='button' className={'tx-db tab' + (!anim ? ' on' : '')} onClick={() => { if (anim && ctl) ctl.stop(); setAnim(false); }} aria-pressed={!anim} title='Editar la jugada'><Icon name='pen' size={22} /><span>Edición</span></button>
-                <button type='button' className={'tx-db tab anim' + (anim ? ' on' : '')} onClick={() => { setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
-              </div>
-              <span className='tx-dsep' />
-          <div className='tx-dg tx-dg-act'>
-            <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar fichas y figuras'><Icon name='select' size={22} /><span>Mover</span></button>
-            <button type='button' className={'tx-db' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
-            <button type='button' className={'tx-db' + (s.multi ? ' on' : '')} onClick={() => { ctl.setTool('select'); ctl.setFlag('multi', !s.multi); setCat(null); }} aria-pressed={s.multi} title='Selección múltiple: toca varias fichas'><Icon name='multi' size={22} /><span>Varios</span></button>
-            <button type='button' className={'tx-db' + (s.tool === 'erase' ? ' on' : '')} onClick={() => { ctl.setTool(s.tool === 'erase' ? 'select' : 'erase'); setCat(null); }} aria-pressed={s.tool === 'erase'} title='Borrador: toca lo que quieras quitar'><Icon name='erase' size={22} /><span>Borrador</span></button>
-            <button type='button' className='tx-db danger' disabled={dis || !(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} title='Eliminar lo seleccionado'><Icon name='trash' size={22} /><span>Eliminar</span></button>
-            <button type='button' className='tx-db' disabled={dis || !s.canUndo} onClick={() => ctl.undo()} title='Deshacer (Ctrl+Z)'><Icon name='undo' size={22} /><span>Deshacer</span></button>
-            <button type='button' className='tx-db' disabled={dis || !s.canRedo} onClick={() => ctl.redo()} title='Rehacer (Ctrl+Y)'><Icon name='redo' size={22} /><span>Rehacer</span></button>
-          </div>
-          <span className='tx-dsep' />
-          <div className='tx-dg tx-dg-cat'>
-            {CATS.map((c) => {
-              const cur = c.tools.includes(s.tool) ? s.tool : null;
-              return (
-                <button type='button' key={c.id} className={'tx-db cat' + (cat === c.id ? ' open' : '') + (cur || (c.id === 'more' && s.tool === 'text') ? ' on' : '')} onClick={() => setCat(cat === c.id ? null : c.id)} aria-expanded={cat === c.id} title={c.label}>
-                  <Icon name={cur && c.id !== 'add' ? cur : c.icon} size={22} /><span>{c.label}</span>
-                </button>
-              );
-            })}
-          </div>
+              <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar'><Icon name='select' size={22} /><span>Mover</span></button>
+              {CATS.filter((c) => c.id !== 'more').map((c) => {
+                const cur = c.tools.includes(s.tool) ? s.tool : null;
+                return (
+                  <button type='button' key={c.id} className={'tx-db cat' + (cat === c.id ? ' open' : '') + (cur ? ' on' : '')} onClick={() => setCat(cat === c.id ? null : c.id)} aria-expanded={cat === c.id} title={c.label}>
+                    <Icon name={cur && c.id !== 'add' ? cur : c.icon} size={22} /><span>{c.label}</span>
+                  </button>
+                );
+              })}
+              <button type='button' className={'tx-db' + (s.tool === 'erase' ? ' on' : '')} onClick={() => { ctl.setTool(s.tool === 'erase' ? 'select' : 'erase'); setCat(null); }} aria-pressed={s.tool === 'erase'} title='Borrador: toca lo que quieras quitar'><Icon name='erase' size={22} /><span>Borrador</span></button>
+              <button type='button' className='tx-db ico danger' aria-label='Eliminar' disabled={dis || !(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} title='Eliminar lo seleccionado'><Icon name='trash' size={22} /><span>Eliminar</span></button>
+              <button type='button' className='tx-db ico' aria-label='Deshacer' disabled={dis || !s.canUndo} onClick={() => ctl.undo()} title='Deshacer (Ctrl+Z)'><Icon name='undo' size={22} /><span>Deshacer</span></button>
+              <button type='button' className='tx-db ico' aria-label='Rehacer' disabled={dis || !s.canRedo} onClick={() => ctl.redo()} title='Rehacer (Ctrl+Y)'><Icon name='redo' size={22} /><span>Rehacer</span></button>
+              <button type='button' className={'tx-db cat' + (cat === 'more' ? ' open' : '') + (anim || s.tool === 'pan' || s.multi ? ' on' : '')} onClick={() => setCat(cat === 'more' ? null : 'more')} aria-expanded={cat === 'more'} title='Más'><Icon name='more' size={22} /><span>Más</span></button>
             </div>
           )}
           {bar === 'menu' && (

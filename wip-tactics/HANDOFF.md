@@ -70,3 +70,8 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - Las fichas de la bandeja se colocan en el centro y se arrastran. No se implementó el diálogo de ajustes de equipo.
 - `tactics.scss`: bloque nuevo al final (`.tx-corner`, `.tx-team`, `.tx-cbtn`, `.tx-roster`, `.tx-tok`); CSS de la antigua cabecera (`.tx-top`, `.tx-menu`, `.tx-viewbar`) queda sin uso.
 - Tests actualizados: el panel se abre con Menú → Ajustes; exportar/biblioteca desde Menú.
+
+## Dock de una sola fila (móvil y escritorio)
+- Fila única: Mover · Añadir · Dibujar · Borrador · Eliminar/Deshacer/Rehacer (solo icono en móvil) · Más.
+- «Dibujar» agrupa Líneas, Formas y Texto; «Más» agrupa Animación (`.tx-ft.anim`), Mano, Varios y Vaciar todo. Se quitaron las pestañas Edición/Animación y CATS `lines/shapes`.
+- Tests ajustados (`.tx-db.cat:has-text("Más")` → `.tx-ft.anim`).

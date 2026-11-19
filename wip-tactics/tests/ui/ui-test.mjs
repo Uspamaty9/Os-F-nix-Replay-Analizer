@@ -37,7 +37,7 @@ assert.equal(await $('.tx-title small').innerText().then((t) => t.length > 0), t
 // 4) selección múltiple con el botón (táctil) y triángulo
 await $('.tx-db', { hasText: 'Mover' }).click();
 await pg.keyboard.press('Escape'); // quita la selección de la última ficha colocada
-await $('.tx-db', { hasText: 'Varios' }).click();
+await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft', { hasText: 'Varios' }).click();
 for (const [x, y] of [[-200, -70], [-60, 60], [80, -20]]) await click(x, y);
 await pg.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Selección');
 assert.ok(await $('.tx-quick button', { hasText: 'Crear triángulo' }).count() === 1, 'oferta de triángulo con 3 jugadores');
@@ -45,7 +45,7 @@ await $('.tx-quick button').first().click();
 await pg.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Figura');
 assert.ok(await $('.tx-panel', { hasText: 'Vinculada a 3 jugadores' }).count() === 1);
 // mover un jugador: la figura se actualiza (sigue vinculada)
-await $('.tx-db', { hasText: 'Varios' }).click(); // desactivar
+await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft', { hasText: 'Varios' }).click(); // desactivar
 await pg.mouse.move(0, 0);
 const a = await toPx(80, -20), c = await toPx(150, 80);
 await pg.mouse.move(a.x, a.y); await pg.mouse.down(); await pg.mouse.move(c.x, c.y, { steps: 6 }); await pg.mouse.up();
@@ -69,7 +69,7 @@ assert.ok(/Sin calificación/.test(panelTxt), 'no se inventa calificación');
 assert.ok(!/Calificación media\n/.test(panelTxt));
 assert.equal(await $('.tx-stats dd').first().innerText(), '1');
 // 7) pasos y animación
-await $('.tx-db.anim').click(); await $('.tx-transport').waitFor();
+await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft.anim').click(); await $('.tx-transport').waitFor();
 await $('.tx-step.add').click();
 await pg.waitForFunction(() => document.querySelectorAll('.tx-step:not(.add):not(.opts)').length === 2);
 await $('.tx-transport .tx-icon.big').click(); // reproducir
@@ -127,7 +127,7 @@ await pg.waitForFunction(() => /Guardado/.test(document.querySelector('.tx-save'
 await pg.screenshot({ path: shots + '/ui-desktop.png' });
 await pg.reload(); await pg.waitForSelector('.tx-root[data-ready="1"]');
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 1', 'recupera el último proyecto');
-await $('.tx-db.anim').click(); await $('.tx-transport').waitFor();
+await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft.anim').click(); await $('.tx-transport').waitFor();
 assert.equal(await $('.tx-step:not(.add):not(.opts)').count(), 2, 'recupera los pasos');
 await pg.keyboard.press('Control+a');
 assert.ok(/4|3|5/.test(await $('.tx-panel-head h3').innerText() + '4'), 'recupera fichas');
@@ -144,7 +144,7 @@ assert.ok(await mp.locator('.tx-title b').isVisible() && (await mp.locator('.tx-
 assert.ok(await mp.locator('.tx-hud').isVisible(), 'controles de vista sobre el campo en móvil');
 const cv = await mp.locator('.tx-canvas').boundingBox(); assert.ok(cv.width >= 380 && cv.height > 150, 'campo en móvil ' + JSON.stringify(cv));
 assert.ok(await mp.locator('.tx-dock').isVisible(), 'dock visible en móvil');
-await mp.locator('.tx-db.anim').tap(); await mp.locator('.tx-transport').waitFor();
+await mp.locator('.tx-db.cat:has-text("Más")').tap(); await mp.locator('.tx-ft.anim').tap(); await mp.locator('.tx-transport').waitFor();
 await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('[aria-label="Panel"]').click(); await mp.locator('button[aria-label="Herramientas"]').dispatchEvent('click'); assert.ok(await mp.locator('.tx-panel').isVisible());
 await mp.locator('[aria-label="Cerrar panel"]').click();
 await mp.locator('.tx-step.opts').tap(); assert.ok(await mp.locator('.tx-stepops').isVisible(), 'opciones del paso plegables'); await mp.locator('.tx-step.opts').tap();
