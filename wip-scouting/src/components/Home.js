@@ -1,5 +1,5 @@
 import HistoryList from "./HistoryList";
-import { saveReplayFile, saveReplayFiles, setReplayInfo, getReplayData } from "../storage/history";
+import { saveReplayFile, saveReplayFiles, setReplayInfo, getReplayData, listReplays } from "../storage/history";
 import $ from 'jquery'
 import { handleFile, replayFromSite, fenixEnter } from "../game2.js";
 import LoadingScreen from "./LoadingScreen";
@@ -406,6 +406,16 @@ function Home() {
     checkParams();
   }
 
+  // Pizarra: lee los postes exactos de un mapa abriendo un replay guardado que lo use (al analizarlo se guarda la geometría completa)
+  async function readMapFromReplay(name) {
+    try {
+      const l = await listReplays();
+      const m = l.find((r) => r.info && r.info.stadium === name);
+      if (!m) { window.alert('No encuentro un replay guardado con el mapa «' + name + '». Abre uno que lo use y la pizarra lo leerá.'); return; }
+      setShowTactics(false); openSaved(m.id);
+    } catch (e) { /* sin acceso al historial */ }
+  }
+
   async function openSaved(id) {
     const data = await getReplayData(id);
     if (!data) return;
@@ -720,7 +730,7 @@ function Home() {
       {mainMode === 'stats' && <GameStats replayId={replayId} />}
       {mainMode === 'replays' && <ReplaysList />}
       {showScouting && <ScoutingApp onClose={() => setShowScouting(false)} openReplay={openSaved} />}
-      {showTactics && <TacticsBoard onClose={() => setShowTactics(false)} playerProvider={scoutingPlayers} stadiumProvider={scoutingStadiums} />}
+      {showTactics && <TacticsBoard onClose={() => setShowTactics(false)} playerProvider={scoutingPlayers} stadiumProvider={scoutingStadiums} onReadMap={readMapFromReplay} />}
     </>
   );
 }

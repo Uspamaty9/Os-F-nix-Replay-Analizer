@@ -32,7 +32,7 @@ const EMPTY = {
 const SAVE_TXT = { saved: 'Guardado', saving: 'Guardando…', dirty: 'Sin guardar', error: 'Error al guardar' };
 
 // playerProvider (opcional): async () => entradas del registro (ver players.js). Lo aporta quien integra la pizarra con el Centro de análisis.
-export default function TacticsBoard({ onClose, playerProvider, stadiumProvider }) {
+export default function TacticsBoard({ onClose, playerProvider, stadiumProvider, onReadMap }) {
   const canvasRef = useRef(null);
   const ctlRef = useRef(null);
   const [snap0, setS] = useState(null);
@@ -426,9 +426,12 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider 
                 <b>Classic</b><small>Predeterminada · 740 × 340</small>{!s.doc.field && <Icon name='check' size={18} />}
               </button>
               {stadiums.map((g) => (
-                <button type='button' key={g.name} className={'tx-field-opt' + (s.doc.field && s.doc.field.name === g.name ? ' on' : '')} onClick={() => { ctl.setField(g); setFieldOpen(false); flash('Cancha: ' + g.name); }}>
-                  <b>{g.name}</b><small>De tus partidos importados · {Math.round(g.halfW * 2)} × {Math.round(g.halfH * 2)}</small>{s.doc.field && s.doc.field.name === g.name && <Icon name='check' size={18} />}
+                <React.Fragment key={g.name}>
+                <button type='button' className={'tx-field-opt' + (s.doc.field && s.doc.field.name === g.name ? ' on' : '')} onClick={() => { ctl.setField(g); setFieldOpen(false); flash('Cancha: ' + g.name); }}>
+                  <b>{g.name}</b><small>De tus partidos importados · {Math.round(g.halfW * 2)} × {Math.round(g.halfH * 2)}{Array.isArray(g.discs) ? '' : ' · sin postes'}</small>{s.doc.field && s.doc.field.name === g.name && <Icon name='check' size={18} />}
                 </button>
+                {!Array.isArray(g.discs) && onReadMap && <button type='button' className='tx-btn' onClick={() => onReadMap(g.name)} title='Abre un replay de este mapa para leer sus postes exactos'><span>Leer postes de «{g.name}» desde un replay</span></button>}
+                </React.Fragment>
               ))}
               {!stadiums.length && <p className='tx-note'>Aquí aparecerán las canchas de los partidos que analices. Abre una repetición en el analizador y vuelve: su cancha quedará disponible.</p>}
             </div>

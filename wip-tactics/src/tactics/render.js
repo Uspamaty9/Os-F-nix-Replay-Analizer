@@ -75,9 +75,7 @@ function drawStadium(ctx, v, w, h, g) {
     ctx.stroke();
   }
   // postes y discos fijos del mapa, con su color y tamaño reales (no hay postes por defecto)
-  // mapas guardados antes de leer los discos: postes en los extremos de la portería (aproximado, hasta que el mapa se vuelva a leer)
-  const legacy = !Array.isArray(g.discs) ? (g.goals || []).flatMap((q) => [[q[0], q[1], 8, '10243D'], [q[2], q[3], 8, '10243D']]) : [];
-  for (const d of legacy.concat(g.discs || [])) {
+  for (const d of g.discs || []) {
     const p = px(d[0], d[1]);
     ctx.fillStyle = hexc(d[3] || 'FFFFFF'); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 2 * v.k);
     ctx.beginPath(); ctx.arc(p.x, p.y, d[2] * v.k, 0, TAU); ctx.fill(); ctx.stroke();

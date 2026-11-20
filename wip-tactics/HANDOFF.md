@@ -82,3 +82,4 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - FYI (pizarra): ya no se dibuja la línea rosa/azul de gol (HaxBall no la dibuja); postes con color/radio del disco real (`posts` en stadiumGeo).
 - FYI (pizarra): los postes ya no son los de Classic; se dibujan todos los discos fijos (invMass 0) del mapa importado (`discs` en stadiumGeo: x,y,radio,color). Mapas guardados sin `discs` se actualizan al reimportar un replay.
 - FYI (pizarra): mapas guardados sin `discs` (antes de leer los discos) dibujan postes aproximados en los extremos de la portería; se corrigen al volver a analizar el replay (ingestFromEngine).
+- FYI (pizarra): sin postes aproximados. En el selector de cancha, los mapas guardados sin `discs` muestran "sin postes" y un botón que abre (vía `onReadMap` de Home.js → `readMapFromReplay`) un replay guardado con ese mapa; al analizarlo se guarda la geometría exacta.
