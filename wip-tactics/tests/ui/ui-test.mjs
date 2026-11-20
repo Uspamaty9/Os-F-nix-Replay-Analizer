@@ -11,6 +11,7 @@ const errs = []; pg.on('pageerror', (e) => errs.push('pageerror: ' + e)); pg.on(
 await pg.goto('http://localhost:8770/index.html');
 await pg.waitForSelector('.tx-root[data-ready="1"]');
 const $ = (s, o) => pg.locator(s, o);
+const sub = async (name, label) => { await menu(); if (!(await $('.tx-fly [aria-label="' + label + '"]').count())) await $('.tx-db:has-text("' + name + '")').click(); await $('.tx-fly [aria-label="' + label + '"]:visible').click(); };
 const menu = async () => { if (!(await $('.tx-menubar').count())) await $('button[aria-label="Menú"]').click(); };
 const stage = async () => (await $('.tx-canvas').boundingBox());
 const clickW = async (x, y, opt = {}) => { const p = await pg.evaluate(([x, y]) => { const c = window.__ctl; return null; }, [x, y]); };
@@ -86,10 +87,10 @@ const nPlayers = () => pg.evaluate(() => document.querySelectorAll('.tx-step').l
 await $('.tx-db', { hasText: 'Deshacer' }).click(); await pg.waitForFunction(() => document.querySelectorAll('.tx-step:not(.add):not(.opts)').length === 1);
 await $('.tx-db', { hasText: 'Rehacer' }).click(); await pg.waitForFunction(() => document.querySelectorAll('.tx-step:not(.add):not(.opts)').length === 2);
 // 9) vistas
-await menu(); for (const l of ['Media cancha izquierda', 'Media cancha derecha', 'Cancha completa']) await $('[aria-label="' + l + '"]:visible').click();
-await $('[aria-label="Ajustar"]:visible').click();
+for (const l of ['Media cancha izquierda', 'Media cancha derecha', 'Cancha completa']) await sub('Vista', l);
+await sub('Vista', 'Ajustar');
 // 10) biblioteca: carpeta, nueva pizarra, duplicar, mover, eliminar
-await menu(); await $('[aria-label="Biblioteca"]').click();
+await sub('Archivo', 'Biblioteca');
 await $('.tx-lib').waitFor();
 await $('.tx-lib-bar button', { hasText: 'Nueva carpeta' }).click();
 await $('.tx-inline input').fill('Presión alta'); await $('.tx-inline button[type="submit"]').click();
@@ -97,7 +98,7 @@ await $('.tx-folders button', { hasText: 'Presión alta' }).waitFor();
 await $('.tx-lib-bar button', { hasText: 'Nueva pizarra' }).click(); // crea dentro de la carpeta
 await $('.tx-lib').waitFor({ state: 'detached' });
 assert.equal(await $('.tx-title b').innerText(), 'Pizarra 2');
-await menu(); await $('[aria-label="Biblioteca"]').click();
+await sub('Archivo', 'Biblioteca');
 await $('.tx-folders button', { hasText: 'Todas' }).click();
 assert.equal(await $('.tx-card').count(), 2);
 await $('.tx-card', { hasText: 'Pizarra 2' }).locator('[aria-label="Más acciones"]').click();
@@ -132,7 +133,7 @@ assert.equal(await $('.tx-step:not(.add):not(.opts)').count(), 2, 'recupera los 
 await pg.keyboard.press('Control+a');
 assert.ok(/4|3|5/.test(await $('.tx-panel-head h3').innerText() + '4'), 'recupera fichas');
 // 13) botón atrás (Android): cierra biblioteca primero y luego la pizarra
-await menu(); await $('[aria-label="Biblioteca"]').click(); await $('.tx-lib').waitFor();
+await sub('Archivo', 'Biblioteca'); await $('.tx-lib').waitFor();
 assert.equal(await pg.evaluate(() => window.__fenixBack()), 'ok'); await $('.tx-lib').waitFor({ state: 'detached' });
 assert.equal(await pg.evaluate(() => window.__closed), 0);
 await pg.evaluate(() => window.__fenixBack()); await pg.waitForFunction(() => window.__closed === 1);
