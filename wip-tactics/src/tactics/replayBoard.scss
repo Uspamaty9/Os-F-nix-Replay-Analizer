@@ -4,11 +4,11 @@
   display: flex; align-items: center; justify-content: center; cursor: pointer;
   border: 1px solid var(--acc, #C89A3D); background: var(--card, rgba(17,17,17,.82)); color: var(--acc, #C89A3D);
 }
-body.fenix-despejado .rb-btn, body.fenix-panel-open .rb-btn { display: none !important; }
+body.fenix-despejado .rb-btn, body.fenix-panel-open .rb-btn, body.fenix-despejado .rb-more, body.fenix-panel-open .rb-more, body.fenix-despejado .rb-pop, body.fenix-panel-open .rb-pop { display: none !important; }
 /* Con la pizarra abierta se esconden los botones flotantes de la repetición para que nada se superponga */
 /* (el botón de zoom/restablecer, el rango de zoom y la etiqueta de seguimiento se quedan donde estaban) */
 body.rb-open {
-  .rb-btn, .fenix-follow, .fenix-star, .fenix-rec, .fenix-clean-btn { display: none !important; }
+  .rb-btn, .rb-more, .rb-pop, .fenix-follow, .fenix-star, .fenix-rec, .fenix-clean-btn { display: none !important; }
 }
 .rb-layer {
   position: fixed; z-index: 40; pointer-events: none; touch-action: none; overflow: hidden; font-family: inherit;
@@ -67,3 +67,22 @@ body.rb-open {
   .rb-layer .rb-t { min-width: 42px; min-height: 42px; }
   .rb-layer .rb-acts .rb-a { min-height: 40px; min-width: 44px; span { display: none; } }
 }
+
+/* Más (⋮) y sombras de tiro sobre la repetición */
+.rb-more {
+  position: absolute; right: calc(var(--edge, 12px) + var(--inr, 0px)); bottom: 172px; z-index: 3; width: 52px; min-height: 44px; padding: 0; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  border: 1px solid var(--acc, #C89A3D); background: var(--card, rgba(17,17,17,.82)); color: var(--acc, #C89A3D);
+  &.active { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
+}
+.rb-pop {
+  position: absolute; right: calc(var(--edge, 12px) + var(--inr, 0px) + 60px); bottom: 150px; z-index: 4; width: min(300px, calc(100% - 100px)); padding: 6px; border-radius: 14px;
+  background: rgba(17,17,17,.94); border: 1px solid var(--acc, #C89A3D); color: #F7F3E8; backdrop-filter: blur(8px);
+  .rb-pop-it { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border-radius: 10px; cursor: pointer;
+    .ic { color: var(--acc, #C89A3D); display: flex; } .tx { flex: 1; display: flex; flex-direction: column; gap: 2px; b { font-size: 14px; } small { font-size: 11.5px; opacity: .75; line-height: 1.3; } }
+    .sw { flex: 0 0 auto; width: 38px; height: 22px; border-radius: 999px; background: #444; position: relative; transition: background .15s;
+      &::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; } }
+    &.on .sw { background: var(--acc, #C89A3D); &::after { transform: translateX(16px); } } }
+}
+.rs-layer { position: fixed; z-index: 39; pointer-events: none; overflow: hidden; .rs-canvas { position: absolute; inset: 0; width: 100%; height: 100%; } }
+body.fenix-despejado .rs-layer { display: none; }

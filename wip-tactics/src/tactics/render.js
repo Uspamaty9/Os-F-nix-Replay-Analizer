@@ -2,6 +2,7 @@
 import { PITCH, getField, toScreen, dist, quadAt, curveCtrl } from './geometry';
 import { shapePts, resolvedPos } from './model';
 import { handlesOf, labelAnchor, isClosed } from './shapes';
+import { paintShadows, goalOpening } from './shadow';
 
 export const FIELD = {
   outside: '#5b7448', grass: '#718c5a', stripe: 'rgba(255,255,255,0.025)', line: 'rgb(199,230,189)',
@@ -275,6 +276,28 @@ export function drawBall(ctx, v, p, st = {}) {
   ctx.restore();
 }
 
+// Sombras de tiro (el balón = foco, cada ficha = objeto opaco) + cuánto de cada portería queda a la vista
+function drawShadowLayer(ctx, v, doc, pos) {
+  if (!pos.ball) return;
+  const circles = doc.players.filter((p) => pos[p.id]).map((p) => ({ x: pos[p.id].x, y: pos[p.id].y, r: PITCH.playerR }));
+  const tf = { sx: (x) => x * v.k + v.ox, sy: (y) => y * v.k + v.oy, k: v.k };
+  const a = toScreen(v, { x: -PITCH.halfW, y: -PITCH.halfH }), b = toScreen(v, { x: PITCH.halfW, y: PITCH.halfH });
+  paintShadows(ctx, tf, pos.ball, circles, { clip: [a.x, a.y, b.x, b.y], reach: 2 * (PITCH.boundW + PITCH.boundH), glow: 60 });
+  const F = getField(), gs = F && F.goals && F.goals.length ? F.goals.map((q) => ({ x: q[0], y0: q[1], y1: q[3] })) : [{ x: -PITCH.halfW, y0: -PITCH.goalHalf, y1: PITCH.goalHalf }, { x: PITCH.halfW, y0: -PITCH.goalHalf, y1: PITCH.goalHalf }];
+  for (const g of gs) {
+    const o = goalOpening(pos.ball, g, circles); if (!o) continue;
+    ctx.save(); ctx.lineCap = 'round';
+    const seg = (ya, yb, col) => { const p0 = toScreen(v, { x: g.x, y: ya }), p1 = toScreen(v, { x: g.x, y: yb }); ctx.strokeStyle = col; ctx.lineWidth = Math.max(4, 6 * v.k); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); };
+    o.blocked.forEach(([ya, yb]) => seg(ya, yb, 'rgba(229, 80, 80, 0.95)'));
+    o.spans.forEach(([ya, yb]) => seg(ya, yb, 'rgba(90, 220, 130, 0.95)'));
+    const c = toScreen(v, { x: g.x + (g.x < 0 ? 1 : -1) * 38, y: (g.y0 + g.y1) / 2 });
+    const t = Math.round(o.open * 100) + '%', fs = Math.max(11, 13 * Math.max(v.k, 0.85));
+    ctx.font = '700 ' + fs + 'px "Open Sans", Roboto, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(t, c.x, c.y); ctx.fillStyle = o.open > 0.5 ? '#7CF0A4' : o.open > 0.2 ? '#FFD36B' : '#FF8A8A'; ctx.fillText(t, c.x, c.y);
+    ctx.restore();
+  }
+}
+
 // Trayectorias de todos los pasos: línea punteada con flecha de cada jugador/balón
 export function drawTrails(ctx, v, doc, upTo) {
   const last = upTo == null ? doc.frames.length - 1 : Math.min(upTo, doc.frames.length - 1);
@@ -312,6 +335,7 @@ export function drawScene(ctx, v, w, h, scene) {
     for (const pl of doc.players) if (prev[pl.id]) drawPlayer(ctx, v, pl, prev[pl.id], { ghost: true, names: false });
     if (prev.ball) drawBall(ctx, v, prev.ball, { ghost: true });
   }
+  if (scene.shadow) drawShadowLayer(ctx, v, doc, pos);
   if (pos.ball) drawBall(ctx, v, pos.ball, { selected: !!(scene.selPlayers && scene.selPlayers.has('ball')) });
   for (const pl of doc.players) {
     if (pos[pl.id]) drawPlayer(ctx, v, pl, pos[pl.id], { selected: !!(scene.selPlayers && scene.selPlayers.has(pl.id)), names: scene.names });

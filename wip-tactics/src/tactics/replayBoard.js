@@ -12,6 +12,7 @@
 import './replayBoard.scss';
 import { iconSvg } from './icons';
 import { saveBlob, fileName } from './exporter';
+import { installReplayShadow } from './replayShadow';
 
 const COLORS = ['#F5C542', '#FFFFFF', '#E56E6E', '#5689E5', '#4CC38A', '#B07CFF'];
 const TEAM = { red: '#E56E6E', blue: '#5689E5' };
@@ -367,9 +368,9 @@ export function installReplayBoard() {
   const sync = () => {
     const fit = document.querySelector('.fenix-fit');
     const host = fit && fit.parentElement;
-    if (!host) { if (cur && !cur.host.isConnected) { cur.api.destroy(); cur.btn.remove(); cur = null; } return; }
+    if (!host) { if (cur && !cur.host.isConnected) { cur.api.destroy(); cur.btn.remove(); cur.sh.destroy(); cur = null; } return; }
     if (cur && cur.host === host && cur.btn.isConnected) return;
-    if (cur) { cur.api.destroy(); cur.btn.remove(); cur = null; }
+    if (cur) { cur.api.destroy(); cur.btn.remove(); cur.sh.destroy(); cur = null; }
     const canvas = host.querySelector('canvas'); if (!canvas) return;
     const api = makeLayer(host, canvas);
     const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rb-btn'; btn.setAttribute('aria-label', 'Pizarra táctica sobre la repetición');
@@ -378,7 +379,7 @@ export function installReplayBoard() {
     btn.addEventListener('pointerdown', stop); btn.addEventListener('touchstart', stop, { passive: true });
     btn.addEventListener('click', (e) => { e.stopPropagation(); api.toggle(); });
     host.appendChild(btn);
-    cur = { host, btn, api };
+    cur = { host, btn, api, sh: installReplayShadow(host, canvas) };
     window.__fenixReplayBoard = api;
   };
   // El botón se crea EN EL MISMO INSTANTE que los demás de la cancha (sin esperar); una vez creado, las revisiones se espacian

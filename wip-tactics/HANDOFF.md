@@ -85,3 +85,10 @@ Nota para el dueño de scouting: `ratingAverage` no aplica por sí mismo el umbr
 - FYI (pizarra): sin postes aproximados. En el selector de cancha, los mapas guardados sin `discs` muestran "sin postes" y un botón que abre (vía `onReadMap` de Home.js → `readMapFromReplay`) un replay guardado con ese mapa; al analizarlo se guarda la geometría exacta.
 - FYI: `saveStadiums` ahora SIEMPRE sobrescribe la cancha con lo último analizado y avisa con `fenix-scouting-changed`; la pizarra refresca sola el `doc.field` si el mapa guardado cambió.
 - FYI (pizarra): la barra Menú ahora tiene grupos: Archivo (nombre/estado, Nueva, Abrir, Guardar) y Vista (Completa, Izquierda, Derecha, Ajustar) como desplegables `.tx-fly`; Cancha, Compartir, Ajustes, Pantalla y Salir siguen directos.
+
+## Sombras de tiro (pedido del usuario)
+El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en sombra es adonde no se puede tirar en línea recta.
+- `shadow.js` (geometría pura): `shadowQuads` (tangentes de cada ficha vistas desde el balón), `goalOpening` (qué parte de la boca de cada portería queda sin tapar), `paintShadows` (sombra unida con relleno `nonzero` + resplandor del balón).
+- **Pizarra**: flag `shadow` del controlador (`setFlag('shadow')`), opción **Sombras** dentro de «Más». `render.js` → `drawShadowLayer`: sombra recortada al campo + raya verde/roja sobre cada portería (libre/tapada) y % libre. Se exporta en el PNG del paso si está activa. Usa la cancha activa (`getField().goals`).
+- **Repetición**: `replayShadow.js` (lo instala `installReplayBoard`): botón **Más** (⋮) sobre el de la pizarra → interruptor «Sombras de tiro». Capa transparente `.rs-layer` que lee `__fenixLive` (jugadores x,y,r), `__fenixBall` y `__fenixView`; no toca `game2.js`. Se recuerda en `localStorage` (`fenix-replay-shadow`). Sin % de portería en la repetición porque el motor no publica la geometría de las porterías.
+- Pruebas: `tests/ui/shadow-test.mjs`, `tests/replay/shadow.mjs`.

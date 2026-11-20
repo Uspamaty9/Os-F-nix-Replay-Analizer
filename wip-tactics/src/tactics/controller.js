@@ -21,6 +21,7 @@ export class TacticsController {
     this.snap = true;
     this.names = true;
     this.trails = false;
+    this.shadow = false;
     this.ghost = true;
     this.newTeam = 'red';
     this.style = { color: '#F5C542', width: 3, opacity: 1, fill: false, dashed: false };
@@ -121,7 +122,7 @@ export class TacticsController {
   snapshot() {
     const d = this.doc;
     return {
-      doc: d, fi: this.fi, tool: this.tool, multi: this.multi, snap: this.snap, names: this.names, trails: this.trails, ghost: this.ghost,
+      doc: d, fi: this.fi, tool: this.tool, multi: this.multi, snap: this.snap, names: this.names, trails: this.trails, ghost: this.ghost, shadow: this.shadow,
       newTeam: this.newTeam, style: this.style, viewMode: this.viewMode, zoom: this.view.k,
       selPlayers: Array.from(this.sel.players), selShapes: Array.from(this.sel.shapes),
       canUndo: M.canUndo(this.h), canRedo: M.canRedo(this.h), polyActive: !!this.poly,
@@ -196,7 +197,7 @@ export class TacticsController {
   }
 
   setFlag(name, value) {
-    if (!['multi', 'snap', 'names', 'trails', 'ghost'].includes(name)) return;
+    if (!['multi', 'snap', 'names', 'trails', 'ghost', 'shadow'].includes(name)) return;
     this[name] = !!value; this.draw(); this.emit();
   }
 
@@ -866,7 +867,7 @@ export class TacticsController {
     }
     drawScene(ctx, this.view, this.w, this.h2, {
       doc: d, fi, pos, selPlayers: playing ? null : this.sel.players, selShapes: playing ? null : this.sel.shapes,
-      draft: this.draft || poly, box: this.box, trails: this.trails, ghost: this.ghost && !playing, names: this.names
+      draft: this.draft || poly, box: this.box, trails: this.trails, ghost: this.ghost && !playing, names: this.names, shadow: this.shadow
     });
     if (this.poly) { // marca de los vértices ya puestos
       ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2;

@@ -25,7 +25,7 @@ const TOOL = Object.fromEntries(TOOLS.map((t) => [t.id, t]));
 const DRAWING = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval', 'polygon']);
 // Estado mostrado mientras se abre el proyecto: el árbol de la interfaz es siempre el mismo (el canvas no se recrea)
 const EMPTY = {
-  doc: newDoc('Cargando…'), fi: 0, tool: 'select', multi: false, snap: true, names: true, trails: false, ghost: true, newTeam: 'red',
+  doc: newDoc('Cargando…'), fi: 0, tool: 'select', multi: false, shadow: false, snap: true, names: true, trails: false, ghost: true, newTeam: 'red',
   style: { color: '#F5C542', width: 3, opacity: 1, fill: false, dashed: false }, viewMode: 'full', zoom: 1, selPlayers: [], selShapes: [],
   canUndo: false, canRedo: false, polyActive: false, play: { state: 'stopped', speed: 1, loop: false }, progress: 0
 };
@@ -227,7 +227,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     const doc = ctl.doc;
     try {
       if (kind === 'json') { const n = fileName(doc, '', 'json'); const how = await saveBlob(projectBlob(doc), n, 'application/json'); flash(saved('Proyecto', n, how)); return; }
-      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); const how = await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash(saved('Imagen', n, how)); return; }
+      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); const how = await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { shadow: ctl.shadow, trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash(saved('Imagen', n, how)); return; }
       if (kind === 'scheme') { const n = fileName(doc, 'esquema', 'png'); const how = await saveBlob(await canvasToBlob(renderScheme(doc)), n, 'image/png'); flash(saved('Esquema', n, how)); return; }
       if (kind === 'sheet') { const n = fileName(doc, 'secuencia', 'png'); const how = await saveBlob(await canvasToBlob(renderSheet(doc)), n, 'image/png'); flash(saved('Secuencia', n, how)); return; }
       if (kind === 'video') {
@@ -354,6 +354,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           <div className='tx-fly' role='group' aria-label='Más'>
             <button type='button' className={'tx-ft anim' + (anim ? ' on' : '')} onClick={() => { if (anim) { if (ctl) ctl.stop(); setAnim(false); } else setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
             <button type='button' className={'tx-ft' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
+            <button type='button' className={'tx-ft shadow' + (s.shadow ? ' on' : '')} onClick={() => { ctl.setFlag('shadow', !s.shadow); setCat(null); }} aria-pressed={!!s.shadow} title='El balón es un foco y cada jugador tapa la luz: lo oscuro es adonde no se puede tirar en línea recta'><Icon name='shadow' size={22} /><span>Sombras</span></button>
             <button type='button' className={'tx-ft' + (s.multi ? ' on' : '')} onClick={() => { ctl.setTool('select'); ctl.setFlag('multi', !s.multi); setCat(null); }} aria-pressed={s.multi} title='Selección múltiple: toca varias fichas'><Icon name='multi' size={22} /><span>Varios</span></button>
             <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
           </div>
@@ -387,7 +388,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <button type='button' className='tx-db ico danger' aria-label='Eliminar' disabled={dis || !(s.selPlayers.length + s.selShapes.length)} onClick={() => ctl.deleteSelection()} title='Eliminar lo seleccionado'><Icon name='trash' size={22} /><span>Eliminar</span></button>
               <button type='button' className='tx-db ico' aria-label='Deshacer' disabled={dis || !s.canUndo} onClick={() => ctl.undo()} title='Deshacer (Ctrl+Z)'><Icon name='undo' size={22} /><span>Deshacer</span></button>
               <button type='button' className='tx-db ico' aria-label='Rehacer' disabled={dis || !s.canRedo} onClick={() => ctl.redo()} title='Rehacer (Ctrl+Y)'><Icon name='redo' size={22} /><span>Rehacer</span></button>
-              <button type='button' className={'tx-db cat' + (cat === 'more' ? ' open' : '') + (anim || s.tool === 'pan' || s.multi ? ' on' : '')} onClick={() => setCat(cat === 'more' ? null : 'more')} aria-expanded={cat === 'more'} title='Más'><Icon name='more' size={22} /><span>Más</span></button>
+              <button type='button' className={'tx-db cat' + (cat === 'more' ? ' open' : '') + (anim || s.shadow || s.tool === 'pan' || s.multi ? ' on' : '')} onClick={() => setCat(cat === 'more' ? null : 'more')} aria-expanded={cat === 'more'} title='Más'><Icon name='more' size={22} /><span>Más</span></button>
             </div>
           )}
           {bar === 'menu' && (

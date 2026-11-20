@@ -55,6 +55,7 @@ const I = {
   full: 'M3 5h18v14H3zM12 5v14',
   film: 'M4 4h16v16H4zM8 4v16M16 4v16M4 9h4M4 15h4M16 9h4M16 15h4',
   image: 'M4 5h16v14H4zM8 10a1.5 1.5 0 1 0 0-.01M4 17l5-5 4 4 3-3 4 4',
+  shadow: 'M3 12a2 2 0 1 0 4 0a2 2 0 1 0-4 0M10 8h3v8h-3zM16 7l5-2M16 12h5M16 17l5 2',
   more: 'M12 6h.01M12 12h.01M12 18h.01',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   upload: 'M12 16V4M7 9l5-5 5 5M4 20h16'
