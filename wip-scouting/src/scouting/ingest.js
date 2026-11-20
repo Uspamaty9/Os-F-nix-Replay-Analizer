@@ -62,8 +62,9 @@ async function saveStadiums(played) {
   try {
     const cur = (await db.getKv('stadiums', {})) || {};
     let ch = false;
-    played.forEach((m) => { const g = stadiumGeo(m.stadium); if (g && (!cur[g.name] || !cur[g.name].discs || cur[g.name].segs.length < g.segs.length || (g.segs.some((x) => x[4]) && !cur[g.name].segs.some((x) => x[4])))) { cur[g.name] = g; ch = true; } });
-    if (ch) await db.setKv('stadiums', cur);
+    // siempre se actualiza la cancha con lo último analizado (paredes, postes, colores), si cambió algo
+    played.forEach((m) => { const g = stadiumGeo(m.stadium); if (g && JSON.stringify(cur[g.name] || null) !== JSON.stringify(g)) { cur[g.name] = g; ch = true; } });
+    if (ch) { await db.setKv('stadiums', cur); try { window.dispatchEvent(new Event('fenix-scouting-changed')); } catch (e) { /* nada */ } }
   } catch (e) { /* nunca debe afectar al análisis */ }
 }
 

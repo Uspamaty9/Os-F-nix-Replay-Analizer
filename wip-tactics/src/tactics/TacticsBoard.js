@@ -256,6 +256,13 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     body = <StylePanel ctl={ctl} s={s} st={s.style} title={tool.label} fillable={['rect', 'oval', 'polygon'].includes(s.tool)} />; title = 'Dibujo';
   } else { body = <DocPanel ctl={ctl} s={s} folders={folders} registry={registry} onAddRegistered={addRegistered} />; title = 'Pizarra'; }
 
+  // La cancha de la jugada se actualiza sola con lo último analizado de ese mapa (postes, paredes, colores)
+  const fieldName = s.doc.field ? s.doc.field.name : null, fieldJson = s.doc.field ? JSON.stringify(s.doc.field) : '';
+  useEffect(() => {
+    if (!ctl || !fieldName || s.play.state !== 'stopped') return;
+    const fresh = stadiums.find((g) => g.name === fieldName);
+    if (fresh && JSON.stringify(fresh) !== fieldJson) ctl.setField(fresh);
+  }, [stadiums, fieldName, fieldJson, ctl, s.play.state]);
   const toggleBar = (k) => { setCat(null); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
