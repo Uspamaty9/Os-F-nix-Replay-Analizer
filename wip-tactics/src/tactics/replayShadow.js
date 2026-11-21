@@ -11,7 +11,7 @@ let on = false; try { on = localStorage.getItem(KEY) === '1'; } catch (e) { /* s
 
 export function installReplayShadow(host, canvas) {
   const layer = document.createElement('div'); layer.className = 'rs-layer';
-  const cv = document.createElement('canvas'); cv.className = 'rs-canvas'; layer.appendChild(cv); document.body.appendChild(layer);
+  const cv = document.createElement('canvas'); cv.className = 'rs-canvas'; layer.appendChild(cv); host.appendChild(layer);
   const ctx = cv.getContext('2d');
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rb-more'; btn.setAttribute('aria-label', 'Más opciones'); btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = iconSvg('more', 24);
@@ -30,7 +30,8 @@ export function installReplayShadow(host, canvas) {
   let W = 0, H = 0, dpr = 1, raf = 0, alive = true;
   const place = () => {
     const cr = canvas.getBoundingClientRect(); if (!cr.width || !cr.height) return false;
-    layer.style.left = cr.left + 'px'; layer.style.top = cr.top + 'px'; layer.style.width = cr.width + 'px'; layer.style.height = cr.height + 'px';
+    const hr = host.getBoundingClientRect();
+    layer.style.left = (cr.left - hr.left) + 'px'; layer.style.top = (cr.top - hr.top) + 'px'; layer.style.width = cr.width + 'px'; layer.style.height = cr.height + 'px';
     const d = Math.min(window.devicePixelRatio || 1, 2);
     if (Math.abs(cr.width - W) > 0.5 || Math.abs(cr.height - H) > 0.5 || d !== dpr) { W = cr.width; H = cr.height; dpr = d; cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
     return true;

@@ -37,5 +37,6 @@ html body .fenix-wait .fw-pct small { font-size: 20px; margin-left: 2px; opacity
 html body .fenix-wait .fw-bar { height: 6px; margin-top: 14px; border-radius: 6px; background: rgba(255, 255, 255, .1); overflow: hidden; }
 html body .fenix-wait .fw-bar i { display: block; height: 100%; border-radius: 6px; background: var(--acc, #C89A3D); transition: width .15s linear; }
 
-/* Botón de restablecer vista de la cancha (zoom): ahora ocupa el lugar que tenía la estrella de Favoritos (arriba a la derecha) */
-html body .fenix-fit { top: calc(var(--edge, 12px) + var(--int, 0px)) !important; bottom: auto !important; right: calc(var(--edge, 12px) + var(--inr, 0px)) !important; height: 46px; min-height: 46px; }
+/* Botón de restablecer vista (zoom): abajo a la derecha, en el espacio libre junto a los botones de la repetición; el de grabar sube a su lugar */
+html body .fenix-fit { top: auto !important; bottom: calc(var(--edge, 12px) + var(--inb, 0px)) !important; right: calc(var(--edge, 12px) + var(--inr, 0px)) !important; height: 46px; min-height: 46px; }
+html body .fenix-rec { top: calc(var(--edge, 12px) + var(--int, 0px)) !important; }

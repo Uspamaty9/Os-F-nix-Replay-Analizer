@@ -5,7 +5,7 @@
 const TAU = Math.PI * 2;
 const wrap = (a) => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
 
-// Cuadriláteros de sombra: para cada círculo {x,y,r} visto desde la luz L={x,y}. Devuelve [[p,p,p,p], …] (todos con el mismo sentido).
+// Polígonos de sombra: para cada círculo {x,y,r} visto desde la luz L={x,y}. Devuelve [[p, …], …] (todos con el mismo sentido).
 export function shadowQuads(L, circles, reach = 3000) {
   const out = [];
   for (const c of circles) {
@@ -13,13 +13,14 @@ export function shadowQuads(L, circles, reach = 3000) {
     if (!(d > c.r + 0.5)) continue; // la luz está dentro de la ficha: no hay sombra definida
     const th = Math.atan2(dy, dx), al = Math.asin(c.r / d), t = Math.sqrt(d * d - c.r * c.r);
     const a1 = th + al, a2 = th - al;
+    // la sombra arranca pegada a la ficha: el borde cercano sigue el arco de su cara oculta (de una tangente a la otra por detrás del círculo)
     const q = [
-      { x: L.x + t * Math.cos(a1), y: L.y + t * Math.sin(a1) },
       { x: L.x + reach * Math.cos(a1), y: L.y + reach * Math.sin(a1) },
-      { x: L.x + reach * Math.cos(a2), y: L.y + reach * Math.sin(a2) },
-      { x: L.x + t * Math.cos(a2), y: L.y + t * Math.sin(a2) }
+      { x: L.x + reach * Math.cos(a2), y: L.y + reach * Math.sin(a2) }
     ];
-    let area = 0; for (let i = 0; i < 4; i++) { const p = q[i], n = q[(i + 1) % 4]; area += p.x * n.y - n.x * p.y; }
+    const span = Math.PI / 2 + al, N = 14;
+    for (let i = 0; i <= N; i++) { const f = th - span + (2 * span * i) / N; q.push({ x: c.x + c.r * Math.cos(f), y: c.y + c.r * Math.sin(f) }); }
+    let area = 0; for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length]; area += p.x * n.y - n.x * p.y; }
     if (area < 0) q.reverse();
     out.push(q);
   }
