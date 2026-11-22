@@ -238,7 +238,8 @@ export function drawPlayer(ctx, v, pl, p, st = {}) {
     ctx.fillStyle = 'rgba(200,154,61,0.35)'; ctx.beginPath(); ctx.arc(s.x, s.y, r + 7, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(s.x, s.y, r + 4, 0, TAU); ctx.stroke();
   }
-  ctx.fillStyle = pl.color; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1.5, 2 * v.k);
+  // mismo círculo que los jugadores de HaxBall: relleno del equipo con borde blanco y dorsal en negrita
+  ctx.fillStyle = pl.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, 2 * v.k);
   ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
   // dorsal
   const txt = pl.num !== '' && pl.num != null ? String(pl.num) : '';

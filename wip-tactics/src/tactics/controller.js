@@ -227,9 +227,13 @@ export class TacticsController {
 
   // Coloca una ficha en el centro visible (para el botón "Añadir jugador")
   addPlayerCenter(extra = {}) {
+    // una misma ficha no se repite: si ya está en el campo, se selecciona en vez de añadir otra
+    const team = extra.team || this.newTeam;
+    const dup = this.doc.players.find((q) => (q.team || 'red') === team && (extra.regKey ? q.regKey === extra.regKey : (extra.num != null && !q.regKey && Number(q.num) === Number(extra.num))));
+    if (dup) { this.sel = { players: new Set([dup.id]), shapes: new Set() }; this.toast('Esa ficha ya está en el campo (seleccionada)'); this.draw(); this.emit(); return dup.id; }
     const c = G.toWorld(this.view, this.w / 2, this.h2 / 2);
     const n = this.doc.players.length;
-    const x = G.clamp(c.x + ((n % 5) - 2) * 26, -360, 360), y = G.clamp(c.y + (Math.floor(n / 5) % 5 - 2) * 26, -160, 160);
+    const x = G.clamp(c.x + ((n % 5) - 2) * 34, -360, 360), y = G.clamp(c.y + (Math.floor(n / 5) % 5 - 2) * 34, -160, 160);
     return this.addPlayer(x, y, extra);
   }
 

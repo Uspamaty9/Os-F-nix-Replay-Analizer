@@ -268,15 +268,6 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
   const views = [['full', 'full', 'Cancha completa'], ['left', 'halfl', 'Media cancha izquierda'], ['right', 'halfr', 'Media cancha derecha']];
 
-  // Pantalla completa + cancha horizontal (mejor uso del espacio en el móvil). Depende del dispositivo: si no se puede girar, solo pasa a pantalla completa.
-  const [full, setFull] = useState(false);
-  const toggleFull = useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) { await document.documentElement.requestFullscreen(); setFull(true); try { await window.screen.orientation.lock('landscape'); } catch (e) { /* sin permiso para girar */ } }
-      else { try { window.screen.orientation.unlock(); } catch (e) { /* nada */ } await document.exitFullscreen(); setFull(false); }
-    } catch (e) { setFull(false); }
-  }, []);
-  useEffect(() => { const h = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', h); return () => { document.removeEventListener('fullscreenchange', h); try { if (document.fullscreenElement) document.exitFullscreen(); window.screen.orientation.unlock(); } catch (e) { /* nada */ } }; }, []);
   const tree = (
     <div className={'tx-root' + (panel ? ' panel-open' : '') + (bar ? '' : ' nobar') + (cat ? ' flyopen' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
       <div className='tx-body'>
@@ -398,7 +389,6 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <button type='button' className='tx-db' onClick={() => setFieldOpen(true)} title='Cambiar de cancha'><Icon name='board' size={22} /><span>Cancha</span></button>
               <button type='button' className='tx-db' onClick={() => setExpOpen(true)} title='Exportar imagen, esquema, secuencia o animación' aria-label='Exportar'><Icon name='download' size={22} /><span>Compartir</span></button>
               <button type='button' className={'tx-db' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} aria-pressed={panel} aria-label='Panel' title='Panel de la jugada: ajustes, plantel y notas'><Icon name='panel' size={22} /><span>Ajustes</span></button>
-              <button type='button' className={'tx-db' + (full ? ' on' : '')} onClick={toggleFull} aria-pressed={full} aria-label='Pantalla completa' title='Pantalla completa y cancha horizontal'><Icon name='fit' size={22} /><span>Pantalla</span></button>
               <button type='button' className='tx-db' onClick={requestClose} aria-label='Volver' title='Volver al inicio'><Icon name='back' size={22} /><span>Salir</span></button>
             </div>
           )}
