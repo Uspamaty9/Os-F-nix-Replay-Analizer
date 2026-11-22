@@ -107,3 +107,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - FYI (repetición): se quitó la entrada automática de jugadores ajenos a la conexión (no la alteran). `drawTints` recorta el sombreado a la figura: solo se sombrea la parte del jugador que cae dentro, aunque entre poco.
 - FYI: el sombreado de jugadores dentro de la figura se dibuja en el motor con `__fenixOver` (bajo el cartel de gol).
 - FYI: en la repetición, Sombras de tiro y Conectar jugadores son botones propios (.rb-sh, .rb-ln) junto al sitio del antiguo ⋮; el ⋮ solo sale con sombras activas y abre «Quién proyecta sombra».
+- FYI (corrige la nota anterior): Sombras de tiro y Conectar jugadores son dos botones DENTRO del menú ⋮ (.rb-pop-tools); el ⋮ queda siempre visible.

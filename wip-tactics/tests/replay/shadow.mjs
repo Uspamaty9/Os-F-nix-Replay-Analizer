@@ -7,12 +7,12 @@ const b = await chromium.launch(); const errs = [];
 for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], ['mob', { width: 390, height: 780 }, true]]) {
   const ctx = await b.newContext({ viewport: vp, hasTouch: touch, isMobile: touch, deviceScaleFactor: 1 }); const pg = await ctx.newPage();
   pg.on('pageerror', (e) => errs.push(String(e))); pg.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
-  await pg.goto('http://localhost:8776/index.html'); await pg.waitForSelector('.rb-sh', { timeout: 5000 });
+  await pg.goto('http://localhost:8776/index.html'); await pg.waitForSelector('.rb-more', { timeout: 5000 });
   assert.equal(await pg.locator('.rb-pop').isVisible(), false, 'menú cerrado al inicio');
   assert.equal(await pg.locator('.rs-layer').isVisible(), false, 'sin sombras al inicio');
   const click = (s) => (touch ? pg.locator(s).tap() : pg.locator(s).click());
-  await click('.rb-sh'); await pg.waitForSelector('.rs-layer', { state: 'visible' });
-  assert.equal(await pg.locator('.rb-sh.active').count(), 1, 'botón Más marcado con sombras activas');
+  await click('.rb-more'); await click('.rb-sh'); await pg.waitForSelector('.rs-layer', { state: 'visible' });
+  assert.equal(await pg.locator('.rb-more.active').count(), 1, 'botón Más marcado con sombras activas');
   // balón en el centro de la cámara, un jugador a su derecha: detrás del jugador (x mayor) hay sombra; arriba a la derecha no
   await pg.evaluate(() => { window.__fenixBall = { x: 0, y: 0 }; window.__fenixLive = [{ id: 1, x: 80, y: 0, r: 15 }]; const g = document.getElementById('game'); Object.assign(window.__fenixView, { W: g.width, H: g.height }); });
   await pg.waitForTimeout(250);
@@ -40,7 +40,7 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   await pg.evaluate(() => { window.__fenixBall = { x: 0, y: 0 }; window.__fenixLive = [{ id: 1, x: 50, y: 0, r: 15 }, { id: 2, x: 50, y: 30, r: 15 }]; }); await pg.waitForTimeout(150);
   const alphaAt = (x, y) => pg.evaluate(([x, y]) => { const v = window.__fenixView, cv = document.querySelector('.rs-canvas'); return cv.getContext('2d').getImageData(Math.round((v.W / 2 + v.k * x) * (cv.width / v.W)), Math.round(((v.H + v.h) / 2 + v.k * y) * (cv.height / v.H)), 1, 1).data[3]; }, [x, y]);
   assert.ok((await alphaAt(120, 72)) > 80, 'con todos, el B proyecta');
-  await click('.rb-more:not(.rb-sh):not(.rb-ln)'); await click('[data-act=pick]'); await pg.waitForSelector('.rb-pickbar', { state: 'visible' });
+  await click('.rb-more'); await click('[data-act=pick]'); await pg.waitForSelector('.rb-pickbar', { state: 'visible' });
   const where = await pg.evaluate(() => { const v = window.__fenixView, g = document.getElementById('game'), r = g.getBoundingClientRect(); return { x: r.left + (v.W / 2 + v.k * 50) * (r.width / v.W), y: r.top + ((v.H + v.h) / 2) * (r.height / v.H) }; });
   if (touch) await pg.touchscreen.tap(where.x, where.y); else await pg.mouse.click(where.x, where.y);
   await pg.waitForTimeout(150);
@@ -48,8 +48,8 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   assert.ok((await alphaAt(120, 72)) < 20, 'solo el elegido proyecta');
   assert.ok((await alphaAt(120, 0)) > 80, 'el elegido sí proyecta');
   await click('.rb-pickbar button'); assert.equal(await pg.locator('.rb-pickbar').isVisible(), false);
-  await click('.rb-more:not(.rb-sh):not(.rb-ln)'); await click('[data-act=all]'); await pg.waitForTimeout(150);
-  assert.ok((await alphaAt(120, 72)) > 80, 'Todos vuelve a proyectar'); await click('.rb-more:not(.rb-sh):not(.rb-ln)');
+  await click('.rb-more'); await click('[data-act=all]'); await pg.waitForTimeout(150);
+  assert.ok((await alphaAt(120, 72)) > 80, 'Todos vuelve a proyectar');
   await click('.rb-sh'); await pg.waitForTimeout(150);
   assert.equal(await pg.locator('.rs-layer').isVisible(), false, 'se apaga');
   await ctx.close();

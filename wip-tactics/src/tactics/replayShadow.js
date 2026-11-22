@@ -15,24 +15,25 @@ export function installReplayShadow(host, canvas) {
   const ctx = cv.getContext('2d');
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rb-more'; btn.setAttribute('aria-label', 'Quién proyecta sombra'); btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = iconSvg('more', 24);
-  const mk = (cls, label, ic) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'rb-more ' + cls; b.setAttribute('aria-label', label); b.title = label; b.innerHTML = iconSvg(ic, 24); return b; };
-  const bSh = mk('rb-sh', 'Sombras de tiro', 'shadow'), bLn = mk('rb-ln', 'Conectar jugadores', 'link');
+  const mk = (cls, label, ic) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'rb-pop-tool ' + cls; b.setAttribute('aria-label', label); b.innerHTML = '<span class="ic">' + iconSvg(ic, 24) + '</span><b>' + label + '</b>'; return b; };
   const pop = document.createElement('div'); pop.className = 'rb-pop'; pop.hidden = true;
   pop.innerHTML = '<div class="rb-pop-row"><span class="tx"><b>Quién proyecta sombra</b><small class="who">Todos los jugadores</small></span><button type="button" class="rb-pop-btn" data-act="pick">Elegir</button><button type="button" class="rb-pop-btn ghost" data-act="all" hidden>Todos</button></div>';
+  const tools = document.createElement('div'); tools.className = 'rb-pop-tools'; pop.prepend(tools);
+  const bSh = mk('rb-sh', 'Sombras de tiro', 'shadow'), bLn = mk('rb-ln', 'Conectar jugadores', 'link'); tools.appendChild(bSh); tools.appendChild(bLn);
     const who = pop.querySelector('.who'), bPick = pop.querySelector('[data-act=pick]'), bAll = pop.querySelector('[data-act=all]');
   const chosen = new Set(); let picking = false;
   const bar = document.createElement('section'); bar.className = 'rb-pickbar'; bar.hidden = true;
   bar.innerHTML = '<span>Toca los jugadores que proyectan sombra</span><button type="button">Listo</button>'; host.appendChild(bar);
   const stop = (e) => e.stopPropagation();
-  [btn, pop, bSh, bLn].forEach((el) => { el.addEventListener('pointerdown', stop); el.addEventListener('touchstart', stop, { passive: true }); });
+  [btn, pop].forEach((el) => { el.addEventListener('pointerdown', stop); el.addEventListener('touchstart', stop, { passive: true }); });
   const syncWho = () => { who.textContent = chosen.size ? chosen.size + (chosen.size > 1 ? ' jugadores elegidos' : ' jugador elegido') : 'Todos los jugadores'; bAll.hidden = !chosen.size; };
-  const sync = () => { bSh.classList.toggle('active', on); bSh.setAttribute('aria-pressed', String(on)); btn.hidden = !on; if (!on) closePop(); };
+  const sync = () => { bSh.classList.toggle('active', on); bSh.setAttribute('aria-pressed', String(on)); btn.classList.toggle('active', on); };
   function closePop() { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
   btn.addEventListener('click', (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); });
-  bSh.addEventListener('click', (e) => { e.stopPropagation(); on = !on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (x) { /* nada */ } sync(); wake(); });
+  bSh.addEventListener('click', (e) => { e.stopPropagation(); on = !on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (x) { /* nada */ } sync(); wake(); closePop(); });
   bLn.addEventListener('click', (e) => { e.stopPropagation(); closePop(); if (window.__fenixReplayBoard && window.__fenixReplayBoard.openLink) window.__fenixReplayBoard.openLink(); });
     document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) closePop(); }, true);
-  host.appendChild(bSh); host.appendChild(bLn); host.appendChild(btn); host.appendChild(pop); sync(); syncWho();
+  host.appendChild(btn); host.appendChild(pop); sync(); syncWho();
   [bar].forEach((el) => { el.addEventListener('pointerdown', stop); el.addEventListener('touchstart', stop, { passive: true }); });
   const setPicking = (v) => { picking = v; bar.hidden = !v; canvas.style.cursor = v ? 'pointer' : ''; };
   bPick.addEventListener('click', (e) => { e.stopPropagation(); on = true; try { localStorage.setItem(KEY, '1'); } catch (x) { /* nada */ } sync(); setPicking(true); closePop(); wake(); });
@@ -103,5 +104,5 @@ export function installReplayShadow(host, canvas) {
   wake();
   const obs = new MutationObserver(() => { if (on && !raf) wake(); });
   obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  return { destroy() { alive = false; setPicking(false); cancelAnimationFrame(raf); obs.disconnect(); layer.remove(); btn.remove(); pop.remove(); bSh.remove(); bLn.remove(); } };
+  return { destroy() { alive = false; setPicking(false); cancelAnimationFrame(raf); obs.disconnect(); layer.remove(); btn.remove(); pop.remove(); } };
 }

@@ -9,7 +9,7 @@ await pg.goto('http://localhost:8776/index.html'); await pg.waitForSelector('.rb
 await pg.evaluate(() => { window.__fenixView = { camX: 400, camY: 220, k: 1, W: innerWidth, H: innerHeight, h: 0, zoom: 1 }; window.__fenixLive = [{ id: 1, x: 300, y: 150, r: 15 }, { id: 2, x: 500, y: 150, r: 15 }, { id: 3, x: 400, y: 300, r: 15 }, { id: 4, x: 600, y: 320, r: 15 }]; });
 await pg.evaluate(() => { const c = document.getElementById('game'), g = c.getContext('2d'); setInterval(() => { const v = window.__fenixView; g.save(); g.clearRect(0, 0, c.width, c.height); g.translate(c.width / 2, c.height / 2); g.scale(v.k, v.k); g.translate(-v.camX, -v.camY); if (window.__fenixUnder) window.__fenixUnder(g); if (window.__fenixOver) window.__fenixOver(g); g.restore(); }, 30); });
 assert.equal(await pg.locator('[data-tool="link"]').count(), 0, 'Unir ya no está en la barra');
-await pg.locator('.rb-ln').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
+await pg.locator('.rb-more').click(); await pg.locator('.rb-ln').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
 const bb = await pg.locator('.rb-canvas').boundingBox();
 const at = async (id) => pg.evaluate((id) => { const p = window.__fenixLive.find((q) => q.id === id), v = window.__fenixView; return { x: innerWidth / 2 + v.k * (p.x - v.camX), y: (innerHeight + v.h) / 2 + v.k * (p.y - v.camY) }; }, id);
 const tapP = async (id) => { const p = await at(id); await pg.mouse.click(bb.x + p.x, bb.y + p.y); };
