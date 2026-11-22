@@ -50,46 +50,29 @@ const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) - (b.y - a.y) * (c.x - a.x);
 const segCross = (a, b, c, d) => ccw(a, c, d) * ccw(b, c, d) < 0 && ccw(a, b, c) * ccw(a, b, d) < 0;
 function crossing(pts) { const n = pts.length; for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) { if (i === 0 && j === n - 1) continue; if (segCross(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return true; } return false; }
 const byAngle = (pts) => { const c = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length }; return pts.slice().sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x)); };
-const segD = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, u = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0; return Math.hypot(p.x - (a.x + u * dx), p.y - (a.y + u * dy)); };
-// Conexión dinámica: el orden se fija al crearla. Un jugador que TOCA una línea entra en la figura (entre los dos jugadores de esa línea) y sale cuando se separa;
-// si la figura se cruzara, se reordena.
+// El orden de los vértices se fija al crear la conexión y solo cambia si la figura se cruzaría (un jugador de la conexión cruza una de sus líneas).
+// Los jugadores que NO están en la conexión no la alteran: solo se sombrea la parte suya que cae dentro de la figura.
 function linkPts(it) {
   const live = liveList(), get = (id) => live.find((p) => p && p.id === id);
   let order = (it.order || it.ids).filter((id) => get(id));
-  const pos = (id) => { const p = get(id); return { id, x: p.x, y: p.y, r: p.r || 15 }; };
-  // los que se unieron al tocar y ya se alejaron, salen
-  for (let i = order.length - 1; i >= 0 && order.length > 2; i--) {
-    const id = order[i]; if (it.ids.includes(id)) continue;
-    const a = pos(order[(i + order.length - 1) % order.length]), c = pos(order[(i + 1) % order.length]), p = pos(id);
-    if (segD(p, a, c) > p.r * 1.8 + 6) order.splice(i, 1);
-  }
-  // un jugador que toca una línea entra
-  const n = order.length;
-  if (n >= 2 && order.length < it.ids.length + 8) {
-    let best = null;
-    for (const p of live) {
-      if (!p || !(p.r > 0) || order.includes(p.id)) continue;
-      for (let i = 0; i < (n === 2 ? 1 : n); i++) {
-        const A = pos(order[i]), B = pos(order[(i + 1) % n]), d = segD(p, A, B);
-        if (d <= p.r && (!best || d < best.d)) best = { d, id: p.id, at: i + 1 };
-      }
-    }
-    if (best) order.splice(best.at, 0, best.id);
-  }
-  let pts = order.map(pos);
+  let pts = order.map((id) => { const p = get(id); return { id, x: p.x, y: p.y, r: p.r || 15 }; });
   if (pts.length >= 4 && crossing(pts)) { pts = byAngle(pts); order = pts.map((q) => q.id); }
   it.order = order;
   return pts;
 }
-const inPoly = (p, pts) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) if ((pts[i].y > p.y) !== (pts[j].y > p.y) && p.x < ((pts[j].x - pts[i].x) * (p.y - pts[i].y)) / (pts[j].y - pts[i].y) + pts[i].x) c = !c; return c; };
-// Los jugadores que quedan DENTRO de una figura (de cualquier equipo, sin estar en la conexión) se sombrean con el color de la conexión
+// La parte de cualquier jugador (de cualquier equipo, sin estar en la conexión) que cae DENTRO de la figura se sombrea con el color de la conexión
+// (se recorta a la figura: si solo entra un poco, solo se sombrea ese poco)
 export function drawTints(ctx, items, T) {
   for (const it of items) {
     if (it.type !== 'link') continue;
     const pts = linkPts(it); if (pts.length < 3) continue;
+    const S = pts.map((q) => ({ x: T.sx(q.x), y: T.sy(q.y) }));
     for (const p of liveList()) {
-      if (!p || !(p.r > 0) || pts.some((q) => q.id === p.id) || !inPoly(p, pts)) continue;
-      ctx.save(); ctx.globalAlpha = 0.42; ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(T.sx(p.x), T.sy(p.y), p.r * T.s, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      if (!p || !(p.r > 0) || pts.some((q) => q.id === p.id)) continue;
+      const cx = T.sx(p.x), cy = T.sy(p.y), r = p.r * T.s;
+      if (cx + r < Math.min(...S.map((q) => q.x)) || cx - r > Math.max(...S.map((q) => q.x)) || cy + r < Math.min(...S.map((q) => q.y)) || cy - r > Math.max(...S.map((q) => q.y))) continue;
+      ctx.save(); ctx.beginPath(); S.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); ctx.closePath(); ctx.clip();
+      ctx.globalAlpha = 0.42; ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
   }
 }
@@ -232,7 +215,7 @@ function makeLayer(host, canvas) {
       const pts = linkPts(it); if (pts.length < 2) continue;
       c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = it.color; c.fillStyle = it.color; c.lineWidth = it.w || 3.5;
       c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); if (pts.length > 2) c.closePath();
-      if (pts.length > 2 && (it.fill || pts.length > it.ids.length)) { c.globalAlpha = 0.24; c.fill(); c.globalAlpha = 1; }
+      if (pts.length > 2 && it.fill) { c.globalAlpha = 0.24; c.fill(); c.globalAlpha = 1; }
       c.stroke(); c.restore();
     }
   };

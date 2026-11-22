@@ -36,14 +36,14 @@ await pg.evaluate(() => { const l = window.__fenixLive; l.find((q) => q.id === 1
 assert.equal(await pg.evaluate(() => window.__fenixReplayBoard.st.items.filter((i) => i.type === 'link').pop().order.join()), ord0, 'mover sin tocar línea no cambia el orden');
 await pg.evaluate(() => { const l = window.__fenixLive; l.find((q) => q.id === 1).x = 700; l.find((q) => q.id === 1).y = 100; }); await pg.waitForTimeout(150);
 assert.notEqual(await pg.evaluate(() => window.__fenixReplayBoard.st.items.filter((i) => i.type === 'link').pop().order.join()), ord0, 'al cruzar una línea se reordena');
-// toca una línea: entra; se aleja: sale; dentro de la figura: se sombrea
-await pg.evaluate(() => { const l = window.__fenixLive; l.find((q) => q.id === 1).x = 300; l.find((q) => q.id === 1).y = 150; l.find((q) => q.id === 3).x = 400; l.find((q) => q.id === 3).y = 300; l.find((q) => q.id === 4).x = 700; l.find((q) => q.id === 4).y = 100; l.push({ id: 5, x: 400, y: 150, r: 15 }, { id: 6, x: 400, y: 215, r: 15 }); }); await pg.waitForTimeout(200);
+// jugadores que NO están en la conexión no la alteran; solo se sombrea la parte que cae dentro de la figura
+await pg.evaluate(() => { const st = window.__fenixReplayBoard.st; st.items = st.items.filter((i) => i.ids.length === 3); st.dirty = true; });
+await pg.evaluate(() => { const l = window.__fenixLive; l.find((q) => q.id === 1).x = 300; l.find((q) => q.id === 1).y = 150; l.find((q) => q.id === 3).x = 400; l.find((q) => q.id === 3).y = 300; l.find((q) => q.id === 4).x = 700; l.find((q) => q.id === 4).y = 100; l.push({ id: 5, x: 400, y: 150, r: 15 }); }); await pg.waitForTimeout(200);
 const tri = () => pg.evaluate(() => window.__fenixReplayBoard.st.items.filter((i) => i.type === 'link')[0].order.join());
-assert.ok(/5/.test(await tri()), 'un jugador que toca la línea entra en la conexión: ' + await tri());
-const p6 = await at(6); const tint = await pg.evaluate(([x, y]) => { const c = document.querySelector('.rb-canvas'), g = c.getContext('2d'); return g.getImageData(Math.round(x * c.width / c.getBoundingClientRect().width), Math.round(y * c.height / c.getBoundingClientRect().height), 1, 1).data[3]; }, [p6.x, p6.y]);
-assert.ok(tint > 60, 'jugador dentro de la figura sombreado: ' + tint);
-await pg.evaluate(() => { window.__fenixLive.find((q) => q.id === 5).y = 20; }); await pg.waitForTimeout(200);
-assert.ok(!/5/.test(await tri()), 'al separarse sale: ' + await tri());
+assert.ok(!/5/.test(await tri()), 'un jugador ajeno no entra en la conexión: ' + await tri());
+const alpha = async (wx, wy) => { const v = await pg.evaluate(() => window.__fenixView); const x = 550 + (wx - v.camX), y = 350 + (wy - v.camY); return pg.evaluate(([x, y]) => { const c = document.querySelector('.rb-canvas'), g = c.getContext('2d'), r = c.getBoundingClientRect(); return g.getImageData(Math.round(x * c.width / r.width), Math.round(y * c.height / r.height), 1, 1).data[3]; }, [x, y]); };
+assert.ok((await alpha(400, 160)) > 60, 'la parte dentro de la figura se sombrea');
+assert.equal(await alpha(400, 140), 0, 'la parte fuera no se sombrea');
 // salir de la repetición: se quita de una y no vuelve
 await pg.evaluate(() => window.dispatchEvent(new Event('fenix-replay-leave'))); await pg.waitForTimeout(100);
 assert.equal(await pg.locator('.rb-layer').count(), 0, 'capa fuera al salir'); assert.equal(await pg.locator('.rb-btn').count(), 0, 'botón fuera al salir');
