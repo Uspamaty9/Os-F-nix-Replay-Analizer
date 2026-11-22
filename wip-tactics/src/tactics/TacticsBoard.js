@@ -266,7 +266,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const toggleBar = (k) => { setCat(null); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
-  const views = [['full', 'full', 'Cancha completa'], ['left', 'halfl', 'Media cancha izquierda'], ['right', 'halfr', 'Media cancha derecha']];
+  const views = [['full', 'full', 'Cancha completa'], ['left', 'halfr', 'Media cancha izquierda'], ['right', 'halfl', 'Media cancha derecha']];
 
   const tree = (
     <div className={'tx-root' + (panel ? ' panel-open' : '') + (bar ? '' : ' nobar') + (cat ? ' flyopen' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>

@@ -11,7 +11,7 @@
 
 import { PITCH, clamp, centroid, ellipsePts, rotatePts, scalePts, translatePts, sortByAngle } from './geometry';
 
-export const TEAM_COLORS = { red: '#E56E6E', blue: '#5689E5', neutral: '#E8E8EC' };
+export const TEAM_COLORS = { red: '#E56E56', blue: '#5689E5', neutral: '#E8E8EC' };
 export const PALETTE = ['#E56E6E', '#5689E5', '#F5C542', '#4CC38A', '#B07CFF', '#FF9F43', '#35D0C8', '#FFFFFF', '#111111'];
 
 export const CATEGORIES = [

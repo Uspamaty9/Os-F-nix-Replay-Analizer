@@ -238,22 +238,20 @@ export function drawPlayer(ctx, v, pl, p, st = {}) {
     ctx.fillStyle = 'rgba(200,154,61,0.35)'; ctx.beginPath(); ctx.arc(s.x, s.y, r + 7, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(s.x, s.y, r + 4, 0, TAU); ctx.stroke();
   }
-  // mismo círculo que los jugadores de HaxBall: relleno del equipo con borde blanco y dorsal en negrita
-  ctx.fillStyle = pl.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, 2 * v.k);
+  // Ficha igual a la del juego HaxBall: relleno del equipo, borde negro fino, dorsal blanco en negrita (Arial Black) y nombre blanco ARRIBA de la ficha
+  ctx.fillStyle = pl.color; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1.2, 1.6 * v.k);
   ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
-  // dorsal
   const txt = pl.num !== '' && pl.num != null ? String(pl.num) : '';
   if (txt) {
-    const fs = Math.max(8, r * (txt.length > 2 ? 0.85 : 1.1));
-    ctx.font = '700 ' + fs + 'px "Open Sans", Roboto, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = lum(pl.color) > 0.55 ? '#111' : '#fff'; ctx.fillText(txt, s.x, s.y + 1);
+    const fs = r * (txt.length > 2 ? 0.8 : txt.length > 1 ? 0.95 : 1.06);
+    ctx.font = '900 ' + fs + "px 'Arial Black','Arial Bold',Gadget,sans-serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = lum(pl.color) > 0.72 ? '#111' : '#fff'; ctx.fillText(txt, s.x, s.y + r * 0.375);
   }
-  // nickname
   if (pl.nick && st.names !== false) {
     const fs = Math.min(15, Math.max(10, 11 * Math.max(v.k, 0.85)));
-    ctx.font = '600 ' + fs + 'px "Open Sans", Roboto, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.strokeText(pl.nick, s.x, s.y + r + 3);
-    ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, s.x, s.y + r + 3);
+    ctx.font = '600 ' + fs + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.strokeText(pl.nick, s.x, s.y - r - 3);
+    ctx.fillStyle = '#fff'; ctx.fillText(pl.nick, s.x, s.y - r - 3);
   }
   if (pl.regKey && st.names !== false) { // marca de jugador registrado
     ctx.fillStyle = '#C89A3D'; ctx.beginPath(); ctx.arc(s.x + r * 0.78, s.y - r * 0.78, Math.max(3, r * 0.26), 0, TAU); ctx.fill();
