@@ -1,0 +1,18 @@
+--- a/src/game2.js	2026-11-22 10:13:25.628909282 -0500
++++ b/src/game2.js	2026-11-22 10:13:25.683861080 -0500
+@@ -1068,6 +1068,7 @@
+ }
+ 
+ function leaveReplayer() {
++  try { window.dispatchEvent(new Event('fenix-replay-leave')); } catch (e) { }  // la pizarra sobre la repetición se quita al instante
+   kicker, lastKicker, goals = [], match = [{ stadium: false, started: true, stopped: false, spaceMode: false, realSoccerMode: false, touches: [], thirds: [0, 0, 0], changes: [], gameTicks: -1, kicks: [], shots: [], redTeam: [], blueTeam: [], shotsRed: 0, shotsBlue: 0, passes: [], passesRed: 0, passesBlue: 0, kicksRed: 0, kicksBlue: 0, possRed: 0, possBlue: 0, scoreRed: 0, scoreBlue: 0, player: [], goals: [] }], player = [], players = [], playerList = [], updatePlayers = true;
+   mtc = 0, playSounds = false, pileczka = [];
+   redGoalCord = [], blueGoalCord = [], goalParsed = 0, playerPos = [], checkTeams = true;
+@@ -10695,6 +10696,7 @@
+       // CHECKPOINT moment, w którym widok centruje się na piłce
+       this.c.lineWidth = 3;
+       this.Sq(c.S);
++      try { window.__fenixUnder && window.__fenixUnder(this.c); } catch (e) { }  // capa de la pizarra (conexiones) bajo paredes, jugadores y nombres
+       this.Rq(c.S);
+       k = e.F;
+       h = 0;

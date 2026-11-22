@@ -47,12 +47,16 @@ let uid = 1;
 
 // ---------- conexiones entre jugadores de la repetición (siguen a los jugadores mientras se mueven) ----------
 const liveList = () => (typeof window !== 'undefined' && Array.isArray(window.__fenixLive) ? window.__fenixLive : []);
+const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) - (b.y - a.y) * (c.x - a.x);
+const segCross = (a, b, c, d) => ccw(a, c, d) * ccw(b, c, d) < 0 && ccw(a, b, c) * ccw(a, b, d) < 0;
+function crossing(pts) { const n = pts.length; for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) { if (i === 0 && j === n - 1) continue; if (segCross(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return true; } return false; }
+const byAngle = (pts) => { const c = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length }; return pts.slice().sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x)); };
+// El orden de los vértices se fija al crear la conexión; solo cambia cuando un jugador toca/cruza una línea (la figura se cruzaría)
 function linkPts(it) {
   const live = liveList();
-  const pts = it.ids.map((id) => live.find((p) => p && p.id === id)).filter(Boolean).map((p) => ({ x: p.x, y: p.y }));
-  if (pts.length < 3) return pts;
-  const c = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length };
-  return pts.sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x));
+  let pts = (it.order || it.ids).map((id) => live.find((p) => p && p.id === id)).filter(Boolean).map((p) => ({ id: p.id, x: p.x, y: p.y }));
+  if (pts.length >= 4 && crossing(pts)) { pts = byAngle(pts); it.order = pts.map((p) => p.id); }
+  return pts;
 }
 const linkKey = (ids) => ids.map(String).sort().join('|');
 
@@ -110,10 +114,7 @@ export function drawItems(ctx, items, T, draft) {
       if (it.fill) fillShape();
       ctx.stroke();
     } else if (it.type === 'link') {
-      const pts = linkPts(it).map(P); if (pts.length < 2) continue;
-      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); if (pts.length > 2) ctx.closePath();
-      if (pts.length > 2 && it.fill) fillShape();
-      ctx.stroke();
+      continue; // se dibuja DENTRO del motor (bajo jugadores y nombres) con window.__fenixUnder
     } else if (it.type === 'token') {
       const p = P(it.p), r = Math.max(9, 17 * T.s);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = TEAM[it.team]; ctx.fill();
@@ -189,6 +190,18 @@ function makeLayer(host, canvas) {
     }
   }
   const mark = () => { st.dirty = true; };
+  // Las conexiones las dibuja el motor justo después de la cancha: quedan bajo paredes, porterías, jugadores y nombres
+  const under = (c) => {
+    for (const it of st.items) {
+      if (it.type !== 'link') continue;
+      const pts = linkPts(it); if (pts.length < 2) continue;
+      c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = it.color; c.fillStyle = it.color; c.lineWidth = it.w || 3.5;
+      c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); if (pts.length > 2) c.closePath();
+      if (pts.length > 2 && it.fill) { c.globalAlpha = 0.24; c.fill(); c.globalAlpha = 1; }
+      c.stroke(); c.restore();
+    }
+  };
+  window.__fenixUnder = under;
   const pt = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   const world = (e, t) => { const q = pt(e); return { x: t.wx(q.x), y: t.wy(q.y) }; };
 
@@ -232,7 +245,8 @@ function makeLayer(host, canvas) {
       if (st.sel.length < 2) return;
       const key = linkKey(st.sel);
       if (st.items.some((i) => i.type === 'link' && linkKey(i.ids) === key)) { st.sel = []; renderUi(); mark(); say('Esos jugadores ya están conectados'); return; }
-      commit(st.items.concat([{ id: uid++, type: 'link', ids: st.sel.slice(), color: st.color, w: WIDTHS[st.wi], fill: st.sel.length > 2 }]));
+      const lp = liveList().filter((p) => p && st.sel.includes(p.id)).map((p) => ({ id: p.id, x: p.x, y: p.y }));
+      commit(st.items.concat([{ id: uid++, type: 'link', ids: st.sel.slice(), order: (lp.length > 2 ? byAngle(lp) : lp).map((p) => p.id), color: st.color, w: WIDTHS[st.wi], fill: st.sel.length > 2 }]));
       st.sel = []; renderUi(); say('Conexión creada: sigue a los jugadores');
     }
     else if (a === 'shot') shot();
@@ -374,7 +388,7 @@ function makeLayer(host, canvas) {
     if (!alive) return;
     if (st.open || st.items.length) {
       layer.hidden = false; place();
-      if (st.dirty || T().sig !== st.sig || st.sel.length || st.items.some((i) => i.type === 'link')) draw();
+      if (st.dirty || T().sig !== st.sig || st.sel.length) draw();
       raf = requestAnimationFrame(loop);
     } else { layer.hidden = true; raf = 0; }
   };
@@ -390,7 +404,7 @@ function makeLayer(host, canvas) {
     close() { if (!st.open) return; st.open = false; touches.clear(); multi = null; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; wake(); },
     toggle() { st.open ? api.close() : api.open(); },
     undo, redo,
-    destroy() { alive = false; try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); document.body.classList.remove('rb-open'); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); } catch (e) { /* nada */ } }
+    destroy() { alive = false; try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); document.body.classList.remove('rb-open'); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); if (window.__fenixUnder === under) window.__fenixUnder = null; } catch (e) { /* nada */ } }
   };
   cv.style.pointerEvents = 'none';
   renderUi();
@@ -398,13 +412,15 @@ function makeLayer(host, canvas) {
 }
 
 // ---------- instalación: botón dentro de la vista de repetición ----------
-let installed = false, cur = null;
+let installed = false, cur = null, leaving = false;
 export function installReplayBoard() {
   if (installed || typeof document === 'undefined') return;
   installed = true;
   const sync = () => {
     const fit = document.querySelector('.fenix-fit');
     const host = fit && fit.parentElement;
+    if (!host) leaving = false;
+    else if (leaving) return;
     if (!host) { if (cur && !cur.host.isConnected) { cur.api.destroy(); cur.btn.remove(); cur.sh.destroy(); cur = null; } return; }
     if (cur && cur.host === host && cur.btn.isConnected) return;
     if (cur) { cur.api.destroy(); cur.btn.remove(); cur.sh.destroy(); cur = null; }
@@ -423,4 +439,6 @@ export function installReplayBoard() {
   const mo = new MutationObserver(() => { if (!cur || !cur.btn.isConnected || !cur.host.isConnected) { clearTimeout(mo.t); sync(); } else { clearTimeout(mo.t); mo.t = setTimeout(sync, 300); } });
   mo.observe(document.body, { childList: true, subtree: true });
   sync();
+  // al salir de la repetición todo se quita de inmediato (no espera a la animación de salida)
+  window.addEventListener('fenix-replay-leave', () => { leaving = true; if (cur) { cur.api.destroy(); cur.btn.remove(); cur.sh.destroy(); cur = null; } });
 }
