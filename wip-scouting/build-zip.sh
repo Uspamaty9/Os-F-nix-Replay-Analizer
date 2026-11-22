@@ -11,4 +11,5 @@ cp "$R/wip-scouting/brand/app.png" "$P/../public/brand/app.png"   # icono de la 
 cp -r "$R/wip-tactics/src/tactics" "$P/"; mv "$P/tactics/scoutingProvider.js.optional" "$P/tactics/scoutingProvider.js"
 python3 "$R/wip-tactics/integrate.py" "$P/index.js"               # pizarra sobre la repetición (2 líneas)
 ( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-sin-espera.patch" )   # entrar directo a la repetición
+( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-cartel-gol.patch" )   # el motor avisa cuándo dibuja el cartel de gol (para las sombras)
 rm -f "$OUT"; zip -qr "$OUT" haxball-replay-analyzer.github.io-react; echo "OK $OUT"; echo "$T" > /tmp/build-zip-last

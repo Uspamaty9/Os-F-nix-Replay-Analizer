@@ -46,6 +46,21 @@ export function installReplayShadow(host, canvas) {
       if (t.ok && ball && live) {
         const circles = live.filter((p) => p && p.r > 0).map((p) => ({ x: p.x, y: p.y, r: p.r }));
         paintShadows(ctx, { sx: t.sx, sy: t.sy, k: t.s }, ball, circles, { reach: 4000, glow: 60 });
+        // El cartel de gol lo dibuja el motor dentro de la cancha (centro). El parche game2-cartel-gol.patch publica window.__fenixCard
+        // en cada fotograma en que lo dibuja: se vuelve a pegar su placa y su pastilla por ENCIMA de la sombra, con su escala y opacidad reales.
+        const cd = window.__fenixCard;
+        if (cd && performance.now() - cd.t < 120 && cd.al > 0.01) {
+          const f = W / (canvas.width || W), s = 0.5 * cd.sc * f, iw = cd.w * s, ih = cd.h * s, ix = W / 2 - iw / 2, iy = H / 2 - ih / 2 + cd.dy * f;
+          const tag = document.querySelector('.fenix-goal-toast .gt-tag'), own = !!tag && /AUTOGOL/i.test(tag.textContent);
+          ctx.save(); ctx.font = '900 24px Poppins, "Arial Black", Arial, sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '5px';
+          const tw = (ctx.measureText(own ? 'AUTOGOL' : 'GOL').width + 56) * s; ctx.restore();
+          const rr = (x, y, w, h, r) => { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+          ctx.save(); ctx.beginPath();
+          rr(ix + 14 * s, iy + 26 * s, iw - 28 * s, ih - 40 * s, 28 * s);   // placa
+          rr(W / 2 - tw / 2, iy + 4 * s, tw, 42 * s, 21 * s);               // pastilla GOL
+          ctx.clip(); ctx.globalAlpha = Math.min(1, cd.al);
+          ctx.drawImage(canvas, ix / f, iy / f, iw / f, ih / f, ix, iy, iw, ih); ctx.restore();
+        }
       }
     }
     raf = requestAnimationFrame(loop);

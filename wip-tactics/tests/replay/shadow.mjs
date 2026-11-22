@@ -24,6 +24,12 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   });
   assert.ok(px.behind > 80, 'sombra detrás del jugador: ' + JSON.stringify(px));
   assert.ok(px.side < 20, 'sin sombra a un lado: ' + JSON.stringify(px));
+  // cartel de gol (el motor avisa con window.__fenixCard): su placa va por encima de la sombra; sin aviso no se toca nada
+  await pg.evaluate(() => { const g = document.getElementById('game'), c = g.getContext('2d'); c.fillStyle = '#ff0000'; c.fillRect(g.width / 2 - 100, g.height / 2 - 20, 200, 40); window.__tcard = setInterval(() => { window.__fenixCard = { t: performance.now(), sc: 1, al: 1, dy: 0, w: 640, h: 156 }; }, 16); window.__fenixBall = { x: -300, y: 0 }; window.__fenixLive = [{ id: 1, x: -250, y: 0, r: 15 }]; }); await pg.waitForTimeout(200);
+  const ctr = () => pg.evaluate(() => { const cv = document.querySelector('.rs-canvas'); return Array.from(cv.getContext('2d').getImageData(Math.round(cv.width / 2), Math.round(cv.height / 2), 1, 1).data); });
+  assert.deepEqual(await ctr(), [255, 0, 0, 255], 'cartel por encima de la sombra');
+  await pg.evaluate(() => { clearInterval(window.__tcard); }); await pg.waitForTimeout(250);
+  assert.ok((await ctr())[3] > 80 && (await ctr())[0] < 40, 'sin cartel vuelve la sombra (sin rectángulo)');
   await click('.rb-more'); await click('.rb-pop-it'); await pg.waitForTimeout(150);
   assert.equal(await pg.locator('.rs-layer').isVisible(), false, 'se apaga');
   await ctx.close();
