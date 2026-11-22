@@ -28,7 +28,7 @@ export function renderImage(doc, fi, opts = {}) {
   const w = opts.width || 1600, fh = fieldSize(w), h = fh + STRIP;
   const c = newCanvas(w, h), ctx = c.getContext('2d');
   const v = fitView(w, fh, 'full', 10);
-  drawScene(ctx, v, w, h, { doc, fi, pos: opts.pos || null, trails: !!opts.trails, shadow: !!opts.shadow, names: opts.names !== false, ghost: false, hideUI: true });
+  drawScene(ctx, v, w, h, { doc, fi, pos: opts.pos || null, trails: !!opts.trails, shadow: !!opts.shadow, shadowIds: opts.shadowIds || null, names: opts.names !== false, ghost: false, hideUI: true });
   caption(ctx, w, fh, doc, doc.frames.length > 1 ? (doc.frames[fi] && doc.frames[fi].name) || '' : doc.category);
   return c;
 }

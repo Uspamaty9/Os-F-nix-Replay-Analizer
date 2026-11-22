@@ -30,6 +30,20 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   assert.deepEqual(await ctr(), [255, 0, 0, 255], 'cartel por encima de la sombra');
   await pg.evaluate(() => { clearInterval(window.__tcard); }); await pg.waitForTimeout(250);
   assert.ok((await ctr())[3] > 80 && (await ctr())[0] < 40, 'sin cartel vuelve la sombra (sin rectángulo)');
+  // elegir quién proyecta: con dos jugadores, al elegir solo al A desaparece la sombra del B
+  await pg.evaluate(() => { window.__fenixBall = { x: 0, y: 0 }; window.__fenixLive = [{ id: 1, x: 50, y: 0, r: 15 }, { id: 2, x: 50, y: 30, r: 15 }]; }); await pg.waitForTimeout(150);
+  const alphaAt = (x, y) => pg.evaluate(([x, y]) => { const v = window.__fenixView, cv = document.querySelector('.rs-canvas'); return cv.getContext('2d').getImageData(Math.round((v.W / 2 + v.k * x) * (cv.width / v.W)), Math.round(((v.H + v.h) / 2 + v.k * y) * (cv.height / v.H)), 1, 1).data[3]; }, [x, y]);
+  assert.ok((await alphaAt(120, 72)) > 80, 'con todos, el B proyecta');
+  await click('.rb-more'); await click('[data-act=pick]'); await pg.waitForSelector('.rb-pickbar', { state: 'visible' });
+  const where = await pg.evaluate(() => { const v = window.__fenixView, g = document.getElementById('game'), r = g.getBoundingClientRect(); return { x: r.left + (v.W / 2 + v.k * 50) * (r.width / v.W), y: r.top + ((v.H + v.h) / 2) * (r.height / v.H) }; });
+  if (touch) await pg.touchscreen.tap(where.x, where.y); else await pg.mouse.click(where.x, where.y);
+  await pg.waitForTimeout(150);
+  assert.match(await pg.locator('.rb-pop .who').textContent(), /1 jugador elegido/);
+  assert.ok((await alphaAt(120, 72)) < 20, 'solo el elegido proyecta');
+  assert.ok((await alphaAt(120, 0)) > 80, 'el elegido sí proyecta');
+  await click('.rb-pickbar button'); assert.equal(await pg.locator('.rb-pickbar').isVisible(), false);
+  await click('.rb-more'); await click('[data-act=all]'); await pg.waitForTimeout(150);
+  assert.ok((await alphaAt(120, 72)) > 80, 'Todos vuelve a proyectar'); await click('.rb-more');
   await click('.rb-more'); await click('.rb-pop-it'); await pg.waitForTimeout(150);
   assert.equal(await pg.locator('.rs-layer').isVisible(), false, 'se apaga');
   await ctx.close();

@@ -22,6 +22,7 @@ export class TacticsController {
     this.names = true;
     this.trails = false;
     this.shadow = false;
+    this.shadowIds = new Set(); // jugadores que proyectan sombra (vacío = todos)
     this.ghost = true;
     this.newTeam = 'red';
     this.style = { color: '#F5C542', width: 3, opacity: 1, fill: false, dashed: false };
@@ -122,7 +123,7 @@ export class TacticsController {
   snapshot() {
     const d = this.doc;
     return {
-      doc: d, fi: this.fi, tool: this.tool, multi: this.multi, snap: this.snap, names: this.names, trails: this.trails, ghost: this.ghost, shadow: this.shadow,
+      doc: d, fi: this.fi, tool: this.tool, multi: this.multi, snap: this.snap, names: this.names, trails: this.trails, ghost: this.ghost, shadow: this.shadow, shadowN: this.shadowIds.size,
       newTeam: this.newTeam, style: this.style, viewMode: this.viewMode, zoom: this.view.k,
       selPlayers: Array.from(this.sel.players), selShapes: Array.from(this.sel.shapes),
       canUndo: M.canUndo(this.h), canRedo: M.canRedo(this.h), polyActive: !!this.poly,
@@ -192,9 +193,11 @@ export class TacticsController {
     if (this.poly) this.cancelPoly();
     this.tool = t; this.draft = null;
     if (t !== 'select') this.hover = null;
-    this.canvas.style.cursor = t === 'pan' ? 'grab' : t === 'select' ? 'default' : t === 'erase' ? 'cell' : 'crosshair';
+    this.canvas.style.cursor = t === 'pan' ? 'grab' : t === 'select' ? 'default' : t === 'erase' ? 'cell' : t === 'shadowpick' ? 'pointer' : 'crosshair';
     this.draw(); this.emit();
   }
+
+  clearShadowPick() { this.shadowIds.clear(); this.draw(); this.emit(); }
 
   setFlag(name, value) {
     if (!['multi', 'snap', 'names', 'trails', 'ghost', 'shadow'].includes(name)) return;
@@ -600,6 +603,11 @@ export class TacticsController {
   _downTool(wp, s, e) {
     const t = this.tool;
     if (t === 'erase' || t === 'player' || t === 'ball' || t === 'text') this._inst = { t: performance.now(), h: this.h };
+    if (t === 'shadowpick') { // elegir quién proyecta sombra: toca una ficha para sumarla o quitarla
+      const id = this._hitPlayer(wp);
+      if (id && id !== 'ball') { if (this.shadowIds.has(id)) this.shadowIds.delete(id); else this.shadowIds.add(id); this.shadow = true; this.draw(); this.emit(); }
+      return;
+    }
     if (t === 'erase') { this.g = { type: 'erase', moved: true }; this._eraseAt(wp); return; }
     if (t === 'player') { if (this._hitPlayer(wp)) { this._downSelect(wp, s, false); return; } this.addPlayer(wp.x, wp.y); return; }
     if (t === 'ball') { this.placeBall(wp.x, wp.y); this.setTool('select'); return; }
@@ -875,7 +883,7 @@ export class TacticsController {
     }
     drawScene(ctx, this.view, this.w, this.h2, {
       doc: d, fi, pos, selPlayers: playing ? null : this.sel.players, selShapes: playing ? null : this.sel.shapes,
-      draft: this.draft || poly, box: this.box, trails: this.trails, ghost: this.ghost && !playing, names: this.names, shadow: this.shadow
+      draft: this.draft || poly, box: this.box, trails: this.trails, ghost: this.ghost && !playing, names: this.names, shadow: this.shadow, shadowIds: this.shadowIds
     });
     if (this.poly) { // marca de los vértices ya puestos
       ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2;

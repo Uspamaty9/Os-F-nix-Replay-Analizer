@@ -13,6 +13,7 @@ export const TOOLS = [
   { id: 'oval', label: 'Óvalo', hint: 'Arrastra; luego mueve sus puntos para deformarlo como quieras' },
   { id: 'polygon', label: 'Polígono', hint: 'Toca los vértices; doble toque o Enter para cerrar' },
   { id: 'erase', label: 'Borrador', hint: 'Toca o arrastra sobre lo que quieras borrar' },
+  { id: 'shadowpick', label: 'Elegir sombras', hint: 'Toca los jugadores que proyectan sombra (vuelve a tocar para quitarlos); sin elegir, lo hacen todos' },
   { id: 'text', label: 'Texto', hint: 'Toca para escribir una nota' },
   { id: 'player', label: 'Ficha', hint: 'Toca para colocar un jugador' },
   { id: 'ball', label: 'Balón', hint: 'Toca para colocar el balón' }

@@ -278,13 +278,20 @@ export function drawBall(ctx, v, p, st = {}) {
 }
 
 // Sombras de tiro (el balón = foco, cada ficha = objeto opaco) + cuánto de cada portería queda a la vista
-function drawShadowLayer(ctx, v, doc, pos) {
+function drawShadowLayer(ctx, v, doc, pos, scene) {
   if (!pos.ball) return;
-  const circles = doc.players.filter((p) => pos[p.id]).map((p) => ({ x: pos[p.id].x, y: pos[p.id].y, r: PITCH.playerR }));
+  const live = scene.shadowIds ? new Set(doc.players.filter((p) => scene.shadowIds.has(p.id) && pos[p.id]).map((p) => p.id)) : null;
+  const only = live && live.size ? live : null;
+  const circles = doc.players.filter((p) => pos[p.id] && (!only || only.has(p.id))).map((p) => ({ x: pos[p.id].x, y: pos[p.id].y, r: PITCH.playerR }));
   const tf = { sx: (x) => x * v.k + v.ox, sy: (y) => y * v.k + v.oy, k: v.k };
   const a = toScreen(v, { x: -PITCH.halfW, y: -PITCH.halfH }), b = toScreen(v, { x: PITCH.halfW, y: PITCH.halfH });
   paintShadows(ctx, tf, pos.ball, circles, { clip: [a.x, a.y, b.x, b.y], reach: 2 * (PITCH.boundW + PITCH.boundH), glow: 60 });
   const F = getField(), gs = F && F.goals && F.goals.length ? F.goals.map((q) => ({ x: q[0], y0: q[1], y1: q[3] })) : [{ x: -PITCH.halfW, y0: -PITCH.goalHalf, y1: PITCH.goalHalf }, { x: PITCH.halfW, y0: -PITCH.goalHalf, y1: PITCH.goalHalf }];
+  if (only) { // anillo dorado: quiénes proyectan sombra
+    ctx.save(); ctx.strokeStyle = 'rgba(255, 214, 90, 0.95)'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]);
+    for (const c of circles) { const q = toScreen(v, c); ctx.beginPath(); ctx.arc(q.x, q.y, (PITCH.playerR + 6) * v.k, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.restore();
+  }
   for (const g of gs) {
     const o = goalOpening(pos.ball, g, circles); if (!o) continue;
     ctx.save(); ctx.lineCap = 'round';
@@ -336,7 +343,7 @@ export function drawScene(ctx, v, w, h, scene) {
     for (const pl of doc.players) if (prev[pl.id]) drawPlayer(ctx, v, pl, prev[pl.id], { ghost: true, names: false });
     if (prev.ball) drawBall(ctx, v, prev.ball, { ghost: true });
   }
-  if (scene.shadow) drawShadowLayer(ctx, v, doc, pos);
+  if (scene.shadow) drawShadowLayer(ctx, v, doc, pos, scene);
   if (pos.ball) drawBall(ctx, v, pos.ball, { selected: !!(scene.selPlayers && scene.selPlayers.has('ball')) });
   for (const pl of doc.players) {
     if (pos[pl.id]) drawPlayer(ctx, v, pl, pos[pl.id], { selected: !!(scene.selPlayers && scene.selPlayers.has(pl.id)), names: scene.names });

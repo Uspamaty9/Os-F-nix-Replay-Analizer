@@ -227,7 +227,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     const doc = ctl.doc;
     try {
       if (kind === 'json') { const n = fileName(doc, '', 'json'); const how = await saveBlob(projectBlob(doc), n, 'application/json'); flash(saved('Proyecto', n, how)); return; }
-      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); const how = await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { shadow: ctl.shadow, trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash(saved('Imagen', n, how)); return; }
+      if (kind === 'png') { const n = fileName(doc, 'paso-' + (ctl.fi + 1), 'png'); const how = await saveBlob(await canvasToBlob(renderImage(doc, ctl.fi, { shadow: ctl.shadow, shadowIds: ctl.shadowIds, trails: ctl.trails, names: ctl.names })), n, 'image/png'); flash(saved('Imagen', n, how)); return; }
       if (kind === 'scheme') { const n = fileName(doc, 'esquema', 'png'); const how = await saveBlob(await canvasToBlob(renderScheme(doc)), n, 'image/png'); flash(saved('Esquema', n, how)); return; }
       if (kind === 'sheet') { const n = fileName(doc, 'secuencia', 'png'); const how = await saveBlob(await canvasToBlob(renderSheet(doc)), n, 'image/png'); flash(saved('Secuencia', n, how)); return; }
       if (kind === 'video') {
@@ -347,6 +347,12 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
             <button type='button' className={'tx-ft anim' + (anim ? ' on' : '')} onClick={() => { if (anim) { if (ctl) ctl.stop(); setAnim(false); } else setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
             <button type='button' className={'tx-ft' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
             <button type='button' className={'tx-ft shadow' + (s.shadow ? ' on' : '')} onClick={() => { ctl.setFlag('shadow', !s.shadow); setCat(null); }} aria-pressed={!!s.shadow} title='El balón es un foco y cada jugador tapa la luz: lo oscuro es adonde no se puede tirar en línea recta'><Icon name='shadow' size={22} /><span>Sombras</span></button>
+            {s.shadow && (
+              <>
+                <button type='button' className={'tx-ft' + (s.tool === 'shadowpick' ? ' on' : '')} onClick={() => { ctl.setTool('shadowpick'); setCat(null); }} aria-pressed={s.tool === 'shadowpick'} title='Elige qué jugadores proyectan sombra'><Icon name='select' size={22} /><span>{s.shadowN ? 'Sombra: ' + s.shadowN + ' elegido' + (s.shadowN > 1 ? 's' : '') : 'Elegir quién'}</span></button>
+                {s.shadowN > 0 && <button type='button' className='tx-ft' onClick={() => { ctl.clearShadowPick(); setCat(null); }} title='Que todos los jugadores proyecten sombra'><Icon name='team' size={22} /><span>Todos</span></button>}
+              </>
+            )}
             <button type='button' className={'tx-ft' + (s.multi ? ' on' : '')} onClick={() => { ctl.setTool('select'); ctl.setFlag('multi', !s.multi); setCat(null); }} aria-pressed={s.multi} title='Selección múltiple: toca varias fichas'><Icon name='multi' size={22} /><span>Varios</span></button>
             <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
           </div>
