@@ -96,3 +96,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - Cartel de gol: es un elemento del DOM por encima de todo (z-index 100001); no necesita tratamiento especial. Se probó copiar/recortar el cartel del canvas y dejaba un rectángulo sin sombra: eliminado. Zoom: `bottom: var(--edge)`.
 - FYI (pizarra): quitado el botón Pantalla; iconos de Vista distintos (completa/izq/der); fichas con círculo tipo HaxBall (relleno del equipo + borde blanco); una ficha (mismo equipo y número, o mismo jugador registrado) no se duplica: se selecciona la existente (`addPlayerCenter`).
 - FYI (pizarra): fichas con diseño del motor de HaxBall (relleno del equipo E56E56/5689E5, borde negro fino, dorsal blanco Arial Black, nombre blanco encima); iconos izquierda/derecha intercambiados a petición.
+- FYI (pizarra): grosor de líneas del campo/postes/contornos de fichas y balón fijo en píxeles (LINE_PX/EDGE_PX en render.js), ya no depende del zoom.

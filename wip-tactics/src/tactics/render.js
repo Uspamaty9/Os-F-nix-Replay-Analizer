@@ -29,6 +29,8 @@ function pathNet(ctx, v, side) {
   ctx.lineTo(C.x, C.y); ctx.quadraticCurveTo(q2.x, q2.y, D.x, D.y);
 }
 
+// Grosor de líneas del campo y de contornos de fichas: fijo en píxeles, no cambia al acercar o alejar
+const LINE_PX = 2, EDGE_PX = 1.5;
 const hexc = (c) => (/^[0-9a-f]{3,8}$/i.test(String(c)) ? '#' + c : String(c));
 
 // Cancha de un estadio importado (geometría compacta guardada al analizar la repetición)
@@ -54,16 +56,16 @@ function drawStadium(ctx, v, w, h, g) {
       ctx.fillStyle = dark ? 'rgba(255,255,255,.025)' : 'rgba(0,0,0,.05)'; const sw = (g.halfW * 2) / 10;
       for (let i = 0; i < 10; i += 2) { const x0 = px(-g.halfW + i * sw, -g.halfH), x1 = px(-g.halfW + (i + 1) * sw, g.halfH); ctx.fillRect(x0.x, x0.y, x1.x - x0.x, x1.y - x0.y); }
     }
-    const lw = Math.max(1.5, 3 * v.k);
+    const lw = LINE_PX;
     ctx.strokeStyle = dark ? mixHex(base, '#ffffff', 0.45) : FIELD.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
     const t = px(0, -g.halfH), u = px(0, g.halfH); ctx.beginPath(); ctx.moveTo(t.x, t.y); ctx.lineTo(u.x, u.y); ctx.stroke();
     const c = px(0, 0);
     if (g.kickOff > 0) { ctx.beginPath(); ctx.arc(c.x, c.y, g.kickOff * v.k, 0, TAU); ctx.stroke(); }
-    ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, 3 * v.k), 0, TAU); ctx.fill();
+    ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(c.x, c.y, 3, 0, TAU); ctx.fill();
   }
   // paredes visibles del estadio (mismo trazado que el motor: arco horario desde el primer vértice)
-  ctx.lineWidth = Math.max(1.4, 3 * v.k); ctx.lineCap = 'round';
+  ctx.lineWidth = LINE_PX; ctx.lineCap = 'round';
   for (const sg of g.segs || []) {
     const A = px(sg[0], sg[1]), B = px(sg[2], sg[3]);
     ctx.strokeStyle = hexc(sg[5]); ctx.beginPath();
@@ -78,7 +80,7 @@ function drawStadium(ctx, v, w, h, g) {
   // postes y discos fijos del mapa, con su color y tamaño reales (no hay postes por defecto)
   for (const d of g.discs || []) {
     const p = px(d[0], d[1]);
-    ctx.fillStyle = hexc(d[3] || 'FFFFFF'); ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 2 * v.k);
+    ctx.fillStyle = hexc(d[3] || 'FFFFFF'); ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_PX;
     ctx.beginPath(); ctx.arc(p.x, p.y, d[2] * v.k, 0, TAU); ctx.fill(); ctx.stroke();
   }
 }
@@ -100,17 +102,17 @@ export function drawPitch(ctx, v, w, h) {
     const x0 = px(-PITCH.halfW + i * 74, -PITCH.halfH), x1 = px(-PITCH.halfW + (i + 1) * 74, PITCH.halfH);
     ctx.fillRect(x0.x, x0.y, x1.x - x0.x, x1.y - x0.y);
   }
-  const lw = Math.max(1.5, 3 * v.k);
+  const lw = LINE_PX;
   ctx.strokeStyle = FIELD.line; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   // borde, línea central y círculo
   ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
   ctx.beginPath(); const t = px(0, -PITCH.halfH), u = px(0, PITCH.halfH); ctx.moveTo(t.x, t.y); ctx.lineTo(u.x, u.y); ctx.stroke();
   const c = px(0, 0);
   ctx.beginPath(); ctx.arc(c.x, c.y, PITCH.kickOff * v.k, 0, TAU); ctx.stroke();
-  ctx.fillStyle = FIELD.line; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(2, 3 * v.k), 0, TAU); ctx.fill();
+  ctx.fillStyle = FIELD.line; ctx.beginPath(); ctx.arc(c.x, c.y, 3, 0, TAU); ctx.fill();
   // porterías: red + postes
   for (const side of [-1, 1]) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(1.2, 2 * v.k);
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = EDGE_PX;
     ctx.beginPath(); pathNet(ctx, v, side); ctx.stroke();
     // línea de gol y conexión con la red
     ctx.strokeStyle = FIELD.line; ctx.lineWidth = lw;
@@ -118,7 +120,7 @@ export function drawPitch(ctx, v, w, h) {
     ctx.beginPath(); ctx.moveTo(g0.x, g0.y); ctx.lineTo(g1.x, g1.y); ctx.moveTo(g2.x, g2.y); ctx.lineTo(g3.x, g3.y); ctx.stroke();
     for (const y of [-64, 64]) {
       const p = px(side * 370, y);
-      ctx.fillStyle = side < 0 ? FIELD.postRed : FIELD.postBlue; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1, 1.5 * v.k);
+      ctx.fillStyle = side < 0 ? FIELD.postRed : FIELD.postBlue; ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_PX;
       ctx.beginPath(); ctx.arc(p.x, p.y, 8 * v.k, 0, TAU); ctx.fill(); ctx.stroke();
     }
   }
@@ -239,7 +241,7 @@ export function drawPlayer(ctx, v, pl, p, st = {}) {
     ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(s.x, s.y, r + 4, 0, TAU); ctx.stroke();
   }
   // Ficha igual a la del juego HaxBall: relleno del equipo, borde negro fino, dorsal blanco en negrita (Arial Black) y nombre blanco ARRIBA de la ficha
-  ctx.fillStyle = pl.color; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1.2, 1.6 * v.k);
+  ctx.fillStyle = pl.color; ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_PX;
   ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
   const txt = pl.num !== '' && pl.num != null ? String(pl.num) : '';
   if (txt) {
@@ -270,7 +272,7 @@ export function drawBall(ctx, v, p, st = {}) {
   ctx.save();
   if (st.ghost) ctx.globalAlpha = 0.3;
   if (st.selected) { ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(s.x, s.y, r + 4, 0, TAU); ctx.stroke(); }
-  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(1.5, 2 * v.k);
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_PX;
   ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
   ctx.restore();
 }
