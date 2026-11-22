@@ -61,18 +61,15 @@ function linkPts(it) {
   return pts;
 }
 // La parte de cualquier jugador (de cualquier equipo, sin estar en la conexión) que cae DENTRO de la figura se sombrea con el color de la conexión
-// (se recorta a la figura: si solo entra un poco, solo se sombrea ese poco)
-export function drawTints(ctx, items, T) {
+// (se recorta a la figura: si solo entra un poco, solo se sombrea ese poco). Se dibuja DENTRO del motor, sobre los jugadores y bajo el cartel de gol.
+export function drawTintsWorld(c, items) {
   for (const it of items) {
     if (it.type !== 'link') continue;
     const pts = linkPts(it); if (pts.length < 3) continue;
-    const S = pts.map((q) => ({ x: T.sx(q.x), y: T.sy(q.y) }));
     for (const p of liveList()) {
       if (!p || !(p.r > 0) || pts.some((q) => q.id === p.id)) continue;
-      const cx = T.sx(p.x), cy = T.sy(p.y), r = p.r * T.s;
-      if (cx + r < Math.min(...S.map((q) => q.x)) || cx - r > Math.max(...S.map((q) => q.x)) || cy + r < Math.min(...S.map((q) => q.y)) || cy - r > Math.max(...S.map((q) => q.y))) continue;
-      ctx.save(); ctx.beginPath(); S.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y))); ctx.closePath(); ctx.clip();
-      ctx.globalAlpha = 0.42; ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      c.save(); c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y))); c.closePath(); c.clip();
+      c.globalAlpha = 0.42; c.fillStyle = it.color; c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill(); c.restore();
     }
   }
 }
@@ -200,7 +197,7 @@ function makeLayer(host, canvas) {
   };
   function draw() {
     const t = T(); st.sig = t.sig; st.dirty = false;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, t, st.draft); drawTints(ctx, st.items, t);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, t, st.draft);
     if (st.sel.length) { // jugadores elegidos para conectar
       ctx.save(); ctx.strokeStyle = st.color; ctx.lineWidth = 3;
       for (const id of st.sel) { const p = liveList().find((q) => q && q.id === id); if (p) { ctx.beginPath(); ctx.arc(t.sx(p.x), t.sy(p.y), Math.max(14, p.r * t.s + 6), 0, Math.PI * 2); ctx.stroke(); } }
@@ -220,6 +217,8 @@ function makeLayer(host, canvas) {
     }
   };
   window.__fenixUnder = under;
+  const over = (c) => drawTintsWorld(c, st.items);
+  window.__fenixOver = over;
   const pt = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   const world = (e, t) => { const q = pt(e); return { x: t.wx(q.x), y: t.wy(q.y) }; };
 
@@ -389,7 +388,7 @@ function makeLayer(host, canvas) {
       const out = document.createElement('canvas'); out.width = cw; out.height = ch; const o = out.getContext('2d');
       o.fillStyle = '#111'; o.fillRect(0, 0, cw, ch);
       try { o.drawImage(canvas, 0, 0, cw, ch); } catch (x) { /* si no se puede copiar la cancha, queda solo el dibujo */ }
-      { const tt = makeT(canvas, cw, ch, false); drawItems(o, st.items, tt, null); drawTints(o, st.items, tt); }
+      drawItems(o, st.items, makeT(canvas, cw, ch, false), null);
       const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
       if (!blob) throw new Error('sin imagen');
       const how = await saveBlob(blob, fileName({ name: 'Repeticion' }, 'pizarra-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'), 'png'), 'image/png');
@@ -423,7 +422,7 @@ function makeLayer(host, canvas) {
     toggle() { st.open ? api.close() : api.open(); },
     openLink() { st.tool = 'link'; st.sel = []; st.confirm = false; api.open(); renderUi(); mark(); say('Toca 2 o más jugadores y pulsa Unir'); },
     undo, redo,
-    destroy() { alive = false; try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); document.body.classList.remove('rb-open'); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); if (window.__fenixUnder === under) window.__fenixUnder = null; } catch (e) { /* nada */ } }
+    destroy() { alive = false; try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); document.body.classList.remove('rb-open'); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); if (window.__fenixUnder === under) window.__fenixUnder = null; if (window.__fenixOver === over) window.__fenixOver = null; } catch (e) { /* nada */ } }
   };
   cv.style.pointerEvents = 'none';
   renderUi();

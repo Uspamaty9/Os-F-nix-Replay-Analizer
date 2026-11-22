@@ -7,7 +7,7 @@ const ctx = await b.newContext({ viewport: { width: 1100, height: 700 } }); cons
 pg.on('pageerror', (e) => errs.push(String(e)));
 await pg.goto('http://localhost:8776/index.html'); await pg.waitForSelector('.rb-btn');
 await pg.evaluate(() => { window.__fenixView = { camX: 400, camY: 220, k: 1, W: innerWidth, H: innerHeight, h: 0, zoom: 1 }; window.__fenixLive = [{ id: 1, x: 300, y: 150, r: 15 }, { id: 2, x: 500, y: 150, r: 15 }, { id: 3, x: 400, y: 300, r: 15 }, { id: 4, x: 600, y: 320, r: 15 }]; });
-await pg.evaluate(() => { const c = document.getElementById('game'), g = c.getContext('2d'); setInterval(() => { const v = window.__fenixView; g.save(); g.clearRect(0, 0, c.width, c.height); g.translate(c.width / 2, c.height / 2); g.scale(v.k, v.k); g.translate(-v.camX, -v.camY); if (window.__fenixUnder) window.__fenixUnder(g); g.restore(); }, 30); });
+await pg.evaluate(() => { const c = document.getElementById('game'), g = c.getContext('2d'); setInterval(() => { const v = window.__fenixView; g.save(); g.clearRect(0, 0, c.width, c.height); g.translate(c.width / 2, c.height / 2); g.scale(v.k, v.k); g.translate(-v.camX, -v.camY); if (window.__fenixUnder) window.__fenixUnder(g); if (window.__fenixOver) window.__fenixOver(g); g.restore(); }, 30); });
 assert.equal(await pg.locator('[data-tool="link"]').count(), 0, 'Unir ya no está en la barra');
 await pg.locator('.rb-more').click(); await pg.locator('.rb-pop-link').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
 const bb = await pg.locator('.rb-canvas').boundingBox();
@@ -41,8 +41,9 @@ await pg.evaluate(() => { const st = window.__fenixReplayBoard.st; st.items = st
 await pg.evaluate(() => { const l = window.__fenixLive; l.find((q) => q.id === 1).x = 300; l.find((q) => q.id === 1).y = 150; l.find((q) => q.id === 3).x = 400; l.find((q) => q.id === 3).y = 300; l.find((q) => q.id === 4).x = 700; l.find((q) => q.id === 4).y = 100; l.push({ id: 5, x: 400, y: 150, r: 15 }); }); await pg.waitForTimeout(200);
 const tri = () => pg.evaluate(() => window.__fenixReplayBoard.st.items.filter((i) => i.type === 'link')[0].order.join());
 assert.ok(!/5/.test(await tri()), 'un jugador ajeno no entra en la conexión: ' + await tri());
-const alpha = async (wx, wy) => { const v = await pg.evaluate(() => window.__fenixView); const x = 550 + (wx - v.camX), y = 350 + (wy - v.camY); return pg.evaluate(([x, y]) => { const c = document.querySelector('.rb-canvas'), g = c.getContext('2d'), r = c.getBoundingClientRect(); return g.getImageData(Math.round(x * c.width / r.width), Math.round(y * c.height / r.height), 1, 1).data[3]; }, [x, y]); };
-assert.ok((await alpha(400, 160)) > 60, 'la parte dentro de la figura se sombrea');
+const alpha = async (wx, wy) => { const v = await pg.evaluate(() => window.__fenixView); const x = 550 + (wx - v.camX), y = 350 + (wy - v.camY); return pg.evaluate(([x, y]) => { const c = document.getElementById('game'), g = c.getContext('2d'), r = c.getBoundingClientRect(); return g.getImageData(Math.round(x * c.width / r.width), Math.round(y * c.height / r.height), 1, 1).data[3]; }, [x, y]); };
+const base = await alpha(400, 240), part = await alpha(400, 160);
+assert.ok(part > base + 40, 'la parte dentro de la figura se sombrea más que el relleno: ' + part + ' vs ' + base);
 assert.equal(await alpha(400, 140), 0, 'la parte fuera no se sombrea');
 // salir de la repetición: se quita de una y no vuelve
 await pg.evaluate(() => window.dispatchEvent(new Event('fenix-replay-leave'))); await pg.waitForTimeout(100);

@@ -1,5 +1,5 @@
---- a/src/game2.js	2026-11-22 11:05:28.879755822 -0500
-+++ b/src/game2.js	2026-11-22 11:05:28.882179983 -0500
+--- a/src/game2.js	2026-11-22 14:55:25.398754006 -0500
++++ b/src/game2.js	2026-11-22 14:55:25.402128875 -0500
 @@ -1069,6 +1069,7 @@
  }
  
@@ -16,3 +16,11 @@
        k = e.F;
        h = 0;
        for (p = e.pb; h < p.length;) this.Mq(p[h++], k);
+@@ -10717,6 +10719,7 @@
+         ++f,
+         null ==
+         this.Jg.get(g) && !(f === 1 && fenixBallHidden()) && this.Ll(g, null);
++      try { window.__fenixOver && window.__fenixOver(this.c); } catch (e) { }  // sombreado de la pizarra sobre los jugadores, bajo el cartel de gol
+       this.c.lineWidth = 3;
+       this.c.resetTransform();
+       this.c.translate(this.sa.width / 2, this.sa.height / 2);
