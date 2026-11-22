@@ -70,7 +70,9 @@ export function installReplayShadow(host, canvas) {
       if (t.ok && ball && live) {
         const all = live.filter((p) => p && p.r > 0), sel = chosen.size ? all.filter((p) => chosen.has(p.id)) : [];
         const circles = (sel.length ? sel : all).map((p) => ({ x: p.x, y: p.y, r: p.r }));
-        paintShadows(ctx, { sx: t.sx, sy: t.sy, k: t.s }, ball, circles, { reach: 4000, glow: 60 });
+        const pc = window.__fenixPitch; // la sombra no sale de la cancha (el motor publica medio ancho/alto; sin dato, no se recorta)
+        const clip = pc && pc.w > 0 && pc.h > 0 ? [t.sx(-pc.w), t.sy(-pc.h), t.sx(pc.w), t.sy(pc.h)] : null;
+        paintShadows(ctx, { sx: t.sx, sy: t.sy, k: t.s }, ball, circles, { reach: 4000, glow: 60, clip });
         if (picking || sel.length) { // aros: dorado = proyecta sombra; blanco tenue = se puede elegir
           ctx.save(); ctx.lineWidth = 2.5;
           for (const p of all) { const on1 = chosen.has(p.id); if (!picking && !on1) continue; ctx.strokeStyle = on1 ? 'rgba(255, 214, 90, 0.95)' : 'rgba(255, 255, 255, 0.35)'; ctx.setLineDash(on1 ? [5, 4] : []); ctx.beginPath(); ctx.arc(t.sx(p.x), t.sy(p.y), p.r * t.s + 6, 0, Math.PI * 2); ctx.stroke(); }

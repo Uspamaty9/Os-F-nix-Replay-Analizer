@@ -30,6 +30,13 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   assert.deepEqual(await ctr(), [255, 0, 0, 255], 'cartel por encima de la sombra');
   await pg.evaluate(() => { clearInterval(window.__tcard); }); await pg.waitForTimeout(250);
   assert.ok((await ctr())[3] > 80 && (await ctr())[0] < 40, 'sin cartel vuelve la sombra (sin rectángulo)');
+  // la sombra no pasa de la cancha: con el motor publicando __fenixPitch, fuera del rectángulo no hay sombra
+  await pg.evaluate(() => { window.__fenixBall = { x: 0, y: 0 }; window.__fenixLive = [{ id: 1, x: 50, y: 0, r: 15 }]; window.__fenixPitch = { w: 100, h: 100 }; }); await pg.waitForTimeout(150);
+  const alphaP = (x, y) => pg.evaluate(([x, y]) => { const v = window.__fenixView, cv = document.querySelector('.rs-canvas'); return cv.getContext('2d').getImageData(Math.round((v.W / 2 + v.k * x) * (cv.width / v.W)), Math.round(((v.H + v.h) / 2 + v.k * y) * (cv.height / v.H)), 1, 1).data[3]; }, [x, y]);
+  assert.ok((await alphaP(85, 0)) > 80, 'dentro de la cancha hay sombra');
+  assert.equal(await alphaP(115, 0), 0, 'fuera de la cancha no hay sombra');
+  await pg.evaluate(() => { window.__fenixPitch = null; }); await pg.waitForTimeout(150);
+  assert.ok((await alphaP(115, 0)) > 80, 'sin dato de cancha no se recorta');
   // elegir quién proyecta: con dos jugadores, al elegir solo al A desaparece la sombra del B
   await pg.evaluate(() => { window.__fenixBall = { x: 0, y: 0 }; window.__fenixLive = [{ id: 1, x: 50, y: 0, r: 15 }, { id: 2, x: 50, y: 30, r: 15 }]; }); await pg.waitForTimeout(150);
   const alphaAt = (x, y) => pg.evaluate(([x, y]) => { const v = window.__fenixView, cv = document.querySelector('.rs-canvas'); return cv.getContext('2d').getImageData(Math.round((v.W / 2 + v.k * x) * (cv.width / v.W)), Math.round(((v.H + v.h) / 2 + v.k * y) * (cv.height / v.H)), 1, 1).data[3]; }, [x, y]);

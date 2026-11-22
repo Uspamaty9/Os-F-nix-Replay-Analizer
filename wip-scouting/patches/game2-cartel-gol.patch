@@ -1,5 +1,5 @@
---- a/src/game2.js	2026-11-21 21:21:43.031313459 -0500
-+++ b/src/game2.js	2026-11-21 21:21:43.095313463 -0500
+--- a/src/game2.js	2026-11-22 00:40:46.921301181 -0500
++++ b/src/game2.js	2026-11-22 00:40:46.951363820 -0500
 @@ -98,6 +98,7 @@
      var sc = 0.5 + 0.5 * eo, al = Math.min(1, p * 2.5), dy = 0;
      if (t > 2.55) { var q = Math.min(1, (t - 2.55) / 0.45); al *= 1 - q; sc *= 1 + 0.1 * q; dy = -14 * q; }
@@ -8,3 +8,11 @@
      a.save(); a.imageSmoothingEnabled = true; a.globalAlpha = Math.max(0, al);
      a.drawImage(this.cv, -w / 2, -h / 2 + dy, w, h);
      a.restore(); a.imageSmoothingEnabled = false;
+@@ -10648,6 +10649,7 @@
+       try {
+         window.__fenixFollow = { id: playerToFollow, x: translatetoDisc.x, y: translatetoDisc.y, free: playerToFollow == 0, mode: playerToFollow == 0 ? 'libre' : (playerToFollow === 'ball' ? 'pelota' : (playerToFollow === 'auto' ? 'automatica' : playerToFollow === 'cine' ? 'cine' : 'jugador')) };
+         window.__fenixBall = (e && e.F && e.F[0]) ? { x: e.F[0].a.x, y: e.F[0].a.y } : null;
++        window.__fenixPitch = c && c.S ? { w: c.S.Td > 0 ? c.S.Td : (c.S.$b || 0), h: c.S.Sd > 0 ? c.S.Sd : (c.S.qc || 0) } : null;  // medio ancho/alto de la cancha (para recortar las sombras de tiro)
+         var fl = [];
+         var fRoom = [];
+         for (var fj = 0; fj < a.I.length; fj++) {
