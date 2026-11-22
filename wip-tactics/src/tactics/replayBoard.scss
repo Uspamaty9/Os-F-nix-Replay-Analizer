@@ -23,6 +23,18 @@ body.rb-open {
   }
   &.open .rb-bar { display: flex; }
   &.open .rb-acts { display: flex; }
+  .rb-linkbar {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--inb, 0px)); display: none; align-items: center; gap: 10px; pointer-events: auto;
+    max-width: calc(100% - 20px); padding: 8px 10px 8px 16px; border-radius: 999px; background: rgba(17,17,17,.92); border: 1px solid var(--acc, #C89A3D); color: #F7F3E8; backdrop-filter: blur(8px);
+    box-shadow: 0 6px 22px rgba(0,0,0,.45);
+    .lk-msg { display: flex; flex-direction: column; gap: 2px; min-width: 0; b { font: 700 13px/1.1 'Poppins', sans-serif; } span { font: 500 11px/1.2 'Poppins', sans-serif; opacity: .75; white-space: nowrap; } }
+    .lk-cols { display: flex; gap: 6px; padding: 0 4px; margin: 0 2px; padding: 0 4px; }
+    .lk-w, .lk-x { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; padding: 0; }
+    .lk-x { background: transparent; border: 1px solid var(--acc, #C89A3D); color: var(--acc, #C89A3D); }
+    .lk-go { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--acc, #C89A3D); color: var(--btn-txt, #111); display: flex; align-items: center; gap: 6px; font: 700 13px/1 'Poppins', sans-serif; &:disabled { opacity: .35; } }
+  }
+  &.open.linkmode .rb-linkbar { display: flex; }
+  &.open.linkmode .rb-bar, &.open.linkmode .rb-acts { display: none; }
   .rb-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; align-items: center; -webkit-overflow-scrolling: touch; &::-webkit-scrollbar { display: none; } }
   .rb-row.sec { gap: 8px; }
   button { font: 600 11px/1.1 inherit; color: inherit; cursor: pointer; }
@@ -50,6 +62,7 @@ body.rb-open {
 }
 @media (max-width: 520px) {
   .rb-layer {
+    .rb-linkbar { gap: 6px; padding: 7px 8px 7px 12px; .lk-msg { display: none; } .lk-cols { padding: 0 6px; gap: 4px; } .rb-col { width: 22px; height: 22px; } .lk-w, .lk-x { width: 36px; height: 36px; } .lk-go { height: 36px; padding: 0 12px; } }
     .rb-t span { display: none; }
     .rb-t { min-width: 40px; width: 40px; min-height: 44px; padding: 4px; }
     .rb-bar .rb-a { min-width: 40px; min-height: 44px; padding: 4px 8px; span { display: none; } }

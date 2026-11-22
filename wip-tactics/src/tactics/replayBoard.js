@@ -181,7 +181,8 @@ function makeLayer(host, canvas) {
   const bar = document.createElement('div'); bar.className = 'rb-bar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Herramientas de la pizarra');
   const acts = document.createElement('div'); acts.className = 'rb-acts'; acts.setAttribute('role', 'toolbar'); acts.setAttribute('aria-label', 'Acciones de la pizarra');
   const toast = document.createElement('div'); toast.className = 'rb-toast'; toast.setAttribute('role', 'status');
-  layer.appendChild(bar); layer.appendChild(acts); layer.appendChild(toast);
+  const lk = document.createElement('div'); lk.className = 'rb-linkbar'; lk.setAttribute('role', 'toolbar'); lk.setAttribute('aria-label', 'Conectar jugadores');
+  layer.appendChild(bar); layer.appendChild(acts); layer.appendChild(lk); layer.appendChild(toast);
   document.body.appendChild(layer); // sobre <body>: ningún botón de la repetición puede quedar por encima de la barra
   const ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1;
@@ -241,8 +242,16 @@ function makeLayer(host, canvas) {
       '<button type="button" class="rb-a" data-act="undo" aria-label="Deshacer" title="Deshacer (también: toca con 2 dedos)"' + (st.hist.length ? '' : ' disabled') + '>' + iconSvg('undo', 20) + '<span>Deshacer</span></button>' +
       '<button type="button" class="rb-a" data-act="redo" aria-label="Rehacer" title="Rehacer (también: toca con 3 dedos)"' + (st.redo.length ? '' : ' disabled') + '>' + iconSvg('redo', 20) + '<span>Rehacer</span></button>' +
       '<button type="button" class="rb-a danger' + (st.confirm ? ' on' : '') + '" data-act="clear" aria-label="Limpiar todo"' + (st.items.length ? '' : ' disabled') + '>' + iconSvg('trash', 20) + '<span>' + (st.confirm ? '¿Seguro?' : 'Limpiar') + '</span></button>' +
-      (st.tool === 'link' ? '<button type="button" class="rb-a on" data-act="join" aria-label="Unir los jugadores elegidos"' + (st.sel.length > 1 ? '' : ' disabled') + '>' + iconSvg('link', 20) + '<span>' + (st.sel.length > 1 ? 'Unir ' + st.sel.length : 'Elige 2+') + '</span></button>' : '') +
       '<button type="button" class="rb-a" data-act="shot" aria-label="Guardar captura" title="Captura">' + iconSvg('image', 20) + '<span>Captura</span></button>';
+    layer.classList.toggle('linkmode', st.tool === 'link');
+    if (st.tool === 'link') {
+      const n = st.sel.length;
+      lk.innerHTML = '<div class="lk-msg"><b>Conectar jugadores</b><span>' + (n > 1 ? n + ' elegidos · pulsa Unir' : n === 1 ? '1 elegido · toca otro jugador' : 'Toca 2 o más jugadores') + '</span></div>' +
+        '<div class="lk-cols">' + COLORS.map((c) => '<button type="button" class="rb-col' + (c === st.color ? ' on' : '') + '" data-color="' + c + '" style="--c:' + c + '" aria-label="Color ' + c + '"></button>').join('') + '</div>' +
+        '<button type="button" class="lk-w" data-act="width" aria-label="Grosor de la línea">' + wIcon + '</button>' +
+        '<button type="button" class="lk-go" data-act="join" aria-label="Unir los jugadores elegidos"' + (n > 1 ? '' : ' disabled') + '>' + iconSvg('link', 20) + '<span>Unir</span></button>' +
+        '<button type="button" class="lk-x" data-act="close" aria-label="Terminar">' + iconSvg('check', 20) + '</button>';
+    }
     cv.style.pointerEvents = st.open && st.tool !== 'hand' ? 'auto' : 'none';
     cv.style.cursor = st.tool === 'erase' ? 'cell' : st.tool === 'select' ? 'move' : 'crosshair';
   }
@@ -269,7 +278,7 @@ function makeLayer(host, canvas) {
     else if (a === 'shot') shot();
     else if (a === 'close') api.close();
   };
-  for (const el of [bar, acts]) { el.addEventListener('pointerdown', (e) => e.stopPropagation()); el.addEventListener('click', onUi); }
+  for (const el of [bar, acts, lk]) { el.addEventListener('pointerdown', (e) => e.stopPropagation()); el.addEventListener('click', onUi); }
 
   // ---- gestos
   const tolPx = () => (matchMedia && matchMedia('(pointer: coarse)').matches ? 16 : 10);
