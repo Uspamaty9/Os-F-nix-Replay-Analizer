@@ -28,8 +28,9 @@ for (const [name, vp, touch] of [['desk', { width: 1100, height: 700 }, false], 
   const centerA = () => pg.evaluate(() => { const v = window.__fenixView, cv = document.querySelector('.rs-canvas'); const d = cv.getContext('2d').getImageData(Math.round(cv.width / 2), Math.round(cv.height / 2), 1, 1).data; return d[3]; });
   await pg.evaluate(() => { window.__fenixBall = { x: -300, y: 0 }; window.__fenixLive = [{ id: 1, x: -250, y: 0, r: 15 }]; }); await pg.waitForTimeout(150);
   assert.ok((await centerA()) > 80, 'la sombra cruza el centro sin cartel');
-  await pg.evaluate(() => { const t = document.createElement('div'); t.className = 'fenix-toast fenix-goal-toast'; document.body.appendChild(t); }); await pg.waitForTimeout(150);
-  assert.equal(await centerA(), 0, 'con el cartel de gol no hay sombra encima');
+  await pg.evaluate(() => { const g = document.getElementById('game'), c = g.getContext('2d'); c.fillStyle = '#ff0000'; c.fillRect(g.width / 2 - 100, g.height / 2 - 20, 200, 40); const t = document.createElement('div'); t.className = 'fenix-toast fenix-goal-toast'; document.body.appendChild(t); }); await pg.waitForTimeout(150);
+  const red = await pg.evaluate(() => { const cv = document.querySelector('.rs-canvas'); return Array.from(cv.getContext('2d').getImageData(Math.round(cv.width / 2), Math.round(cv.height / 2), 1, 1).data); });
+  assert.deepEqual(red, [255, 0, 0, 255], 'con el cartel de gol el cartel va encima de la sombra: ' + red);
   await pg.evaluate(() => document.querySelector('.fenix-goal-toast').remove()); await pg.waitForTimeout(150);
   assert.ok((await centerA()) > 80, 'vuelve la sombra al desaparecer el cartel');
   await click('.rb-more'); await click('.rb-pop-it'); await pg.waitForTimeout(150);
