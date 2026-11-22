@@ -75,7 +75,12 @@ body.rb-open {
   border: 1px solid var(--acc, #C89A3D); background: var(--card, rgba(17,17,17,.82)); color: var(--acc, #C89A3D);
   &.active { background: var(--acc, #C89A3D); color: var(--btn-txt, #111); }
 }
+.rb-more.rb-sh { bottom: 172px; }
+.rb-more.rb-ln { bottom: 224px; }
+.rb-more:not(.rb-sh):not(.rb-ln) { bottom: 276px; }
+.rb-more[hidden] { display: none !important; }
 .rb-pop {
+  bottom: 276px !important;
   position: absolute; right: calc(var(--edge, 12px) + var(--inr, 0px) + 60px); bottom: 150px; z-index: 4; width: min(300px, calc(100% - 100px)); padding: 6px; border-radius: 14px;
   background: rgba(17,17,17,.94); border: 1px solid var(--acc, #C89A3D); color: #F7F3E8; backdrop-filter: blur(8px);
   .rb-pop-it { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border-radius: 10px; cursor: pointer;
