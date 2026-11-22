@@ -340,6 +340,10 @@ export class TacticsController {
     if (this._locked()) return;
     const ids = this.doc.players.filter((p) => this.sel.players.has(p.id)).map((p) => p.id);
     if (ids.length < 2) { this.toast('Selecciona al menos 2 jugadores'); return; }
+    // el mismo grupo de jugadores no se vincula dos veces: si ya existe esa conexión, se selecciona; con un jugador nuevo sí se crea otra
+    const key = (a) => a.slice().sort().join('|');
+    const same = this.doc.shapes.find((s) => s.attach && s.attach.length === ids.length && key(s.attach) === key(ids));
+    if (same) { this.sel = { players: new Set(), shapes: new Set([same.id]) }; this.toast('Esos jugadores ya están conectados'); this.draw(); this.emit(); return; }
     const r = M.createLink(this.doc, this.fi, ids, { color: this.style.color, width: this.style.width, opacity: this.style.opacity, dashed: this.style.dashed, fill: true });
     if (!r.id) return;
     this.sel = { players: new Set(), shapes: new Set([r.id]) };

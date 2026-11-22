@@ -98,3 +98,5 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - FYI (pizarra): fichas con diseño del motor de HaxBall (relleno del equipo E56E56/5689E5, borde negro fino, dorsal blanco Arial Black, nombre blanco encima); iconos izquierda/derecha intercambiados a petición.
 - FYI (pizarra): grosor de líneas del campo/postes/contornos de fichas y balón fijo en píxeles (LINE_PX/EDGE_PX en render.js), ya no depende del zoom.
 - FYI (pizarra): corregido: grosor de líneas/contornos del campo, postes, fichas y balón en unidades del campo (LINE_W=3, EDGE_W=2 × zoom), proporcional al mapa en cualquier zoom, sin mínimo en píxeles.
+- FYI (pizarra): `linkSelection` no repite una conexión con el mismo grupo de jugadores (la selecciona); botón «Volver al inicio» arriba a la izquierda junto a Rojo (`.tx-home`).
+- FYI (repetición): herramienta «Unir» (`link`) en `replayBoard.js`: se eligen 2+ jugadores reales (`__fenixLive`) y «Unir N» crea una conexión/triángulo/polígono que SIGUE a los jugadores mientras se mueven (se redibuja cada frame); no repite el mismo grupo. Prueba: `tests/replay/link.mjs`.

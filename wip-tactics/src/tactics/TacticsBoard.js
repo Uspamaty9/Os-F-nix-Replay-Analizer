@@ -273,6 +273,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
       <div className='tx-body'>
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
+          <button type='button' className='tx-corner tx-home' onClick={requestClose} aria-label='Volver al inicio' title='Volver al inicio'><Icon name='back' size={22} /></button>
           <div className='tx-title tx-sr'><b>{s.doc.name}</b><small className={'tx-save ' + saveState}>{SAVE_TXT[saveState]}</small></div>
           {[['red', 'Rojo', nRed, 'tl'], ['blue', 'Azul', nBlue, 'tr']].map(([t, lbl, n, pos]) => (
             <button type='button' key={t} className={'tx-corner tx-team ' + t + ' ' + pos + (bar === t ? ' on' : '')} onClick={() => toggleBar(t)} aria-pressed={bar === t} aria-label={'Jugadores ' + lbl.toLowerCase() + 's'} title={'Equipo ' + lbl.toLowerCase() + ': toca para ver sus fichas'}>

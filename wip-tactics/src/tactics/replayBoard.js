@@ -27,13 +27,14 @@ const TOOLS = [
   { id: 'carrow', icon: 'carrow', label: 'Flecha curva' },
   { id: 'rect', icon: 'rect', label: 'Rectángulo' },
   { id: 'oval', icon: 'oval', label: 'Óvalo' },
+  { id: 'link', icon: 'link', label: 'Conectar jugadores' },
   { id: 'red', team: 'red', label: 'Ficha roja' },
   { id: 'blue', team: 'blue', label: 'Ficha azul' },
   { id: 'ball', icon: 'ball', label: 'Balón' },
   { id: 'text', icon: 'text', label: 'Texto' },
   { id: 'erase', icon: 'erase', label: 'Borrador' }
 ];
-const SHORT = { hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', red: 'Roja', blue: 'Azul', rect: 'Rect.', oval: 'Óvalo' };
+const SHORT = { link: 'Unir', hand: 'Vista', select: 'Mover', dline: 'Discont.', carrow: 'Curva', red: 'Roja', blue: 'Azul', rect: 'Rect.', oval: 'Óvalo' };
 const DRAG = new Set(['pen', 'line', 'dline', 'arrow', 'carrow', 'rect', 'oval']);
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -43,6 +44,18 @@ function segDist(p, a, b) {
   return dist(p, { x: a.x + t * dx, y: a.y + t * dy });
 }
 let uid = 1;
+
+// ---------- conexiones entre jugadores de la repetición (siguen a los jugadores mientras se mueven) ----------
+const liveList = () => (typeof window !== 'undefined' && Array.isArray(window.__fenixLive) ? window.__fenixLive : []);
+function linkPts(it) {
+  const live = liveList();
+  const pts = it.ids.map((id) => live.find((p) => p && p.id === id)).filter(Boolean).map((p) => ({ x: p.x, y: p.y }));
+  if (pts.length < 3) return pts;
+  const c = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length };
+  return pts.sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x));
+}
+const linkKey = (ids) => ids.map(String).sort().join('|');
+
 
 // ---------- cámara ----------
 // Devuelve la transformación mundo → píxeles CSS de la capa, con el factor f (CSS px por px del canvas).
@@ -96,6 +109,11 @@ export function drawItems(ctx, items, T, draft) {
       if (it.type === 'oval') ctx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.max(1, (x1 - x0) / 2), Math.max(1, (y1 - y0) / 2), 0, 0, Math.PI * 2); else ctx.rect(x0, y0, x1 - x0, y1 - y0);
       if (it.fill) fillShape();
       ctx.stroke();
+    } else if (it.type === 'link') {
+      const pts = linkPts(it).map(P); if (pts.length < 2) continue;
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); if (pts.length > 2) ctx.closePath();
+      if (pts.length > 2 && it.fill) fillShape();
+      ctx.stroke();
     } else if (it.type === 'token') {
       const p = P(it.p), r = Math.max(9, 17 * T.s);
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fillStyle = TEAM[it.team]; ctx.fill();
@@ -117,6 +135,7 @@ export function drawItems(ctx, items, T, draft) {
 // ¿el punto (px, py en CSS) toca la marca?
 function hit(it, q, T, tol) {
   const P = (p) => ({ x: T.sx(p.x), y: T.sy(p.y) });
+  if (it.type === 'link') { const pts = linkPts(it).map(P); for (let i = 0; i < pts.length; i++) { const j = (i + 1) % pts.length; if (pts.length === 2 && i === 1) break; if (segDist(q, pts[i], pts[j]) <= tol) return true; } return false; }
   if (it.type === 'token') return dist(q, P(it.p)) <= Math.max(9, 17 * T.s) + tol;
   if (it.type === 'ball') return dist(q, P(it.p)) <= Math.max(6, 10 * T.s) + tol;
   if (it.type === 'text') { const p = P(it.p), fs = Math.max(13, 22 * T.s); return Math.abs(q.x - p.x) <= it.text.length * fs * 0.35 + tol && Math.abs(q.y - p.y) <= fs * 0.7 + tol; }
@@ -139,7 +158,7 @@ function shift(it, dx, dy) {
 
 // ---------- capa por repetición ----------
 function makeLayer(host, canvas) {
-  const st = { tool: 'pen', color: COLORS[0], wi: 1, fill: false, items: [], hist: [], redo: [], draft: null, open: false, drawing: null, moving: null, inst: null, confirm: false, toastT: 0, dirty: true, sig: '' };
+  const st = { tool: 'pen', color: COLORS[0], wi: 1, fill: false, items: [], sel: [], hist: [], redo: [], draft: null, open: false, drawing: null, moving: null, inst: null, confirm: false, toastT: 0, dirty: true, sig: '' };
   const touches = new Map(); let multi = null;
   const layer = document.createElement('div'); layer.className = 'rb-layer'; layer.hidden = true;
   const cv = document.createElement('canvas'); cv.className = 'rb-canvas'; layer.appendChild(cv);
@@ -163,6 +182,11 @@ function makeLayer(host, canvas) {
   function draw() {
     const t = T(); st.sig = t.sig; st.dirty = false;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, t, st.draft);
+    if (st.sel.length) { // jugadores elegidos para conectar
+      ctx.save(); ctx.strokeStyle = st.color; ctx.lineWidth = 3;
+      for (const id of st.sel) { const p = liveList().find((q) => q && q.id === id); if (p) { ctx.beginPath(); ctx.arc(t.sx(p.x), t.sy(p.y), Math.max(14, p.r * t.s + 6), 0, Math.PI * 2); ctx.stroke(); } }
+      ctx.restore();
+    }
   }
   const mark = () => { st.dirty = true; };
   const pt = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
@@ -187,6 +211,7 @@ function makeLayer(host, canvas) {
       '<button type="button" class="rb-a" data-act="undo" aria-label="Deshacer" title="Deshacer (también: toca con 2 dedos)"' + (st.hist.length ? '' : ' disabled') + '>' + iconSvg('undo', 20) + '<span>Deshacer</span></button>' +
       '<button type="button" class="rb-a" data-act="redo" aria-label="Rehacer" title="Rehacer (también: toca con 3 dedos)"' + (st.redo.length ? '' : ' disabled') + '>' + iconSvg('redo', 20) + '<span>Rehacer</span></button>' +
       '<button type="button" class="rb-a danger' + (st.confirm ? ' on' : '') + '" data-act="clear" aria-label="Limpiar todo"' + (st.items.length ? '' : ' disabled') + '>' + iconSvg('trash', 20) + '<span>' + (st.confirm ? '¿Seguro?' : 'Limpiar') + '</span></button>' +
+      (st.tool === 'link' ? '<button type="button" class="rb-a on" data-act="join" aria-label="Unir los jugadores elegidos"' + (st.sel.length > 1 ? '' : ' disabled') + '>' + iconSvg('link', 20) + '<span>' + (st.sel.length > 1 ? 'Unir ' + st.sel.length : 'Elige 2+') + '</span></button>' : '') +
       '<button type="button" class="rb-a" data-act="shot" aria-label="Guardar captura" title="Captura">' + iconSvg('image', 20) + '<span>Captura</span></button>';
     cv.style.pointerEvents = st.open && st.tool !== 'hand' ? 'auto' : 'none';
     cv.style.cursor = st.tool === 'erase' ? 'cell' : st.tool === 'select' ? 'move' : 'crosshair';
@@ -195,7 +220,7 @@ function makeLayer(host, canvas) {
   const onUi = (e) => {
     e.stopPropagation();
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.tool) { st.tool = b.dataset.tool; st.confirm = false; renderUi(); say(TOOLS.find((t) => t.id === st.tool).label); return; }
+    if (b.dataset.tool) { st.tool = b.dataset.tool; st.sel = []; st.confirm = false; mark(); renderUi(); say(TOOLS.find((t) => t.id === st.tool).label); return; }
     if (b.dataset.color) { st.color = b.dataset.color; if (['red', 'blue', 'ball', 'erase', 'hand', 'select'].includes(st.tool)) st.tool = 'pen'; renderUi(); return; }
     const a = b.dataset.act;
     if (a === 'undo') undo();
@@ -203,6 +228,13 @@ function makeLayer(host, canvas) {
     else if (a === 'width') { st.wi = (st.wi + 1) % WIDTHS.length; renderUi(); say('Grosor ' + ['fino', 'medio', 'grueso'][st.wi]); }
     else if (a === 'fill') { st.fill = !st.fill; renderUi(); say(st.fill ? 'Figuras rellenas' : 'Figuras sin relleno'); }
     else if (a === 'clear') { if (!st.items.length) return; if (st.confirm) { commit([]); say('Todo borrado'); } else { st.confirm = true; renderUi(); clearTimeout(st.cT); st.cT = setTimeout(() => { st.confirm = false; renderUi(); }, 3000); } }
+    else if (a === 'join') {
+      if (st.sel.length < 2) return;
+      const key = linkKey(st.sel);
+      if (st.items.some((i) => i.type === 'link' && linkKey(i.ids) === key)) { st.sel = []; renderUi(); mark(); say('Esos jugadores ya están conectados'); return; }
+      commit(st.items.concat([{ id: uid++, type: 'link', ids: st.sel.slice(), color: st.color, w: WIDTHS[st.wi], fill: st.sel.length > 2 }]));
+      st.sel = []; renderUi(); say('Conexión creada: sigue a los jugadores');
+    }
     else if (a === 'shot') shot();
     else if (a === 'close') api.close();
   };
@@ -233,10 +265,15 @@ function makeLayer(host, canvas) {
     const instant = () => { st.inst = { t: now, hl: st.hist.length, redo: st.redo }; };
     if (tool === 'red' || tool === 'blue') { instant(); commit(st.items.concat([{ id: uid++, type: 'token', team: tool, p, n: count(tool) + 1 }])); return; }
     if (tool === 'ball') { instant(); commit(st.items.filter((i) => i.type !== 'ball').concat([{ id: uid++, type: 'ball', p }])); return; }
+    if (tool === 'link') {
+      const hitP = liveList().filter((l) => l && l.r > 0).map((l) => ({ l, d: dist(q, { x: t.sx(l.x), y: t.sy(l.y) }) })).filter((o) => o.d <= Math.max(14, o.l.r * t.s + 6) + tolPx()).sort((a, b) => a.d - b.d)[0];
+      if (hitP) { const id = hitP.l.id; st.sel = st.sel.includes(id) ? st.sel.filter((x) => x !== id) : st.sel.concat([id]); renderUi(); mark(); }
+      return;
+    }
     if (tool === 'text') { askText(q, p); return; }
     if (tool === 'erase') { st.drawing = { id: e.pointerId, erase: true, first: true }; instant(); eraseAt(q, t, true); return; }
     if (tool === 'select') {
-      for (let i = st.items.length - 1; i >= 0; i--) if (hit(st.items[i], q, t, tolPx())) { st.moving = { id: e.pointerId, i, base: st.items, p0: p }; return; }
+      for (let i = st.items.length - 1; i >= 0; i--) if (st.items[i].type !== 'link' && hit(st.items[i], q, t, tolPx())) { st.moving = { id: e.pointerId, i, base: st.items, p0: p }; return; }
       return;
     }
     if (!DRAG.has(tool)) return;
@@ -337,7 +374,7 @@ function makeLayer(host, canvas) {
     if (!alive) return;
     if (st.open || st.items.length) {
       layer.hidden = false; place();
-      if (st.dirty || T().sig !== st.sig) draw();
+      if (st.dirty || T().sig !== st.sig || st.sel.length || st.items.some((i) => i.type === 'link')) draw();
       raf = requestAnimationFrame(loop);
     } else { layer.hidden = true; raf = 0; }
   };
