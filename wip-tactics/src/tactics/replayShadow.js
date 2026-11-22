@@ -16,7 +16,7 @@ export function installReplayShadow(host, canvas) {
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'rb-more'; btn.setAttribute('aria-label', 'Más opciones'); btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = iconSvg('more', 24);
   const pop = document.createElement('div'); pop.className = 'rb-pop'; pop.hidden = true;
-  pop.innerHTML = '<button type="button" class="rb-pop-it" role="switch"><span class="ic"></span><span class="tx"><b>Sombras de tiro</b><small>El balón es un foco y cada jugador tapa la luz: lo oscuro es adonde no se puede tirar en línea recta.</small></span><i class="sw"></i></button><div class="rb-pop-row"><span class="tx"><b>Quién proyecta sombra</b><small class="who">Todos los jugadores</small></span><button type="button" class="rb-pop-btn" data-act="pick">Elegir</button><button type="button" class="rb-pop-btn ghost" data-act="all" hidden>Todos</button></div>';
+  pop.innerHTML = '<button type="button" class="rb-pop-it" role="switch"><span class="ic"></span><span class="tx"><b>Sombras de tiro</b><small>El balón es un foco y cada jugador tapa la luz: lo oscuro es adonde no se puede tirar en línea recta.</small></span><i class="sw"></i></button><div class="rb-pop-row"><span class="tx"><b>Quién proyecta sombra</b><small class="who">Todos los jugadores</small></span><button type="button" class="rb-pop-btn" data-act="pick">Elegir</button><button type="button" class="rb-pop-btn ghost" data-act="all" hidden>Todos</button></div><button type="button" class="rb-pop-it rb-pop-link"><span class="ic"></span><span class="tx"><b>Conectar jugadores</b><small>Une 2 o más jugadores con líneas o un triángulo que los siguen mientras se mueven.</small></span></button>';
   const item = pop.querySelector('.rb-pop-it'); pop.querySelector('.ic').innerHTML = iconSvg('shadow', 22);
   const who = pop.querySelector('.who'), bPick = pop.querySelector('[data-act=pick]'), bAll = pop.querySelector('[data-act=all]');
   const chosen = new Set(); let picking = false;
@@ -28,6 +28,8 @@ export function installReplayShadow(host, canvas) {
   const sync = () => { item.classList.toggle('on', on); item.setAttribute('aria-checked', String(on)); btn.classList.toggle('active', on); };
   btn.addEventListener('click', (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); });
   item.addEventListener('click', (e) => { e.stopPropagation(); on = !on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (x) { /* nada */ } sync(); wake(); pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); });
+  const linkIt = pop.querySelector('.rb-pop-link'); linkIt.querySelector('.ic').innerHTML = iconSvg('link', 22);
+  linkIt.addEventListener('click', (e) => { e.stopPropagation(); pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (window.__fenixReplayBoard && window.__fenixReplayBoard.openLink) window.__fenixReplayBoard.openLink(); });
   const closePop = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
   document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== btn) closePop(); }, true);
   host.appendChild(btn); host.appendChild(pop); sync(); syncWho();

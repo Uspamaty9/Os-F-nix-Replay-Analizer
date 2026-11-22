@@ -27,7 +27,6 @@ const TOOLS = [
   { id: 'carrow', icon: 'carrow', label: 'Flecha curva' },
   { id: 'rect', icon: 'rect', label: 'Rectángulo' },
   { id: 'oval', icon: 'oval', label: 'Óvalo' },
-  { id: 'link', icon: 'link', label: 'Conectar jugadores' },
   { id: 'red', team: 'red', label: 'Ficha roja' },
   { id: 'blue', team: 'blue', label: 'Ficha azul' },
   { id: 'ball', icon: 'ball', label: 'Balón' },
@@ -51,12 +50,48 @@ const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) - (b.y - a.y) * (c.x - a.x);
 const segCross = (a, b, c, d) => ccw(a, c, d) * ccw(b, c, d) < 0 && ccw(a, b, c) * ccw(a, b, d) < 0;
 function crossing(pts) { const n = pts.length; for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) { if (i === 0 && j === n - 1) continue; if (segCross(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n])) return true; } return false; }
 const byAngle = (pts) => { const c = { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length }; return pts.slice().sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x)); };
-// El orden de los vértices se fija al crear la conexión; solo cambia cuando un jugador toca/cruza una línea (la figura se cruzaría)
+const segD = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, u = l2 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2)) : 0; return Math.hypot(p.x - (a.x + u * dx), p.y - (a.y + u * dy)); };
+// Conexión dinámica: el orden se fija al crearla. Un jugador que TOCA una línea entra en la figura (entre los dos jugadores de esa línea) y sale cuando se separa;
+// si la figura se cruzara, se reordena.
 function linkPts(it) {
-  const live = liveList();
-  let pts = (it.order || it.ids).map((id) => live.find((p) => p && p.id === id)).filter(Boolean).map((p) => ({ id: p.id, x: p.x, y: p.y }));
-  if (pts.length >= 4 && crossing(pts)) { pts = byAngle(pts); it.order = pts.map((p) => p.id); }
+  const live = liveList(), get = (id) => live.find((p) => p && p.id === id);
+  let order = (it.order || it.ids).filter((id) => get(id));
+  const pos = (id) => { const p = get(id); return { id, x: p.x, y: p.y, r: p.r || 15 }; };
+  // los que se unieron al tocar y ya se alejaron, salen
+  for (let i = order.length - 1; i >= 0 && order.length > 2; i--) {
+    const id = order[i]; if (it.ids.includes(id)) continue;
+    const a = pos(order[(i + order.length - 1) % order.length]), c = pos(order[(i + 1) % order.length]), p = pos(id);
+    if (segD(p, a, c) > p.r * 1.8 + 6) order.splice(i, 1);
+  }
+  // un jugador que toca una línea entra
+  const n = order.length;
+  if (n >= 2 && order.length < it.ids.length + 8) {
+    let best = null;
+    for (const p of live) {
+      if (!p || !(p.r > 0) || order.includes(p.id)) continue;
+      for (let i = 0; i < (n === 2 ? 1 : n); i++) {
+        const A = pos(order[i]), B = pos(order[(i + 1) % n]), d = segD(p, A, B);
+        if (d <= p.r && (!best || d < best.d)) best = { d, id: p.id, at: i + 1 };
+      }
+    }
+    if (best) order.splice(best.at, 0, best.id);
+  }
+  let pts = order.map(pos);
+  if (pts.length >= 4 && crossing(pts)) { pts = byAngle(pts); order = pts.map((q) => q.id); }
+  it.order = order;
   return pts;
+}
+const inPoly = (p, pts) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) if ((pts[i].y > p.y) !== (pts[j].y > p.y) && p.x < ((pts[j].x - pts[i].x) * (p.y - pts[i].y)) / (pts[j].y - pts[i].y) + pts[i].x) c = !c; return c; };
+// Los jugadores que quedan DENTRO de una figura (de cualquier equipo, sin estar en la conexión) se sombrean con el color de la conexión
+export function drawTints(ctx, items, T) {
+  for (const it of items) {
+    if (it.type !== 'link') continue;
+    const pts = linkPts(it); if (pts.length < 3) continue;
+    for (const p of liveList()) {
+      if (!p || !(p.r > 0) || pts.some((q) => q.id === p.id) || !inPoly(p, pts)) continue;
+      ctx.save(); ctx.globalAlpha = 0.42; ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(T.sx(p.x), T.sy(p.y), p.r * T.s, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+  }
 }
 const linkKey = (ids) => ids.map(String).sort().join('|');
 
@@ -182,7 +217,7 @@ function makeLayer(host, canvas) {
   };
   function draw() {
     const t = T(); st.sig = t.sig; st.dirty = false;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, t, st.draft);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); drawItems(ctx, st.items, t, st.draft); drawTints(ctx, st.items, t);
     if (st.sel.length) { // jugadores elegidos para conectar
       ctx.save(); ctx.strokeStyle = st.color; ctx.lineWidth = 3;
       for (const id of st.sel) { const p = liveList().find((q) => q && q.id === id); if (p) { ctx.beginPath(); ctx.arc(t.sx(p.x), t.sy(p.y), Math.max(14, p.r * t.s + 6), 0, Math.PI * 2); ctx.stroke(); } }
@@ -197,7 +232,7 @@ function makeLayer(host, canvas) {
       const pts = linkPts(it); if (pts.length < 2) continue;
       c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = it.color; c.fillStyle = it.color; c.lineWidth = it.w || 3.5;
       c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); if (pts.length > 2) c.closePath();
-      if (pts.length > 2 && it.fill) { c.globalAlpha = 0.24; c.fill(); c.globalAlpha = 1; }
+      if (pts.length > 2 && (it.fill || pts.length > it.ids.length)) { c.globalAlpha = 0.24; c.fill(); c.globalAlpha = 1; }
       c.stroke(); c.restore();
     }
   };
@@ -371,7 +406,7 @@ function makeLayer(host, canvas) {
       const out = document.createElement('canvas'); out.width = cw; out.height = ch; const o = out.getContext('2d');
       o.fillStyle = '#111'; o.fillRect(0, 0, cw, ch);
       try { o.drawImage(canvas, 0, 0, cw, ch); } catch (x) { /* si no se puede copiar la cancha, queda solo el dibujo */ }
-      drawItems(o, st.items, makeT(canvas, cw, ch, false), null);
+      { const tt = makeT(canvas, cw, ch, false); drawItems(o, st.items, tt, null); drawTints(o, st.items, tt); }
       const blob = await new Promise((r) => out.toBlob(r, 'image/png'));
       if (!blob) throw new Error('sin imagen');
       const how = await saveBlob(blob, fileName({ name: 'Repeticion' }, 'pizarra-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'), 'png'), 'image/png');
@@ -388,7 +423,7 @@ function makeLayer(host, canvas) {
     if (!alive) return;
     if (st.open || st.items.length) {
       layer.hidden = false; place();
-      if (st.dirty || T().sig !== st.sig || st.sel.length) draw();
+      if (st.dirty || T().sig !== st.sig || st.sel.length || st.items.some((i) => i.type === 'link')) draw();
       raf = requestAnimationFrame(loop);
     } else { layer.hidden = true; raf = 0; }
   };
@@ -403,6 +438,7 @@ function makeLayer(host, canvas) {
     open() { if (st.open) return; st.open = true; layer.classList.add('open'); document.body.classList.add('rb-open'); renderUi(); st.dirty = true; wake(); prevBack = window.__fenixBack; window.__fenixBack = myBack; },
     close() { if (!st.open) return; st.open = false; touches.clear(); multi = null; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; wake(); },
     toggle() { st.open ? api.close() : api.open(); },
+    openLink() { st.tool = 'link'; st.sel = []; st.confirm = false; api.open(); renderUi(); mark(); say('Toca 2 o más jugadores y pulsa Unir'); },
     undo, redo,
     destroy() { alive = false; try { ro && ro.disconnect(); window.removeEventListener('resize', place); cancelAnimationFrame(raf); document.body.classList.remove('rb-open'); if (window.__fenixBack === myBack) window.__fenixBack = prevBack; layer.remove(); if (window.__fenixUnder === under) window.__fenixUnder = null; } catch (e) { /* nada */ } }
   };
