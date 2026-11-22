@@ -46,14 +46,6 @@ export function installReplayShadow(host, canvas) {
       if (t.ok && ball && live) {
         const circles = live.filter((p) => p && p.r > 0).map((p) => ({ x: p.x, y: p.y, r: p.r }));
         paintShadows(ctx, { sx: t.sx, sy: t.sy, k: t.s }, ball, circles, { reach: 4000, glow: 60 });
-        // el cartel de gol lo dibuja el motor en el centro del canvas (placa de 640×156/214 a escala 0,5): se vuelve a pegar encima de la sombra, como los botones
-        if (document.querySelector('.fenix-goal-toast')) {
-          const f = W / (canvas.width || W), hasAs = !!document.querySelector('.fenix-goal-toast .gt-assist'), H0 = hasAs ? 214 : 156;
-          const x = W / 2 - 160 * f + 7 * f, yy = H / 2 - (H0 / 4) * f + 13 * f, w = 306 * f, h = (H0 - 40) * 0.5 * f, r = 14 * f;
-          ctx.save(); ctx.beginPath();
-          ctx.moveTo(x + r, yy); ctx.arcTo(x + w, yy, x + w, yy + h, r); ctx.arcTo(x + w, yy + h, x, yy + h, r); ctx.arcTo(x, yy + h, x, yy, r); ctx.arcTo(x, yy, x + w, yy, r); ctx.closePath(); ctx.clip();
-          ctx.drawImage(canvas, x / f, yy / f, w / f, h / f, x, yy, w, h); ctx.restore();
-        }
       }
     }
     raf = requestAnimationFrame(loop);
