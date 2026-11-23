@@ -21,10 +21,10 @@ const click = async (x, y, mods = []) => { const p = await toPx(x, y); for (cons
 
 assert.equal(await $('.tx-panel').isVisible(), false, 'el panel empieza cerrado para dar espacio al campo'); await $('button[aria-label="Menú"]').click(); await $('.tx-menusheet [aria-label="Panel"]').click(); assert.equal(await $('.tx-panel').isVisible(), true, 'el botón abre el panel');
 // 1) pantalla inicial: panel de pizarra, herramientas, barra de pasos
-assert.equal(await $('.tx-namepill b').innerText(), 'Pizarra 1');
-assert.ok(await $('.tx-db').count() >= 8, 'botones del dock');
+assert.equal(await $('.tx-menu2 b').innerText(), 'Pizarra 1');
+assert.ok(await $('.tx-db').count() >= 7, 'botones del dock');
 assert.equal(await $('.tx-step').count(), 0, 'la animación está oculta hasta tocar Animar');
-for (const t of ['Mover', 'Borrador', 'Eliminar', 'Deshacer', 'Rehacer']) assert.ok(await $('.tx-db', { hasText: t }).first().isVisible(), t + ' siempre visible');
+for (const t of ['Borrador', 'Eliminar', 'Deshacer', 'Rehacer']) assert.ok(await $('.tx-db', { hasText: t }).first().isVisible(), t + ' siempre visible');
 const placeRed = async (page) => { await page.evaluate(() => { window.__ctl.setNewTeam('red'); window.__ctl.setTool('player'); }); };
 const catTool = async (page, cat, tool) => { await page.locator('.tx-db.cat', { hasText: cat }).click(); await page.locator('.tx-ft', { hasText: tool }).click(); };
 assert.equal(await $('.tx-panel-head h3').innerText(), 'Pizarra');
@@ -34,11 +34,11 @@ for (const [x, y] of [[-200, -70], [-60, 60], [80, -20]]) await click(x, y);
 await pg.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Jugador');
 // 3) escribir nickname y dorsal
 await $('.tx-panel input[list="tx-reg-list"]').fill('Zeta');
-assert.equal(await $('.tx-namepill small').innerText().then((t) => t.length > 0), true);
+assert.equal(await $('.tx-menu2 small').innerText().then((t) => t.length > 0), true);
 // 4) selección múltiple con el botón (táctil) y triángulo
-await $('.tx-db', { hasText: 'Mover' }).click();
-await pg.keyboard.press('Escape'); // quita la selección de la última ficha colocada
-await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft', { hasText: 'Varios' }).click();
+await pg.evaluate(() => { window.__ctl.setFlag('multi', false); window.__ctl.setTool('select'); });
+await pg.evaluate(() => document.activeElement && document.activeElement.blur()); await pg.keyboard.press('Escape'); // quita la selección de la última ficha colocada
+if (!(await $('.tx-ft.shadow').isVisible())) await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft', { hasText: 'Varios' }).click();
 for (const [x, y] of [[-200, -70], [-60, 60], [80, -20]]) await click(x, y);
 await pg.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Selección');
 assert.ok(await $('.tx-quick button', { hasText: 'Crear triángulo' }).count() === 1, 'oferta de triángulo con 3 jugadores');
@@ -52,7 +52,7 @@ const a = await toPx(80, -20), c = await toPx(150, 80);
 await pg.mouse.move(a.x, a.y); await pg.mouse.down(); await pg.mouse.move(c.x, c.y, { steps: 6 }); await pg.mouse.up();
 // desvincular desde el panel
 await click(-200, -70); // tocar jugador 1
-await $('.tx-db', { hasText: 'Mover' }).click();
+await pg.evaluate(() => { window.__ctl.setFlag('multi', false); window.__ctl.setTool('select'); });
 // seleccionar la figura tocando su borde: usamos el menú de dibujo; basta comprobar el botón vía selección por recuadro
 // 5) con 2 jugadores seleccionados -> conexión; con 4 -> estructura/cuadrado
 await pg.keyboard.press('Control+a');
@@ -97,7 +97,7 @@ await $('.tx-inline input').fill('Presión alta'); await $('.tx-inline button[ty
 await $('.tx-folders button', { hasText: 'Presión alta' }).waitFor();
 await $('.tx-lib-bar button', { hasText: 'Nueva pizarra' }).click(); // crea dentro de la carpeta
 await $('.tx-lib').waitFor({ state: 'detached' });
-assert.equal(await $('.tx-namepill b').innerText(), 'Pizarra 2');
+assert.equal(await $('.tx-menu2 b').innerText(), 'Pizarra 2');
 await sub('Archivo', 'Biblioteca');
 await $('.tx-folders button', { hasText: 'Todas' }).click();
 assert.equal(await $('.tx-card').count(), 2);
@@ -112,7 +112,7 @@ await pg.waitForFunction(() => document.querySelectorAll('.tx-card').length === 
 // abrir la primera (la que tiene fichas)
 await $('.tx-card', { hasText: 'Pizarra 1' }).locator('.tx-card-main').click();
 await $('.tx-lib').waitFor({ state: 'detached' });
-assert.equal(await $('.tx-namepill b').innerText(), 'Pizarra 1');
+assert.equal(await $('.tx-menu2 b').innerText(), 'Pizarra 1');
 // 11) exportación: PNG, esquema, secuencia, proyecto y vídeo
 await menu(); await $('.tx-menusheet [aria-label="Exportar"]').click();
 for (const [label, ext] of [['Imagen del paso actual', '.png'], ['Esquema táctico', '.png'], ['Secuencia por pasos', '.png'], ['Jugada individual', '.json']]) {
@@ -127,7 +127,7 @@ assert.ok(vdl.suggestedFilename().endsWith('.webm'));
 await pg.waitForFunction(() => /Guardado/.test(document.querySelector('.tx-save').innerText), null, { timeout: 5000 });
 await pg.screenshot({ path: shots + '/ui-desktop.png' });
 await pg.reload(); await pg.waitForSelector('.tx-root[data-ready="1"]');
-assert.equal(await $('.tx-namepill b').innerText(), 'Pizarra 1', 'recupera el último proyecto');
+assert.equal(await $('.tx-menu2 b').innerText(), 'Pizarra 1', 'recupera el último proyecto');
 await $('.tx-db.cat:has-text("Más")').click(); await $('.tx-ft.anim').click(); await $('.tx-transport').waitFor();
 assert.equal(await $('.tx-step:not(.add):not(.opts)').count(), 2, 'recupera los pasos');
 await pg.keyboard.press('Control+a');
@@ -141,7 +141,7 @@ await pg.evaluate(() => window.__fenixBack()); await pg.waitForFunction(() => wi
 const m = await b.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 const mp = await m.newPage(); mp.on('pageerror', (e) => errs.push('mobile pageerror: ' + e));
 await mp.goto('http://localhost:8770/index.html'); await mp.waitForSelector('.tx-root[data-ready="1"]');
-assert.ok(await mp.locator('.tx-namepill b').count() === 1, 'título presente en móvil');
+assert.ok(await mp.locator('.tx-menu2 b').count() === 1, 'título presente en móvil');
 const cv = await mp.locator('.tx-canvas').boundingBox(); assert.ok(cv.width >= 380 && cv.height > 150, 'campo en móvil ' + JSON.stringify(cv));
 assert.ok(await mp.locator('.tx-dock').isVisible(), 'dock visible en móvil');
 await mp.locator('.tx-db.cat:has-text("Más")').tap(); await mp.locator('.tx-ft.anim').tap(); await mp.locator('.tx-transport').waitFor();
@@ -156,7 +156,7 @@ await mp.evaluate(() => { window.__ctl.setNewTeam('red'); window.__ctl.setTool('
 await mp.locator('.tx-canvas').tap({ position: { x: 150, y: cv.height / 2 } });
 await mp.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Jugador');
 assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'colocar una ficha no abre el panel');
-await mp.locator('.tx-db:has-text("Mover")').tap(); await mp.keyboard.press('Escape');
+await mp.evaluate(() => { window.__ctl.setFlag('multi', false); window.__ctl.setTool('select'); }); await mp.keyboard.press('Escape');
 await mp.locator('.tx-canvas').tap({ position: { x: 150, y: cv.height / 2 } });
 assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'seleccionar no tapa el campo con el panel');
 await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('.tx-menusheet [aria-label="Panel"]').click();

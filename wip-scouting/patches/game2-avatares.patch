@@ -1,0 +1,11 @@
+--- a/src/game2.js
++++ b/src/game2.js
+@@ -10659,6 +10659,8 @@
+           if (a.I[fj].H != null) fl.push({ id: a.I[fj].V, x: a.I[fj].H.a.x, y: a.I[fj].H.a.y, r: a.I[fj].H.Z });
+           var fcol = '#888';
+           try { var R = a.I[fj].ea && a.I[fj].ea.R; if (R != null) fcol = 'rgb(' + ((R & 16711680) >>> 16) + ',' + ((R & 65280) >>> 8) + ',' + (R & 255) + ')'; } catch (e) { }
++          var fav = null; try { var av = a.I[fj].Jd != null ? a.I[fj].Jd : a.I[fj].Xb; if (av != null && av !== '') fav = '' + av; } catch (e) { }  // avatar de HaxBall (texto) para la bandeja de la pizarra
++          if (fav) { try { var fam = window.__fenixAvatars || (window.__fenixAvatars = {}); var fk = String(a.I[fj].w).trim().toLowerCase(); if (fam[fk] !== fav) { fam[fk] = fav; window.__fenixAvatarsDirty = true; } } catch (e) { } }
+           fRoom.push({ id: a.I[fj].V, name: a.I[fj].w, disc: a.I[fj].H != null, col: fcol });
+         }
+         window.__fenixLive = fl;

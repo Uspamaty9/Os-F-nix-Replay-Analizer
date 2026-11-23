@@ -10,6 +10,7 @@ import Timeline from './Timeline';
 import { DocPanel, PlayerPanel, MultiPanel, ShapePanel, StylePanel } from './panels';
 import { TacticsController } from './controller';
 import { TOOLS } from './shapes';
+import { avatarTexts, avatarOf } from './avatarText';
 import { newDoc, TEAM_COLORS, MAX_PER_TEAM } from './model';
 import { listDocs, saveDoc, listFolders, listRoster, saveRosterPlayer, getKv, setKv, serializeDoc } from './storage';
 import { collectFromMatches, mergeRegistry, keyOf } from './players';
@@ -269,6 +270,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     if (fresh && JSON.stringify(fresh) !== fieldJson) ctl.setField(fresh);
   }, [stadiums, fieldName, fieldJson, ctl, s.play.state]);
   useEffect(() => { if (cat) setBar(null); }, [cat]);
+  const avMap = regMode && bar ? avatarTexts() : {};
   const toggleBar = (k) => { setCat(null); setPanel(false); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = s.doc.players.filter((q) => (q.team || 'red') === 'red').length, nBlue = s.doc.players.filter((q) => (q.team || 'red') === 'blue').length;
@@ -281,9 +283,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
           <header className='tx-top2'>
             <button type='button' className='tx-round tx-back' onClick={requestClose} aria-label='Volver al inicio' title='Volver al inicio'><Icon name='back' size={22} /></button>
-            <button type='button' className={'tx-namepill' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Menú: nueva, abrir, guardar, cancha, compartir'>
-              <b>{s.doc.name}</b><i className={'tx-dot ' + saveState} aria-hidden='true' /><small className={'tx-sr tx-save ' + saveState}>{SAVE_TXT[saveState]}</small>
-            </button>
+            <button type='button' className={'tx-round tx-menu2' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Ajustes: nueva, abrir, guardar, cancha, compartir'><Icon name='settings' size={22} /><b className='tx-sr'>{s.doc.name}</b><i className={'tx-dot ' + saveState} aria-hidden='true' /><small className={'tx-sr tx-save ' + saveState}>{SAVE_TXT[saveState]}</small></button>
           </header>
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
@@ -333,11 +333,11 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <>
                 <div className='tx-fgrp'>Líneas</div>
                 {['pen', 'line', 'dline', 'arrow', 'carrow'].map((id) => (
-                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
+                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(s.tool === id ? 'select' : id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
                 ))}
                 <div className='tx-fgrp'>Formas</div>
                 {['rect', 'oval', 'polygon', 'text'].map((id) => (
-                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
+                  <button type='button' key={id} className={'tx-ft' + (s.tool === id ? ' on' : '')} onClick={() => { ctl.setTool(s.tool === id ? 'select' : id); setCat(null); }} title={TOOL[id].hint} aria-pressed={s.tool === id}><Icon name={id} size={22} /><span>{TOOL[id].label}</span></button>
                 ))}
               </>
             )}
@@ -360,11 +360,10 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
         )}
           {(
             <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
-              <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar'><Icon name='select' size={22} /><span>Mover</span></button>
               {CATS.filter((c) => c.id !== 'more').map((c) => {
                 const cur = c.tools.includes(s.tool) ? s.tool : null;
                 return (
-                  <button type='button' key={c.id} className={'tx-db cat' + (cat === c.id ? ' open' : '') + (cur ? ' on' : '')} onClick={() => setCat(cat === c.id ? null : c.id)} aria-expanded={cat === c.id} title={c.label}>
+                  <button type='button' key={c.id} className={'tx-db cat' + (cat === c.id ? ' open' : '') + (cur ? ' on' : '')} onClick={() => { if (cur && cat !== c.id) { ctl.setTool('select'); setCat(null); } else setCat(cat === c.id ? null : c.id); }} aria-expanded={cat === c.id} title={cur ? c.label + ': toca para volver a mover' : c.label}>
                     <Icon name={cur && c.id !== 'add' ? cur : c.icon} size={22} /><span>{c.label}</span>
                   </button>
                 );
@@ -386,7 +385,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               {regMode && registry.length === 0 && <span className='tx-tok-empty'>Aún no hay jugadores analizados. Abre una repetición para analizarlos.</span>}
               {regMode && [...registry].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
                 <button type='button' key={r.key} className={'tx-tok reg ' + bar + ((r.team || null) === bar ? ' mine' : '') + (s.doc.players.some((q) => q.regKey === r.key) ? ' used' : '') + (r.avatar ? ' av' : '')} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}>
-                  <i>{r.avatar ? <img src={r.avatar} alt='' /> : String(r.nick || '?').slice(0, 2)}</i><span>{r.nick}</span>
+                  <i>{r.avatar ? <img src={r.avatar} alt='' /> : (avatarOf(avMap, r) ? <b className='tx-avtxt'>{avatarOf(avMap, r)}</b> : <Icon name='user' size={22} />)}</i><span>{r.nick}</span>
                 </button>
               ))}
               {!regMode && (

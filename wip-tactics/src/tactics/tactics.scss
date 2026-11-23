@@ -445,3 +445,6 @@
 .tx-root .tx-tok.close i { background: rgba(255, 255, 255, .08); border: 1px solid var(--ring); }
 .tx-root .tx-tok.toggle.reg i { background: rgba(255, 255, 255, .08); border: 2px solid var(--tx-acc); color: var(--tx-acc); }
 .tx-root .tx-tok-empty { align-self: center; flex: 0 0 auto; font-size: 12px; opacity: .7; max-width: 220px; white-space: normal; }
+
+.tx-root .tx-tok .tx-avtxt { font: 900 20px 'Arial Black', Arial, sans-serif; line-height: 1; }
+.tx-root .tx-menu2 { position: relative; margin-left: auto; border-color: var(--gold); color: var(--gold); .tx-dot { position: absolute; right: 6px; top: 6px; width: 8px; height: 8px; } }

@@ -43,6 +43,7 @@ const I = {
   fit: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
   back: 'M19 12H5M11 6l-6 6 6 6',
   menu: 'M4 7h16M4 12h16M4 17h10',
+  settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M9 14v6',
   close: 'M6 6l12 12M18 6L6 18',
   panel: 'M4 4h16v16H4zM15 4v16',
   multi: 'M4 4h9v9H4zM11 11h9v9h-9z',
