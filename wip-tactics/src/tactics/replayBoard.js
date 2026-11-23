@@ -232,7 +232,7 @@ function makeLayer(host, canvas) {
   function renderUi() {
     const wIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="' + [2, 3.5, 5.5][st.wi] + '" aria-hidden="true"><path d="M5 18L19 6"/></svg>';
     bar.innerHTML =
-      '<div class="rb-row tools">' + TOOLS.map((t) => '<button type="button" class="rb-t' + (st.tool === t.id ? ' on' : '') + (t.team ? ' team ' + t.team : '') + '" data-tool="' + t.id + '" aria-pressed="' + (st.tool === t.id) + '" aria-label="' + t.label + '" title="' + t.label + '">' + (t.team ? '<i></i>' : iconSvg(t.icon, 22)) + '<span>' + (SHORT[t.id] || t.label) + '</span></button>').join('') + '</div>' +
+      '<div class="rb-row tools">' + TOOLS.map((t) => '<button type="button" class="rb-t' + (st.tool === t.id ? ' on' : '') + (t.team ? ' team ' + t.team : '') + '" data-tool="' + t.id + '" aria-pressed="' + (st.tool === t.id) + '" aria-label="' + t.label + '" title="' + t.label + '">' + (t.team ? '<i></i>' : iconSvg(t.icon, 22)) + '<span>' + (SHORT[t.id] || t.label) + '</span></button>' + (['select', 'carrow', 'oval', 'ball'].includes(t.id) ? '<span class="rb-gap"></span>' : '')).join('') + '</div>' +
       '<div class="rb-row sec">' + COLORS.map((c) => '<button type="button" class="rb-col' + (c === st.color ? ' on' : '') + '" data-color="' + c + '" style="--c:' + c + '" aria-label="Color ' + c + '"></button>').join('') +
       '<span class="rb-sep"></span>' +
       '<button type="button" class="rb-a" data-act="width" aria-label="Grosor del trazo" title="Grosor">' + wIcon + '<span>Grosor</span></button>' +

@@ -119,3 +119,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - Dock: ahora es UNA barra plana (sin píldora con contorno dentro de otro rectángulo). Iconos renovados en icons.js (select, pen, plus, erase, trash, undo, redo, more, menu, back); `more` usa trazo 3.2.
 - Barra superior pegada arriba (quitado el `--int` duplicado: `.tx-root` ya lo aplica como padding). Panel y bandeja de fichas ya no se solapan (abrir uno cierra el otro).
 - `MAX_PER_TEAM` = 11. La bandeja muestra 5 fichas numeradas y un botón "+" (estado `slots`) hasta 11; los jugadores ya analizados (registro) salen con su avatar y se añaden al equipo cuyo escudo abrió la bandeja.
+- FYI: rediseño del menú de dibujo sobre la repetición (dock de cristal, herramientas agrupadas con .rb-gap, acciones en píldora redonda), de la barra .rb-linkbar y del menú ⋮ (estilos al final de replayBoard.scss).

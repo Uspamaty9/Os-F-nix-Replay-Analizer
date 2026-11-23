@@ -111,3 +111,41 @@ body.fenix-despejado .rs-layer { display: none; }
   button { all: unset; cursor: pointer; padding: 7px 14px; border-radius: 999px; background: var(--acc, #C89A3D); color: #111; font-weight: 700; } }
 body.fenix-despejado .rb-pickbar, body.fenix-panel-open .rb-pickbar { display: none !important; }
 .rb-pickbar[hidden], .rb-pop-btn[hidden], .rb-pop[hidden] { display: none !important; }
+
+/* ── Rediseño: dock flotante de cristal, herramientas agrupadas, acciones en píldora ── */
+.rb-layer {
+  --rb-glass: rgba(16, 18, 22, .86); --rb-line: rgba(255, 255, 255, .09); --rb-acc: var(--acc, #C89A3D);
+  .rb-bar, .rb-acts, .rb-linkbar {
+    background: var(--rb-glass); border: 1px solid var(--rb-line); backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .06);
+  }
+  .rb-bar { border-radius: 22px; padding: 8px 8px 9px; gap: 6px; }
+  .rb-row.tools { gap: 2px; padding: 0 2px; }
+  .rb-gap { flex: 0 0 1px; align-self: center; height: 24px; margin: 0 5px; background: var(--rb-line); }
+  .rb-t, .rb-a { background: transparent; border: 0; border-radius: 14px; color: #D8D4C8; transition: background .12s, color .12s, transform .08s; }
+  .rb-t:active, .rb-a:active { background: rgba(255, 255, 255, .1); }
+  .rb-t.on { background: var(--rb-acc); color: var(--btn-txt, #111); box-shadow: 0 3px 12px rgba(200, 154, 61, .45); }
+  .rb-t.team i { border-color: rgba(255, 255, 255, .85); }
+  .rb-row.sec { padding: 6px 4px 0; border-top: 1px solid var(--rb-line); gap: 10px; }
+  .rb-col { width: 30px; height: 30px; border: 2px solid rgba(255, 255, 255, .25); transition: transform .12s;
+    &.on { outline: none; border-color: #fff; box-shadow: 0 0 0 3px var(--rb-acc); transform: scale(1.05); } }
+  .rb-sep { display: none; }
+  .rb-row.sec .rb-a { background: rgba(255, 255, 255, .07); min-height: 38px; border-radius: 999px; padding: 0 14px; margin-left: 0;
+    &[data-act=width] { margin-left: auto; } &.on { background: var(--rb-acc); color: var(--btn-txt, #111); } }
+  .rb-acts { border-radius: 26px; padding: 6px; gap: 2px; }
+  .rb-acts .rb-a { background: transparent; border-radius: 50%; min-width: 46px; width: 46px; min-height: 46px; height: 46px; padding: 0; }
+  .rb-acts .rb-a.close { background: var(--rb-acc); color: var(--btn-txt, #111); box-shadow: 0 4px 14px rgba(200, 154, 61, .5); margin-bottom: 4px; }
+  .rb-acts .rb-a.danger.on { background: #C0392B; }
+  .rb-acts .rb-a:disabled { opacity: .3; }
+  .rb-linkbar { padding: 7px 8px 7px 18px; gap: 8px;
+    .lk-cols { border: 0; }
+    .lk-w, .lk-x { background: rgba(255, 255, 255, .08); border: 0; color: #F7F3E8; }
+    .lk-x { background: rgba(255, 255, 255, .08); color: #F7F3E8; }
+    .lk-go { box-shadow: 0 3px 12px rgba(200, 154, 61, .45); } }
+}
+.rb-pop, .stage > .rb-pop { inset: auto 0 150px auto !important; right: calc(var(--edge, 12px) + var(--inr, 0px) + 60px) !important; height: auto !important; border: 1px solid rgba(255, 255, 255, .09); border-radius: 20px; background: rgba(16, 18, 22, .94); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); padding: 8px;
+  .rb-pop-tools .rb-pop-tool { border: 0; background: rgba(255, 255, 255, .07); color: #F7F3E8; border-radius: 14px; .ic { color: var(--acc, #C89A3D); }
+    &.active { background: var(--acc, #C89A3D); color: #111; .ic { color: #111; } } } }
+.rb-more { border-radius: 14px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(16, 18, 22, .86); backdrop-filter: blur(10px); box-shadow: 0 6px 18px rgba(0, 0, 0, .4); }
+.rb-layer .rb-linkbar .lk-go:disabled { background: rgba(255, 255, 255, .1); color: rgba(247, 243, 232, .5); box-shadow: none; opacity: 1; }
+@media (max-width: 520px) { .rb-layer .rb-linkbar { gap: 4px; padding: 6px 8px; width: max-content; .lk-cols { gap: 3px; padding: 0 2px; } .rb-col { width: 20px; height: 20px; } .lk-w, .lk-x { width: 34px; height: 34px; } .lk-go { height: 34px; padding: 0 12px; } } }
