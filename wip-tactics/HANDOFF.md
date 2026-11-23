@@ -116,3 +116,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - Nueva hoja `.tx-menusheet` (estado `menuOpen`, `menuRef`, también en `__fenixBack` y Escape): Nueva, Abrir (`aria-label=Biblioteca`), Guardar, Cancha, Compartir (`Exportar`), Ajustes (`Panel`), vista del campo (`.tx-vseg`) y Salir. Icono `menu` en icons.js.
 - SCSS: bloque final "Rediseño minimalista" en tactics.scss (lo anterior queda como código muerto: `.tx-cbtn`, `.tx-menubar`, `.tx-home`).
 - Tests (ui/eraser/shadow) actualizados al nuevo flujo del menú.
+- Dock: ahora es UNA barra plana (sin píldora con contorno dentro de otro rectángulo). Iconos renovados en icons.js (select, pen, plus, erase, trash, undo, redo, more, menu, back); `more` usa trazo 3.2.
