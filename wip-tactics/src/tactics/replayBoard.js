@@ -427,7 +427,7 @@ function makeLayer(host, canvas) {
   const api = {
     layer, st,
     open() { if (st.open) return; st.open = true; layer.classList.add('open'); document.body.classList.add('rb-open'); renderUi(); st.dirty = true; wake(); prevBack = window.__fenixBack; window.__fenixBack = myBack; },
-    close() { if (!st.open) return; st.open = false; touches.clear(); multi = null; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; wake(); },
+    close() { if (!st.open) return; st.open = false; if (st.tool === 'link') { st.tool = 'pen'; st.sel = []; } layer.classList.remove('linkmode'); touches.clear(); multi = null; layer.classList.remove('open'); document.body.classList.remove('rb-open'); cv.style.pointerEvents = 'none'; if (window.__fenixBack === myBack) window.__fenixBack = prevBack; prevBack = null; wake(); },
     toggle() { st.open ? api.close() : api.open(); },
     openLink() { st.tool = 'link'; st.sel = []; st.confirm = false; api.open(); renderUi(); mark(); say('Toca 2 o más jugadores y pulsa Unir'); },
     undo, redo,

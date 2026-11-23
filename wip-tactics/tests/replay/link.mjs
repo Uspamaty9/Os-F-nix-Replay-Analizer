@@ -45,6 +45,11 @@ const alpha = async (wx, wy) => { const v = await pg.evaluate(() => window.__fen
 const base = await alpha(400, 240), part = await alpha(400, 160);
 assert.ok(part > base + 40, 'la parte dentro de la figura se sombrea más que el relleno: ' + part + ' vs ' + base);
 assert.equal(await alpha(400, 140), 0, 'la parte fuera no se sombrea');
+// al terminar la conexión, el botón de la cancha vuelve a abrir el menú normal de dibujo
+await pg.locator('.rb-linkbar .lk-x').click(); await pg.waitForTimeout(150);
+await pg.locator('.rb-btn').click(); await pg.waitForSelector('.rb-bar', { state: 'visible' });
+assert.equal(await pg.locator('.rb-linkbar').isVisible(), false, 'sin barra de conexión'); assert.equal(await pg.locator('.rb-t[data-tool=pen]').count(), 1, 'herramientas de dibujo');
+await pg.locator('.rb-btn').click().catch(() => {}); await pg.waitForTimeout(100);
 // salir de la repetición: se quita de una y no vuelve
 await pg.evaluate(() => window.dispatchEvent(new Event('fenix-replay-leave'))); await pg.waitForTimeout(100);
 assert.equal(await pg.locator('.rb-layer').count(), 0, 'capa fuera al salir'); assert.equal(await pg.locator('.rb-btn').count(), 0, 'botón fuera al salir');
