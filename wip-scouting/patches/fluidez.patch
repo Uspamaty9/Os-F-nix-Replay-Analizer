@@ -1,0 +1,70 @@
+--- a/src/game2.js	2026-11-22 23:15:31.446106584 -0500
++++ b/src/game2.js	2026-11-22 23:15:31.454705535 -0500
+@@ -213,15 +213,17 @@
+   var ch = cur - target, tmp = (vel + om * ch) * dt;
+   return [target + (ch + tmp) * ex, (vel - om * tmp) * ex];
+ }
+-function fenixCineCam(bx, by, vw, vh, S) {
++function fenixCineCam(bx, by, vw, vh, S, bvx0, bvy0) {
+   var fv = fenixView, now = performance.now(), a = fv.cine;
+   if (!a) a = fv.cine = { x: fv.camX != null ? fv.camX : bx, y: fv.camY != null ? fv.camY : by, vx: 0, vy: 0, bx: bx, by: by, bvx: 0, bvy: 0, t: now };
+-  var dt = Math.min(0.1, Math.max(0.004, (now - a.t) / 1000)); a.t = now;
++  var dt0 = Math.min(0.1, Math.max(0.004, (now - a.t) / 1000)); a.t = now;
++  a.dt = a.dt ? a.dt + (dt0 - a.dt) * 0.15 : dt0; var dt = a.dt;  // dt suavizado: los tirones de fotograma no se notan como olas de velocidad en la cámara
+   if (Math.abs(bx - a.bx) + Math.abs(by - a.by) > 450) { a.bvx = 0; a.bvy = 0; a.vx = 0; a.vy = 0; a.x = bx; a.y = by; }
+   else {
+     var k = Math.min(1, dt * 5);
+-    a.bvx += ((bx - a.bx) / dt - a.bvx) * k;
+-    a.bvy += ((by - a.by) / dt - a.bvy) * k;
++    var tvx = (typeof bvx0 === 'number' && isFinite(bvx0)) ? bvx0 * 60 : (bx - a.bx) / dt0, tvy = (typeof bvy0 === 'number' && isFinite(bvy0)) ? bvy0 * 60 : (by - a.by) / dt0;  // velocidad real del balón (por segundo), no la diferencia entre fotogramas
++    a.bvx += (tvx - a.bvx) * k;
++    a.bvy += (tvy - a.bvy) * k;
+   }
+   a.bx = bx; a.by = by;
+   var lx = Math.max(-vw * 0.22, Math.min(vw * 0.22, a.bvx * 0.45)), ly = Math.max(-vh * 0.22, Math.min(vh * 0.22, a.bvy * 0.45));
+@@ -10638,7 +10640,7 @@
+           translatetoDisc.x = followedP.H.a.x;
+           translatetoDisc.y = followedP.H.a.y;
+         } else if (playerToFollow === 'cine' && e && e.F && e.F[0]) {
+-          var fcam = fenixCineCam(e.F[0].a.x, e.F[0].a.y, n, m, c.S);
++          var fcam = fenixCineCam(e.F[0].a.x, e.F[0].a.y, n, m, c.S, e.F[0].D && e.F[0].D.x, e.F[0].D && e.F[0].D.y);
+           translatetoDisc.x = fcam.x;
+           translatetoDisc.y = fcam.y;
+         } else if (playerToFollow === 'ball' && e && e.F && e.F[0]) {
+--- a/src/recorder.js	2026-11-22 23:15:31.446971655 -0500
++++ b/src/recorder.js	2026-11-22 23:15:31.455747406 -0500
+@@ -39,11 +39,13 @@
+   ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H);
+   const src = { off, W, H, running: true, raf: 0 };
+   let last = 0;
+-  const gap = 1000 / (fps || 30) - 3;
++  const iv = 1000 / (fps || 30); let next = 0;
+   const draw = (t) => {
+     if (!src.running) return;
+     src.raf = requestAnimationFrame(draw);
+-    if (t - last < gap) return;
++    if (!next) next = t;
++    if (t + 2 < next) return;   // cadencia pareja (acumulada) en vez de un umbral fijo: evita fotogramas desiguales que se ven como olas de velocidad
++    next = Math.max(next + iv, t - iv * 0.5);
+     last = t;
+     const cw = canvas.width, ch = canvas.height;
+     if (!cw || !ch) return;
+@@ -51,6 +53,7 @@
+     const dx = Math.round((W - dw) / 2), dy = Math.round((H - dh) / 2);
+     if (dw !== W || dh !== H) { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H); }
+     try { ctx.drawImage(canvas, 0, 0, cw, ch, dx, dy, dw, dh); } catch (e) { }
++    try { if (src.track && src.track.requestFrame) src.track.requestFrame(); } catch (e) { }   // un fotograma grabado por cada fotograma dibujado
+   };
+   src.raf = requestAnimationFrame(draw);
+   src.stop = () => { src.running = false; cancelAnimationFrame(src.raf); };
+@@ -82,7 +85,9 @@
+     const aspect = (canvas.width || 1) / (canvas.height || 1);
+     const tier = await pickTier(mime, aspect, o.long || 1920, fps);
+     source = makeSource(canvas, tier[0], fps);
+-    stream = source.off.captureStream(fps);
++    stream = source.off.captureStream(0);
++    source.track = stream.getVideoTracks()[0];
++    if (!source.track || !source.track.requestFrame) { source.track = null; stream = source.off.captureStream(fps); }
+     const opt = { videoBitsPerSecond: tier[1] };
+     if (mime) opt.mimeType = mime;
+     mr = new window.MediaRecorder(stream, opt);

@@ -13,4 +13,5 @@ python3 "$R/wip-tactics/integrate.py" "$P/index.js"               # pizarra sobr
 ( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-sin-espera.patch" )   # entrar directo a la repetición
 ( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-cartel-gol.patch" )   # el motor avisa cuándo dibuja el cartel de gol (para las sombras)
 ( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/game2-capa-pizarra.patch" )   # capa de la pizarra bajo jugadores y aviso al salir de la repetición
+( cd "$PRJ" && patch -p1 < "$R/wip-scouting/patches/fluidez.patch" )   # cámara cine con velocidad real del balón y grabación de video con cadencia pareja
 rm -f "$OUT"; zip -qr "$OUT" haxball-replay-analyzer.github.io-react; echo "OK $OUT"; echo "$T" > /tmp/build-zip-last

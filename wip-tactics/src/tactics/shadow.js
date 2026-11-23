@@ -54,6 +54,13 @@ export function goalOpening(L, goal, circles) {
   return { open: total > 0 ? Math.max(0, 1 - cov / total) : 0, spans, blocked };
 }
 
+// Color de la sombra según el fondo del mapa (entero 0xRRGGBB del motor): sobre fondos oscuros una sombra casi negra no se ve, así que se pinta gris.
+export function shadowColor(bg) {
+  if (typeof bg !== 'number' || !isFinite(bg)) return 'rgba(6, 8, 22, 0.58)';
+  const r = (bg >> 16) & 255, g = (bg >> 8) & 255, b = bg & 255, lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum < 0.3 ? 'rgba(150, 156, 168, 0.42)' : 'rgba(6, 8, 22, 0.58)';
+}
+
 // Dibuja las sombras con una función de conversión sx/sy (mundo → píxeles) y un factor de escala k. `clip` = rectángulo en pantalla [x0,y0,x1,y1] opcional.
 export function paintShadows(ctx, tf, L, circles, opts = {}) {
   const quads = shadowQuads(L, circles, opts.reach || 3000);
@@ -62,7 +69,7 @@ export function paintShadows(ctx, tf, L, circles, opts = {}) {
   if (quads.length) {
     ctx.beginPath();
     for (const q of quads) { q.forEach((p, i) => { const X = tf.sx(p.x), Y = tf.sy(p.y); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.closePath(); }
-    ctx.fillStyle = 'rgba(6, 8, 22, 0.58)'; ctx.fill('nonzero');
+    ctx.fillStyle = shadowColor(opts.bg); ctx.fill('nonzero');
   }
   // resplandor del foco
   const bx = tf.sx(L.x), by = tf.sy(L.y), gr = (opts.glow || 70) * tf.k;
