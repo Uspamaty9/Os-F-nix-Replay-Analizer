@@ -15,6 +15,7 @@ import { setReplays, setReplaysLoaded, setReplaysType, setLoadingMore, addMoreRe
 import { openModal } from "./Modal";
 import Downloading from "./Downloading";
 import SettingsSheet from './SettingsSheet';
+import { toast } from "../extras";
 import ReplayFav from './ReplayFav';
 import TacticsBoard from '../tactics/TacticsBoard';
 import { scoutingPlayers, scoutingStadiums } from '../tactics/scoutingProvider';
@@ -416,9 +417,29 @@ function Home() {
     } catch (e) { /* sin acceso al historial */ }
   }
 
-  async function openSaved(id) {
+  // Partidos unidos: al llegar al final de una repetición se pasa sola a la siguiente de la lista
+  async function playNext() {
+    const pl = window.__fenixPlaylist;
+    if (!pl || pl.busy || pl.i + 1 >= pl.ids.length) return;
+    pl.busy = true;
+    try {
+      const nid = pl.ids[pl.i + 1]; const data = await getReplayData(nid);
+      if (!data) { pl.busy = false; return; }
+      pl.i++; window.__fenixCurrentId = nid;
+      try { toast('Parte ' + (pl.i + 1) + ' de ' + pl.ids.length); } catch (e) { /* nada */ }
+      dispatch(setConnectHalves(false)); dispatch(setConnectedHalves(false));
+      document.body.classList.add('fenix-analyzing');
+      const ld = document.getElementById('loading-screen');
+      if (ld) { ld.style.left = 'max(8vw, calc((100vw - 420px) / 2))'; ld.classList.add('fenix-loading-in'); }
+      setTimeout(() => { if (ld) ld.classList.remove('fenix-loading-in'); waitingForStats = true; replayFromSite(data); pl.busy = false; }, 430);
+    } catch (e) { pl.busy = false; }
+  }
+  useEffect(() => { const h = () => { playNext(); }; window.addEventListener('fenix-replay-end', h); return () => window.removeEventListener('fenix-replay-end', h); }, []); // eslint-disable-line
+
+  async function openSaved(id, chain) {
     const data = await getReplayData(id);
     if (!data) return;
+    window.__fenixPlaylist = Array.isArray(chain) && chain.length > 1 && chain.indexOf(id) >= 0 ? { ids: chain.slice(), i: chain.indexOf(id), busy: false } : null;
     window.__fenixCurrentId = id;
     dispatch(setUserUploaded(true));
     dispatch(setConnectHalves(false))
@@ -607,7 +628,7 @@ function Home() {
   }
 
   function legacyOpen(e) {
-    window.__fenixCurrentId = null;
+    window.__fenixCurrentId = null; window.__fenixPlaylist = null;
     dispatch(setUserUploaded(true));
     dispatch(setConnectHalves(false))
     dispatch(setConnectedHalves(false))

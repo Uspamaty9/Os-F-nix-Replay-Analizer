@@ -3,13 +3,14 @@ import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Prov, useConfirm, toast, saveFile, askExport, slug, stamp } from './ui';
 import { NetworkGraph, StackBar } from './charts';
 import { toInputDate, passNetwork, teamName, fmtPct, fmtNum, fmtDate, fmtDur } from './model';
-import { suggestTeams } from './ingest';
+import { suggestTeams, mergeMatches, undoMerge } from './ingest';
+import MergeSheet from './Merge';
 import { buildMatchReport } from './report';
 
 export default function Matches({ model, view, nav, params, openReplay }) {
   const sel = params && params.matchId && model.matchById.get(params.matchId);
   const [q, setQ] = useState(''); const [showEx, setShowEx] = useState(false); const [confirm, confirmEl] = useConfirm();
-  const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set());
+  const [merging, setMerging] = useState(null); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set());
   if (sel) return <Detail model={model} m={sel} nav={nav} openReplay={openReplay} />;
   // Borrar: van a la papelera (con sus calificaciones) y se pueden restaurar con «Deshacer» o desde Más > Papelera.
   const trashMatches = async (ms) => {
@@ -33,7 +34,7 @@ export default function Matches({ model, view, nav, params, openReplay }) {
         <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>
         {model.excluded.length > 0 && <button className={'sc-btn small' + (showEx ? '' : ' ghost')} onClick={() => setShowEx(!showEx)}>{showEx ? 'Ocultar excluidos' : 'Mostrar excluidos (' + model.excluded.length + ')'}</button>}
         {selMode && <><button className="sc-btn small ghost" onClick={() => setChk(new Set(list.map((m) => m.id)))}>Todos</button><button className="sc-btn small ghost" onClick={() => setChk(new Set())}>Ninguno</button>
-          {(() => { const picked = list.filter((m) => chk.has(m.id)); const allEx = picked.length > 0 && picked.every((m) => m.excluded); return <><button className="sc-btn small ghost" disabled={!picked.length} onClick={() => setEx(picked, !allEx)}>{allEx ? 'Incluir' : 'Excluir'} ({picked.length})</button><button className="sc-btn small danger" disabled={!picked.length} onClick={() => trashMatches(picked)}>Borrar ({picked.length})</button></>; })()}</>}
+          {(() => { const picked = list.filter((m) => chk.has(m.id)); const allEx = picked.length > 0 && picked.every((m) => m.excluded); return <><button className="sc-btn small ghost" disabled={!picked.length} onClick={() => setEx(picked, !allEx)}>{allEx ? 'Incluir' : 'Excluir'} ({picked.length})</button><button className="sc-btn small" disabled={picked.length < 2 || picked.some((m) => m.excluded)} onClick={() => setMerging(picked)}>Unir ({picked.length})</button><button className="sc-btn small danger" disabled={!picked.length} onClick={() => trashMatches(picked)}>Borrar ({picked.length})</button></>; })()}</>}
       </div>
       {!list.length ? <Empty>{model.matches.length ? 'Ningún partido coincide con los filtros.' : 'Aún no hay partidos. Abre una repetición desde el historial y, cuando termine de analizarse, aparecerá aquí con todas sus estadísticas.'}</Empty> : (
         <ul className="sc-list">{list.map((m) => <li key={m.id} className={m.excluded ? 'off' : ''} style={m.excluded ? { opacity: 0.55 } : undefined} onClick={() => (selMode ? setChk((c) => { const n = new Set(c); n.has(m.id) ? n.delete(m.id) : n.add(m.id); return n; }) : nav('matches', { matchId: m.id }))}>
@@ -42,6 +43,10 @@ export default function Matches({ model, view, nav, params, openReplay }) {
           <div className="mid"><b>{teamName(model, m.redTeamId, 'Rojo')} vs {teamName(model, m.blueTeamId, 'Azul')}</b><small>{m.rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{m.rec.parts.length > 1 ? ' · ' + m.rec.parts.length + ' tramos' : ''}{m.excluded ? ' · EXCLUIDO' : ''}</small></div>
           {!selMode && <span className="chev" style={{ color: 'var(--sc-mute)', fontSize: 20 }}>›</span>}</li>)}</ul>)}
       {confirmEl}
+      {merging && <MergeSheet items={merging} onClose={() => setMerging(null)} onDone={async (recs, swaps, name) => {
+        setMerging(null); const originals = recs.slice(); const rec = await mergeMatches(recs, swaps, name); setChk(new Set()); setSelMode(false);
+        if (rec) toast('Partidos unidos', { label: 'Deshacer', fn: async () => { await undoMerge(rec, originals); toast('Unión deshecha'); } });
+      }} />}
     </Card></div>
   );
 }
@@ -65,8 +70,10 @@ function Detail({ model, m, nav, openReplay }) {
       <button className="sc-link back" onClick={() => nav('matches', {})}>‹ Partidos</button>
       <Card className="sc-mhead"><div className="sc-bigscore"><div className="t r">{rn}</div><div className="s">{m.score[0]} <em>–</em> {m.score[1]}</div><div className="t b">{bn}</div></div>
         <small>{rec.name} · {fmtDate(m.date)} · {fmtDur(m.ticks)}{an.stadium ? ' · ' + an.stadium : ''}</small>
-        {rec.excluded && <p className="sc-note warn">Este partido está EXCLUIDO: no cuenta en el panel, jugadores, red de pases ni informes.</p>}
-        <div className="sc-row wrap"><button className="sc-btn small" onClick={() => openReplay(rec.replayId)}>▶ Ver repetición</button><button className="sc-btn small ghost" onClick={pdf}>Informe PDF</button><button className="sc-btn small ghost" onClick={() => nav('scouting', { matchId: m.id })}>Evaluar jugadores</button></div>
+        {rec.mergedFrom && <p className="sc-note">Partido unido de {rec.mergedFrom.length} repeticiones, vistas seguidas. <button className="sc-link" onClick={async () => { await undoMerge(rec, model.matches.concat(model.excluded).map((x) => x.rec)); nav('matches', {}); toast('Unión deshecha'); }}>Separarlas</button></p>}
+        {rec.excluded && rec.mergedInto && <p className="sc-note">Forma parte de un partido unido; por eso no cuenta por separado.</p>}
+        {rec.excluded && !rec.mergedInto && <p className="sc-note warn">Este partido está EXCLUIDO: no cuenta en el panel, jugadores, red de pases ni informes.</p>}
+        <div className="sc-row wrap"><button className="sc-btn small" onClick={() => openReplay(rec.replayId, rec.replayIds)}>▶ Ver {rec.replayIds && rec.replayIds.length > 1 ? 'las ' + rec.replayIds.length + ' repeticiones seguidas' : 'repetición'}</button><button className="sc-btn small ghost" onClick={pdf}>Informe PDF</button><button className="sc-btn small ghost" onClick={() => nav('scouting', { matchId: m.id })}>Evaluar jugadores</button></div>
         {(an.consistency.scoreMatchesGoals === false || an.consistency.passesMatch === false || an.consistency.kicksMatch === false) && <p className="sc-note warn">Aviso de coherencia: {an.consistency.scoreMatchesGoals === false ? 'el marcador no coincide con la lista de goles. ' : ''}{an.consistency.passesMatch === false ? 'pases reconstruidos ' + an.consistency.passesDerived + ' vs motor ' + an.consistency.passesEngine + '. ' : ''}{an.consistency.kicksMatch === false ? 'toques no coinciden con el contador del motor.' : ''}</p>}
         {an.spaceMode && <p className="sc-note">Partida en modo especial: los pases se reconstruyen de la secuencia de toques.</p>}
       </Card>

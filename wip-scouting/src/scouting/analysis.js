@@ -75,6 +75,38 @@ export function compactPart(m) {
   };
 }
 
+// ---------- 1b. Unir tramos de varias repeticiones en un solo partido ----------
+// parts = tramos compactos en orden; swaps[i] = true si en ese tramo los bandos están cambiados respecto al primero (p. ej. segundo tiempo).
+export function mergeParts(parts, swaps) {
+  const sw = (t) => (t === 'R' ? 'B' : t === 'B' ? 'R' : t);
+  const out = { v: 1, ticks: 0, spaceMode: false, stadium: '', scoreRed: 0, scoreBlue: 0, possRed: 0, possBlue: 0, thirds: [0, 0, 0], kicksRed: 0, kicksBlue: 0, passesRed: 0, passesBlue: 0, players: [], kicks: [], shots: [], goals: [], ep: {}, breaks: [] };
+  const idx = new Map(); let accR = 0, accB = 0;
+  const pmap = (nick) => { if (!idx.has(nick)) { idx.set(nick, out.players.length); out.players.push({ nick, nation: '', team: '' }); } return idx.get(nick); };
+  parts.forEach((pt, n) => {
+    const flip = !!(swaps && swaps[n]); const T = (t) => (flip ? sw(t) : t);
+    const map = pt.players.map((pl) => {
+      const i = pmap(pl.nick); const o = out.players[i]; const t = T(pl.team);
+      if (!o.nation) o.nation = pl.nation || '';
+      o.team = !o.team ? t : (t && t !== o.team ? 'RB' : o.team); // si cambió de bando, queda en ambos
+      return i;
+    });
+    const off = out.kicks.length;
+    if (off) out.breaks.push(off - 1);
+    pt.kicks.forEach((k) => out.kicks.push([map[k[0]], k[1] * (flip ? -1 : 1), k[2] * (flip ? -1 : 1)]));
+    pt.shots.forEach((sh) => out.shots.push([map[sh[0]], sh[1] >= 0 ? sh[1] + off : -1]));
+    const scR = flip ? pt.scoreBlue : pt.scoreRed, scB = flip ? pt.scoreRed : pt.scoreBlue;
+    pt.goals.forEach((g) => out.goals.push({ ki: g.ki >= 0 ? g.ki + off : -1, s: map[g.s], a: g.a >= 0 ? map[g.a] : -1, f: flip ? sw(g.f) : g.f, own: g.own, sc: g.sc ? (flip ? [accR + g.sc[1], accB + g.sc[0]] : [accR + g.sc[0], accB + g.sc[1]]) : null }));
+    Object.keys(pt.ep || {}).forEach((k) => { const i = map[k]; out.ep[i] = (out.ep[i] || 0) + pt.ep[k]; });
+    out.ticks += pt.ticks | 0; out.spaceMode = out.spaceMode || !!pt.spaceMode; if (!out.stadium) out.stadium = pt.stadium;
+    out.scoreRed += scR; out.scoreBlue += scB; accR += scR; accB += scB;
+    out.possRed += flip ? pt.possBlue : pt.possRed; out.possBlue += flip ? pt.possRed : pt.possBlue;
+    out.kicksRed += flip ? pt.kicksBlue : pt.kicksRed; out.kicksBlue += flip ? pt.kicksRed : pt.kicksBlue;
+    out.passesRed += flip ? pt.passesBlue : pt.passesRed; out.passesBlue += flip ? pt.passesRed : pt.passesBlue;
+    for (let i = 0; i < 3; i++) out.thirds[i] += (flip ? pt.thirds[2 - i] : pt.thirds[i]) | 0;
+  });
+  return out;
+}
+
 // ---------- 2. Analizar un tramo compacto ----------
 function blankPlayer(pi, p) {
   return { pi, nick: p.nick, nation: p.nation, team: p.team, goals: 0, assists: 0, ownGoals: 0, kicks: 0, shotsOT: 0, passesCompleted: 0, passesReceived: 0, passesFailed: 0, turnovers: 0, recoveries: 0, interceptions: 0, blocks: 0, keyPasses: 0, goalInvolvements: 0, consecutive: 0, sx: 0, sy: 0 };
@@ -87,6 +119,7 @@ export function analyzePart(part) {
   const shotKi = new Set(part.shots.filter((s) => s[1] >= 0).map((s) => s[1]));
   const goalKi = new Set(part.goals.filter((g) => g.ki >= 0 && !g.own).map((g) => g.ki));
   const goalKiAll = new Set(part.goals.filter((g) => g.ki >= 0).map((g) => g.ki)); // tras estos toques hay saque inicial
+  (part.breaks || []).forEach((k) => goalKiAll.add(k)); // empalmes de repeticiones unidas: tampoco hay pérdida ni recuperación entre el último toque de una y el primero de la siguiente
   const xs = part.kicks.map((k) => k[1]);
   const width = xs.length >= 10 ? Math.max.apply(null, xs) - Math.min.apply(null, xs) : 0;
   const dMin = width * INTERCEPT_RATIO;

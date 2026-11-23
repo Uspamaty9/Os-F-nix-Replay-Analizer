@@ -1,0 +1,10 @@
+--- a/src/game2.js	2026-11-22 23:39:00.865472616 -0500
++++ b/src/game2.js	2026-11-22 23:39:00.869192784 -0500
+@@ -5742,6 +5742,7 @@
+       10000, this.Qb > this.Fd && (this.Qb = this.Fd, this.Fd = - 1)) : this.Qb += b * this.pl;
+     a = this.mf * this.mh;
+     this.Qb > a && (this.Qb = a);
++    try { if (this.Qb >= a - 1 && a > 0) { if (!this.fenixEndSent) { this.fenixEndSent = 1; window.dispatchEvent(new Event('fenix-replay-end')); } } else this.fenixEndSent = 0; } catch (e) { }  // aviso de fin de repetición (para encadenar partidos unidos)
+     b = this.Qb * this.Ac;
+     a = b | 0;
+     for (this.sk = b - a; this.Y < a;) {

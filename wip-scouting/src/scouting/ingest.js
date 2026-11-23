@@ -1,7 +1,7 @@
 // Puente entre el analizador de repeticiones y el módulo de estadísticas.
 // Se llama cuando el motor termina de analizar una repetición; NO modifica el motor ni su flujo.
 import * as db from './db';
-import { compactPart, mainPartIndex } from './analysis';
+import { compactPart, mainPartIndex, mergeParts } from './analysis';
 import { getMeta, listReplays } from '../storage/history';
 
 export const normNick = (s) => String(s == null ? '' : s).trim().toLowerCase();
@@ -111,4 +111,29 @@ export async function pendingReplays() {
   const [reps, ms] = await Promise.all([listReplays(), db.all('matches')]);
   const have = new Set(ms.map((m) => m.replayId));
   return reps.filter((r) => !have.has(r.id));
+}
+
+// Unir varias repeticiones ya analizadas en UN solo partido (p. ej. primer y segundo tiempo guardados por separado).
+// recs = registros de 'matches' en orden; swaps[i] = true si en esa repetición los bandos están cambiados respecto a la primera.
+// Los registros originales quedan excluidos (para no contar dos veces) y enlazados, y se pueden recuperar con deshacerUnion.
+export async function mergeMatches(recs, swaps, name) {
+  if (!recs || recs.length < 2) return null;
+  const parts = recs.map((r) => r.parts[r.partIdx]).filter(Boolean);
+  if (parts.length < 2) return null;
+  const first = recs[0];
+  const rec = {
+    id: db.uid('m'), replayId: first.replayId, replayIds: recs.map((r) => r.replayId), mergedFrom: recs.map((r) => r.id), swaps: recs.map((_, i) => !!(swaps && swaps[i])),
+    name: name || recs.map((r) => r.name).join(' + '), date: Math.min.apply(null, recs.map((r) => r.date || Date.now())),
+    redTeamId: first.redTeamId || null, blueTeamId: first.blueTeamId || null, teamAuto: !!first.teamAuto,
+    seasonId: first.seasonId || null, competitionId: first.competitionId || null, fixtureId: first.fixtureId || null, round: first.round || '', notes: '',
+    createdAt: Date.now(), ingestedAt: Date.now(), parts: [mergeParts(parts, swaps)], partIdx: 0,
+  };
+  await db.putMany('matches', recs.map((r) => Object.assign({}, r, { excluded: true, mergedInto: rec.id })).concat([rec]));
+  return rec;
+}
+export async function undoMerge(rec, originals) {
+  const ids = new Set(rec.mergedFrom || []);
+  const back = (originals || []).filter((r) => ids.has(r.id)).map((r) => { const n = Object.assign({}, r); delete n.mergedInto; n.excluded = false; return n; });
+  if (back.length) await db.putMany('matches', back);
+  await db.del('matches', rec.id);
 }

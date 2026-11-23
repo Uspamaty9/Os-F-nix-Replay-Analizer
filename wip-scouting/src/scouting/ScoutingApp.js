@@ -29,7 +29,7 @@ export default function ScoutingApp({ onClose, openReplay }) {
   // al abrir el Centro: ¿hay jugadores nuevos pendientes de decidir?
   useEffect(() => { if (!model || askedNew.current) return; askedNew.current = true; db.getKv('pendingNewPlayers', []).then((ids) => { const live = ids.filter((i) => model.allPlayers.some((p) => p.id === i && !p.hidden)); if (live.length) setNewIds(live); }); }, [model]);
   const nav = useCallback((t, p) => { setTab(t); setParams(p || {}); const el = document.querySelector('.sc-main'); if (el) el.scrollTop = 0; }, []);
-  const open = useCallback((id) => { onClose(); openReplay(id); }, [onClose, openReplay]);
+  const open = useCallback((id, chain) => { onClose(); openReplay(id, chain); }, [onClose, openReplay]);
   let f = filters;
   if (model) { // limpia filtros que apuntan a elementos eliminados
     const ok = (list, id) => !id || list.some((x) => x.id === id);
