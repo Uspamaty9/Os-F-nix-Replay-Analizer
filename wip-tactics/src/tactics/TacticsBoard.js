@@ -51,6 +51,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const [anim, setAnim] = useState(false);
   const [bar, setBar] = useState(null); // bandeja de fichas abierta: 'red' | 'blue' | null
   const [menuOpen, setMenuOpen] = useState(false);
+  const [slots, setSlots] = useState(5); // fichas numeradas visibles en la bandeja (5–11)
   const [fieldOpen, setFieldOpen] = useState(false);
   const [stadiums, setStadiums] = useState([]);
   const matches = useSelector((st) => (st.gameStats ? st.gameStats.matches : null));
@@ -185,8 +186,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
 
   const addRegistered = (r) => {
     const ctl = ctlRef.current; if (!ctl) return;
-    ctl.addPlayerCenter({ nick: r.nick, regKey: r.key, team: r.team || 'neutral', color: TEAM_COLORS[r.team || 'neutral'] });
-    setPanel(true);
+    const tm = bar === 'red' || bar === 'blue' ? bar : (r.team || 'neutral');
+    ctl.addPlayerCenter({ nick: r.nick, regKey: r.key, team: tm, color: TEAM_COLORS[tm] });
   };
   const saveToRoster = async (p) => {
     const key = keyOf(p.nick); if (!key) return;
@@ -265,7 +266,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     const fresh = stadiums.find((g) => g.name === fieldName);
     if (fresh && JSON.stringify(fresh) !== fieldJson) ctl.setField(fresh);
   }, [stadiums, fieldName, fieldJson, ctl, s.play.state]);
-  const toggleBar = (k) => { setCat(null); setBar((b) => (b === k ? null : k)); };
+  const toggleBar = (k) => { setCat(null); setPanel(false); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = teamCount(s.doc, 'red'), nBlue = teamCount(s.doc, 'blue');
   const views = [['full', 'full', 'Cancha completa'], ['left', 'halfr', 'Media cancha izquierda'], ['right', 'halfl', 'Media cancha derecha']];
@@ -383,7 +384,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           {(bar === 'red' || bar === 'blue') && (
             <div className='tx-fly tx-roster' role='group' aria-label={'Fichas del equipo ' + (bar === 'red' ? 'rojo' : 'azul')}>
               <button type='button' className={'tx-tok ball'} onClick={() => ctl.placeBall(0, 0)} title='Poner el balón en el centro'><i><Icon name='ball' size={22} /></i><span>Balón</span></button>
-              {Array.from({ length: MAX_PER_TEAM }, (_, i) => i + 1).map((n) => {
+              {Array.from({ length: Math.min(MAX_PER_TEAM, Math.max(slots, ...s.doc.players.filter((q) => (q.team || 'red') === bar && !q.regKey).map((q) => Number(q.num) || 0))) }, (_, i) => i + 1).map((n) => {
                 const used = s.doc.players.some((q) => (q.team || 'red') === bar && Number(q.num) === n);
                 return (
                   <button type='button' key={n} className={'tx-tok ' + bar + (used ? ' used' : '')} onClick={() => ctl.addPlayerCenter({ team: bar, num: n })} title={'Ficha ' + n + (used ? ' (ya está en el campo)' : '')}>
@@ -391,10 +392,15 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
                   </button>
                 );
               })}
-              {registry.filter((r) => (r.team || 'neutral') === bar).map((r) => (
-                <button type='button' key={r.key} className={'tx-tok reg ' + bar} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}><i>{String(r.nick || '?').slice(0, 2)}</i><span>{r.nick}</span></button>
+              {slots < MAX_PER_TEAM && (
+                <button type='button' className='tx-tok add' onClick={() => setSlots((n) => Math.min(MAX_PER_TEAM, n + 1))} aria-label='Un jugador más' title={'Un jugador más (hasta ' + MAX_PER_TEAM + ')'}><i><Icon name='plus' size={22} /></i><span>Jugador {slots + 1}</span></button>
+              )}
+              {[...registry].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
+                <button type='button' key={r.key} className={'tx-tok reg ' + bar + (r.avatar ? ' av' : '')} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}>
+                  <i>{r.avatar ? <img src={r.avatar} alt='' /> : String(r.nick || '?').slice(0, 2)}</i><span>{r.nick}</span>
+                </button>
               ))}
-              <button type='button' className='tx-tok gear' onClick={() => setPanel(!panel)} title='Panel de la jugada y plantel'><i><Icon name='panel' size={22} /></i><span>Ajustes</span></button>
+              <button type='button' className='tx-tok gear' onClick={() => { setBar(null); setPanel(true); }} title='Panel de la jugada y plantel'><i><Icon name='panel' size={22} /></i><span>Ajustes</span></button>
             </div>
           )}
         </div>
@@ -409,7 +415,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <button type='button' className='tx-tile' onClick={() => { flush(); flash('Guardado'); setMenuOpen(false); }}><Icon name='save' size={24} /><span>Guardar</span></button>
               <button type='button' className='tx-tile' onClick={() => { setMenuOpen(false); setFieldOpen(true); }}><Icon name='board' size={24} /><span>Cancha</span></button>
               <button type='button' className='tx-tile' aria-label='Exportar' onClick={() => { setMenuOpen(false); setExpOpen(true); }}><Icon name='download' size={24} /><span>Compartir</span></button>
-              <button type='button' className={'tx-tile' + (panel ? ' on' : '')} aria-label='Panel' aria-pressed={panel} onClick={() => { setMenuOpen(false); setPanel(!panel); }}><Icon name='panel' size={24} /><span>Ajustes</span></button>
+              <button type='button' className={'tx-tile' + (panel ? ' on' : '')} aria-label='Panel' aria-pressed={panel} onClick={() => { setMenuOpen(false); setBar(null); setCat(null); setPanel(!panel); }}><Icon name='panel' size={24} /><span>Ajustes</span></button>
             </div>
             <div className='tx-vseg' role='group' aria-label='Vista del campo'>
               {views.map(([m, ic, vt]) => <button type='button' key={m} className={s.viewMode === m ? 'on' : ''} aria-label={vt} aria-pressed={s.viewMode === m} onClick={() => { ctl.setViewMode(m); setMenuOpen(false); }}><Icon name={ic} size={18} /><span>{m === 'full' ? 'Completa' : m === 'left' ? 'Izquierda' : 'Derecha'}</span></button>)}

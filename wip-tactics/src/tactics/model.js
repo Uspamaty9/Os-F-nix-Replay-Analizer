@@ -20,7 +20,7 @@ export const CATEGORIES = [
 ];
 
 // Máximo de fichas por equipo (el campo es de HaxBall: más jugadores no se pueden leer ni animar)
-export const MAX_PER_TEAM = 5;
+export const MAX_PER_TEAM = 11;
 export const teamCount = (doc, team) => doc.players.filter((q) => (q.team || 'red') === (team || 'red')).length;
 export const canAddPlayer = (doc, team) => teamCount(doc, team) < MAX_PER_TEAM;
 
