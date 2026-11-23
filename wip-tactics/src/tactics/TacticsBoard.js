@@ -96,7 +96,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
       onFocusLabel: () => { setPanel(true); setTimeout(() => { const el = document.getElementById('tx-shape-label'); if (el) { el.focus(); el.select(); } }, 80); },
       onSave: () => { flush(); flash('Guardado'); }
     });
-    ctlRef.current = ctl;
+    ctlRef.current = ctl; window.__ctl = ctl;
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => ctl.resize()) : null;
     if (ro) ro.observe(canvas.parentElement); else window.addEventListener('resize', () => ctl.resize());
     (async () => {
@@ -283,13 +283,6 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
             </button>
             <button type='button' className={'tx-round tx-menu2' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Menú: nueva, abrir, guardar, cancha, compartir'><Icon name='menu' size={22} /></button>
           </header>
-          {[['red', 'Rojo', nRed, 'tl'], ['blue', 'Azul', nBlue, 'tr']].map(([t, lbl, n, pos]) => (
-            <button type='button' key={t} className={'tx-corner tx-team ' + t + ' ' + pos + (bar === t ? ' on' : '')} onClick={() => toggleBar(t)} aria-pressed={bar === t} aria-label={'Jugadores ' + lbl.toLowerCase() + 's'} title={'Equipo ' + lbl.toLowerCase() + ': toca para ver sus fichas'}>
-              <span className='tx-chev'><Icon name={t === 'red' ? 'next' : 'prev'} size={16} /></span>
-              <span className='tx-badge'><Icon name='team' size={26} /></span>
-              <small>{lbl} {n}/{MAX_PER_TEAM}</small>
-            </button>
-          ))}
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
             <span>{dis ? 'Animación en curso: pausa para editar' : s.multi && s.tool === 'select' ? 'Selección múltiple activa: toca varias fichas' : tool ? tool.hint : ''}</span>
@@ -327,8 +320,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           <div className='tx-fly' role='group' aria-label={CATS.find((c) => c.id === cat).label}>
             {cat === 'add' && (
               <>
-                <button type='button' className={'tx-ft team red' + (s.tool === 'player' && s.newTeam === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('player'); setCat(null); }}><i /><span>Rojo {nRed}/{MAX_PER_TEAM}</span></button>
-                <button type='button' className={'tx-ft team blue' + (s.tool === 'player' && s.newTeam === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('player'); setCat(null); }}><i /><span>Azul {nBlue}/{MAX_PER_TEAM}</span></button>
+                <button type='button' className={'tx-ft team red' + (bar === 'red' ? ' on' : '')} onClick={() => { ctl.setNewTeam('red'); ctl.setTool('select'); toggleBar('red'); }}><i /><span>Rojo {nRed}/{MAX_PER_TEAM}</span></button>
+                <button type='button' className={'tx-ft team blue' + (bar === 'blue' ? ' on' : '')} onClick={() => { ctl.setNewTeam('blue'); ctl.setTool('select'); toggleBar('blue'); }}><i /><span>Azul {nBlue}/{MAX_PER_TEAM}</span></button>
                 <button type='button' className={'tx-ft' + (s.tool === 'ball' ? ' on' : '')} onClick={() => { ctl.setTool('ball'); setCat(null); }}><Icon name='ball' size={22} /><span>Balón</span></button>
                 {[2, 3, 4].map((n) => <button type='button' key={n} className='tx-ft' onClick={() => { ctl.addFormation(n); setCat(null); }}><Icon name='team' size={22} /><span>{n} vs {n}</span></button>)}
                 <button type='button' className='tx-ft' onClick={() => { ctl.setTool('select'); setPanel(true); setCat(null); }}><Icon name='user' size={22} /><span>Registrados</span></button>

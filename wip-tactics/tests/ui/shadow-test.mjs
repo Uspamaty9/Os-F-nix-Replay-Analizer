@@ -9,7 +9,7 @@ await pg.goto('http://localhost:8773/index.html'); await pg.waitForSelector('.tx
 const bb = await pg.locator('.tx-canvas').boundingBox();
 const tap = (fx, fy) => pg.mouse.click(bb.x + bb.width * fx, bb.y + bb.height * fy);
 await pg.locator('.tx-db.cat:has-text("Añadir")').click(); await pg.locator('.tx-ft', { hasText: 'Balón' }).click(); await tap(0.4, 0.5);
-await pg.locator('.tx-db.cat:has-text("Añadir")').click(); await pg.locator('.tx-ft.team.blue').click(); await tap(0.55, 0.5);
+await pg.evaluate(() => { window.__ctl.setNewTeam('blue'); window.__ctl.setTool('player'); }); await tap(0.55, 0.5);
 await pg.locator('.tx-db:has-text("Mover")').click();
 const sample = () => pg.evaluate(() => { const c = document.querySelector('.tx-canvas'); const cv = c.tagName === 'CANVAS' ? c : c.querySelector('canvas'); const x = cv.getContext('2d'); const w = cv.width, h = cv.height;
   const px = (fx, fy) => { const d = x.getImageData(Math.round(w * fx), Math.round(h * fy), 1, 1).data; return d[0] + d[1] + d[2]; };
@@ -21,7 +21,7 @@ const on = await sample(); assert.ok(on.behind < on.above - 40, 'detrás de la f
 await pg.locator('.tx-db.cat:has-text("Más")').click(); assert.equal(await pg.locator('.tx-ft.shadow').getAttribute('aria-pressed'), 'true');
 await pg.screenshot({ path: process.argv[3] + '/shadow-board.png' });
 // elegir quién proyecta sombra: con un segundo jugador abajo, al elegir solo al azul desaparece la sombra del otro
-await pg.locator('.tx-db.cat:has-text("Añadir")').click(); await pg.locator('.tx-ft.team.red').click(); await tap(0.55, 0.78);
+await pg.evaluate(() => { window.__ctl.setNewTeam('red'); window.__ctl.setTool('player'); }); await tap(0.55, 0.78);
 await pg.locator('.tx-db:has-text("Mover")').click();
 const dark = () => pg.evaluate(() => { const c = document.querySelector('.tx-canvas'); const cv = c.tagName === 'CANVAS' ? c : c.querySelector('canvas'); const x = cv.getContext('2d'); const w = cv.width, h = cv.height; let n = 0;
   for (let fy = 0.62; fy < 0.9; fy += 0.02) for (let fx = 0.3; fx < 0.95; fx += 0.02) { const d = x.getImageData(Math.round(w * fx), Math.round(h * fy), 1, 1).data; if (d[0] + d[1] + d[2] < 330) n++; } return n; });

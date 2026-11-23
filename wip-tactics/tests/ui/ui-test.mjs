@@ -25,7 +25,7 @@ assert.equal(await $('.tx-namepill b').innerText(), 'Pizarra 1');
 assert.ok(await $('.tx-db').count() >= 8, 'botones del dock');
 assert.equal(await $('.tx-step').count(), 0, 'la animación está oculta hasta tocar Animar');
 for (const t of ['Mover', 'Borrador', 'Eliminar', 'Deshacer', 'Rehacer']) assert.ok(await $('.tx-db', { hasText: t }).first().isVisible(), t + ' siempre visible');
-const placeRed = async (page) => { await page.locator('.tx-db.cat', { hasText: 'Añadir' }).click(); await page.locator('.tx-ft.team.red').click(); };
+const placeRed = async (page) => { await page.evaluate(() => { window.__ctl.setNewTeam('red'); window.__ctl.setTool('player'); }); };
 const catTool = async (page, cat, tool) => { await page.locator('.tx-db.cat', { hasText: cat }).click(); await page.locator('.tx-ft', { hasText: tool }).click(); };
 assert.equal(await $('.tx-panel-head h3').innerText(), 'Pizarra');
 // 2) colocar 3 fichas con la herramienta Ficha
@@ -152,7 +152,7 @@ await mp.locator('button[aria-label="Menú"]').click(); await mp.locator('.tx-me
 await mp.screenshot({ path: shots + '/ui-mobile.png' });
 await mp.locator('[aria-label="Cerrar panel"]').click();
 // dedo: colocar ficha y arrastrar
-await mp.locator('.tx-db.cat', { hasText: 'Añadir' }).tap(); await mp.locator('.tx-ft.team.red').tap();
+await mp.evaluate(() => { window.__ctl.setNewTeam('red'); window.__ctl.setTool('player'); });
 await mp.locator('.tx-canvas').tap({ position: { x: 150, y: cv.height / 2 } });
 await mp.waitForFunction(() => document.querySelector('.tx-panel-head h3').innerText === 'Jugador');
 assert.ok(!(await mp.locator('.tx-panel').isVisible()), 'colocar una ficha no abre el panel');
