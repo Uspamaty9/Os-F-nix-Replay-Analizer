@@ -425,13 +425,17 @@ function Home() {
     try {
       const nid = pl.ids[pl.i + 1]; const data = await getReplayData(nid);
       if (!data) { pl.busy = false; return; }
-      pl.i++; window.__fenixCurrentId = nid;
+      pl.i++;
       try { toast('Parte ' + (pl.i + 1) + ' de ' + pl.ids.length); } catch (e) { /* nada */ }
-      dispatch(setConnectHalves(false)); dispatch(setConnectedHalves(false));
-      document.body.classList.add('fenix-analyzing');
-      const ld = document.getElementById('loading-screen');
-      if (ld) { ld.style.left = 'max(8vw, calc((100vw - 420px) / 2))'; ld.classList.add('fenix-loading-in'); }
-      setTimeout(() => { if (ld) ld.classList.remove('fenix-loading-in'); waitingForStats = true; replayFromSite(data); pl.busy = false; }, 430);
+      // se sale de la repetición por el camino normal (reinicia el motor) y se entra en la siguiente
+      window.__fenixLeaveOk = true;
+      const lb = document.getElementById('button_leave'); if (lb) lb.click();
+      setTimeout(() => {
+        window.__fenixCurrentId = nid;
+        dispatch(setUserUploaded(true)); dispatch(setConnectHalves(false)); dispatch(setConnectedHalves(false));
+        setReplayId(null); waitingForSocket = true; waitingForStats = true;
+        fenixEnter(function () { replayFromSite(data); pl.busy = false; });
+      }, 800);
     } catch (e) { pl.busy = false; }
   }
   useEffect(() => { const h = () => { playNext(); }; window.addEventListener('fenix-replay-end', h); return () => window.removeEventListener('fenix-replay-end', h); }, []); // eslint-disable-line
