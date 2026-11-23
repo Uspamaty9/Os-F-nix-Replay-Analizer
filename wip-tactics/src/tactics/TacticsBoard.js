@@ -51,7 +51,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const [anim, setAnim] = useState(false);
   const [bar, setBar] = useState(null); // bandeja de fichas abierta: 'red' | 'blue' | null
   const [menuOpen, setMenuOpen] = useState(false);
-  const [generic, setGeneric] = useState(false); // con jugadores analizados, las fichas genéricas quedan ocultas
+  const [regMode, setRegMode] = useState(false); // bandeja: fichas numeradas o jugadores analizados
   const [slots, setSlots] = useState(5); // fichas numeradas visibles en la bandeja (5–11)
   const [fieldOpen, setFieldOpen] = useState(false);
   const [stadiums, setStadiums] = useState([]);
@@ -268,6 +268,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     const fresh = stadiums.find((g) => g.name === fieldName);
     if (fresh && JSON.stringify(fresh) !== fieldJson) ctl.setField(fresh);
   }, [stadiums, fieldName, fieldJson, ctl, s.play.state]);
+  useEffect(() => { if (cat) setBar(null); }, [cat]);
   const toggleBar = (k) => { setCat(null); setPanel(false); setBar((b) => (b === k ? null : k)); };
   const dis = s.play.state !== 'stopped';
   const nRed = s.doc.players.filter((q) => (q.team || 'red') === 'red').length, nBlue = s.doc.players.filter((q) => (q.team || 'red') === 'blue').length;
@@ -280,10 +281,9 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
           <header className='tx-top2'>
             <button type='button' className='tx-round tx-back' onClick={requestClose} aria-label='Volver al inicio' title='Volver al inicio'><Icon name='back' size={22} /></button>
-            <button type='button' className='tx-namepill' onClick={() => setMenuOpen(true)} title='Abrir el menú'>
+            <button type='button' className={'tx-namepill' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Menú: nueva, abrir, guardar, cancha, compartir'>
               <b>{s.doc.name}</b><i className={'tx-dot ' + saveState} aria-hidden='true' /><small className={'tx-sr tx-save ' + saveState}>{SAVE_TXT[saveState]}</small>
             </button>
-            <button type='button' className={'tx-round tx-menu2' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Menú: nueva, abrir, guardar, cancha, compartir'><Icon name='menu' size={22} /></button>
           </header>
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
@@ -378,16 +378,21 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
           )}
           {(bar === 'red' || bar === 'blue') && (
             <div className='tx-fly tx-roster' role='group' aria-label={'Fichas del equipo ' + (bar === 'red' ? 'rojo' : 'azul')}>
+              <button type='button' className='tx-tok close' onClick={() => setBar(null)} aria-label='Cerrar fichas' title='Cerrar'><i><Icon name='close' size={20} /></i><span>Cerrar</span></button>
               <button type='button' className={'tx-tok ball'} onClick={() => ctl.placeBall(0, 0)} title='Poner el balón en el centro'><i><Icon name='ball' size={22} /></i><span>Balón</span></button>
-              {[...registry].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
+              {regMode && (
+                <button type='button' className='tx-tok toggle' onClick={() => setRegMode(false)} title='Volver a las fichas numeradas'><i>1·2</i><span>Numeradas</span></button>
+              )}
+              {regMode && registry.length === 0 && <span className='tx-tok-empty'>Aún no hay jugadores analizados. Abre una repetición para analizarlos.</span>}
+              {regMode && [...registry].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
                 <button type='button' key={r.key} className={'tx-tok reg ' + bar + ((r.team || null) === bar ? ' mine' : '') + (s.doc.players.some((q) => q.regKey === r.key) ? ' used' : '') + (r.avatar ? ' av' : '')} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}>
                   <i>{r.avatar ? <img src={r.avatar} alt='' /> : String(r.nick || '?').slice(0, 2)}</i><span>{r.nick}</span>
                 </button>
               ))}
-              {registry.length > 0 && (
-                <button type='button' className={'tx-tok toggle' + (generic ? ' on' : '')} onClick={() => setGeneric(!generic)} aria-pressed={generic} title='Mostrar u ocultar las fichas numeradas'><i>{generic ? '1·2' : '#'}</i><span>Numeradas</span></button>
+              {!regMode && (
+                <button type='button' className='tx-tok toggle reg' onClick={() => setRegMode(true)} title='Jugadores ya analizados, con su avatar'><i><Icon name='user' size={22} /></i><span>Analizados</span></button>
               )}
-              {(registry.length === 0 || generic) && (
+              {!regMode && (
                 <>
               {Array.from({ length: Math.min(MAX_PER_TEAM, Math.max(slots, ...s.doc.players.filter((q) => (q.team || 'red') === bar && !q.regKey).map((q) => Number(q.num) || 0))) }, (_, i) => i + 1).map((n) => {
                 const used = s.doc.players.some((q) => (q.team || 'red') === bar && Number(q.num) === n);
