@@ -217,10 +217,18 @@ export class TacticsController {
   }
 
   // ------------------------------------------------------------ jugadores
+  // Quita las fichas predeterminadas (sin jugador analizado ni nombre) de un equipo
+  removeDefaultPlayers(team) {
+    if (this._locked()) return;
+    const ids = this.doc.players.filter((q) => (q.team || 'red') === team && !q.regKey && !q.nick).map((q) => q.id);
+    if (!ids.length) return;
+    this._apply(M.removePlayers(this.doc, ids)); this._fixSel(); this.emit();
+  }
+
   addPlayer(x, y, extra = {}) {
     if (this._locked()) return null;
     const team = extra.team || this.newTeam;
-    if (!M.canAddPlayer(this.doc, team)) { this.toast('Máximo ' + M.MAX_PER_TEAM + ' jugadores por equipo'); return null; }
+    if (!extra.regKey && !M.canAddPlayer(this.doc, team)) { this.toast('Máximo ' + M.MAX_PER_TEAM + ' jugadores por equipo'); return null; }
     const r = M.addPlayer(this.doc, this.fi, { x: G.clamp(x, -400, 400), y: G.clamp(y, -190, 190), team, ...extra });
     this._apply(r.doc);
     this.sel = { players: new Set([r.id]), shapes: new Set() };
