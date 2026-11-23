@@ -42,6 +42,7 @@ const I = {
   zoomout: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5M8 11h6',
   fit: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
   back: 'M15 5l-7 7 7 7',
+  menu: 'M4 7h16M4 12h16M4 17h16',
   close: 'M6 6l12 12M18 6L6 18',
   panel: 'M4 4h16v16H4zM15 4v16',
   multi: 'M4 4h9v9H4zM11 11h9v9h-9z',

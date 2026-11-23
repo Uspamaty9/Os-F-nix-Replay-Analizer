@@ -49,15 +49,16 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const [panel, setPanel] = useState(false);
   const [cat, setCat] = useState(null);
   const [anim, setAnim] = useState(false);
-  const [bar, setBar] = useState('tools'); // 'tools' | 'menu' | 'red' | 'blue' | null (barra inferior oculta)
+  const [bar, setBar] = useState(null); // bandeja de fichas abierta: 'red' | 'blue' | null
+  const [menuOpen, setMenuOpen] = useState(false);
   const [fieldOpen, setFieldOpen] = useState(false);
   const [stadiums, setStadiums] = useState([]);
   const matches = useSelector((st) => (st.gameStats ? st.gameStats.matches : null));
 
   const pending = useRef(null), timer = useRef(0), msgTimer = useRef(0), progT = useRef(0), notesT = useRef({});
   const abortRef = useRef(null);
-  const libRef = useRef(false), expRef = useRef(false), busyRef = useRef(null);
-  libRef.current = lib; expRef.current = expOpen; busyRef.current = busy;
+  const menuRef = useRef(false), libRef = useRef(false), expRef = useRef(false), busyRef = useRef(null);
+  menuRef.current = menuOpen; libRef.current = lib; expRef.current = expOpen; busyRef.current = busy;
   const fieldRef = useRef(false); fieldRef.current = fieldOpen;
 
   const flash = useCallback((m) => { setMsg(m); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(''), String(m).startsWith('✓') ? 5000 : 2600); }, []);
@@ -125,6 +126,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     window.__fenixBack = function () {
       const ctl = ctlRef.current;
       if (busyRef.current) { if (abortRef.current) abortRef.current.abort(); return 'ok'; }
+      if (menuRef.current) { setMenuOpen(false); return 'ok'; }
       if (fieldRef.current) { setFieldOpen(false); return 'ok'; }
       if (expRef.current) { setExpOpen(false); return 'ok'; }
       if (libRef.current) { setLib(false); return 'ok'; }
@@ -134,7 +136,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
     };
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      if (expRef.current) { setExpOpen(false); e.stopPropagation(); } else if (libRef.current) { setLib(false); e.stopPropagation(); }
+      if (menuRef.current) { setMenuOpen(false); e.stopPropagation(); } else if (expRef.current) { setExpOpen(false); e.stopPropagation(); } else if (libRef.current) { setLib(false); e.stopPropagation(); }
     };
     window.addEventListener('keydown', onKey, true);
     return () => { window.__fenixBack = prev; window.removeEventListener('keydown', onKey, true); };
@@ -269,12 +271,17 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const views = [['full', 'full', 'Cancha completa'], ['left', 'halfr', 'Media cancha izquierda'], ['right', 'halfl', 'Media cancha derecha']];
 
   const tree = (
-    <div className={'tx-root' + (panel ? ' panel-open' : '') + (bar ? '' : ' nobar') + (cat ? ' flyopen' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
+    <div className={'tx-root' + (panel ? ' panel-open' : '') + ((cat || bar) ? ' flyopen' : '')} data-ready={snap0 ? '1' : '0'} role='application' aria-label='Pizarra táctica'>
       <div className='tx-body'>
         <main className='tx-stage'>
           <canvas ref={canvasRef} className='tx-canvas' aria-label='Campo de HaxBall' />
-          <button type='button' className='tx-corner tx-home' onClick={requestClose} aria-label='Volver al inicio' title='Volver al inicio'><Icon name='back' size={22} /></button>
-          <div className='tx-title tx-sr'><b>{s.doc.name}</b><small className={'tx-save ' + saveState}>{SAVE_TXT[saveState]}</small></div>
+          <header className='tx-top2'>
+            <button type='button' className='tx-round tx-back' onClick={requestClose} aria-label='Volver al inicio' title='Volver al inicio'><Icon name='back' size={22} /></button>
+            <button type='button' className='tx-namepill' onClick={() => setMenuOpen(true)} title='Abrir el menú'>
+              <b>{s.doc.name}</b><i className={'tx-dot ' + saveState} aria-hidden='true' /><small className={'tx-sr tx-save ' + saveState}>{SAVE_TXT[saveState]}</small>
+            </button>
+            <button type='button' className={'tx-round tx-menu2' + (menuOpen ? ' on' : '')} onClick={() => setMenuOpen(true)} aria-label='Menú' aria-haspopup='dialog' title='Menú: nueva, abrir, guardar, cancha, compartir'><Icon name='menu' size={22} /></button>
+          </header>
           {[['red', 'Rojo', nRed, 'tl'], ['blue', 'Azul', nBlue, 'tr']].map(([t, lbl, n, pos]) => (
             <button type='button' key={t} className={'tx-corner tx-team ' + t + ' ' + pos + (bar === t ? ' on' : '')} onClick={() => toggleBar(t)} aria-pressed={bar === t} aria-label={'Jugadores ' + lbl.toLowerCase() + 's'} title={'Equipo ' + lbl.toLowerCase() + ': toca para ver sus fichas'}>
               <span className='tx-chev'><Icon name={t === 'red' ? 'next' : 'prev'} size={16} /></span>
@@ -282,8 +289,6 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <small>{lbl} {n}/{MAX_PER_TEAM}</small>
             </button>
           ))}
-          <button type='button' className={'tx-corner tx-cbtn bl' + (bar === 'menu' ? ' on' : '')} onClick={() => toggleBar('menu')} aria-pressed={bar === 'menu'} aria-label='Menú' title='Menú: nueva, abrir, guardar, cancha, exportar'><Icon name='board' size={26} /><span>Menú</span></button>
-          <button type='button' className={'tx-corner tx-cbtn br' + (bar === 'tools' ? ' on' : '')} onClick={() => toggleBar('tools')} aria-pressed={bar === 'tools'} aria-label='Herramientas' title='Herramientas de dibujo y animación'><Icon name='pen' size={26} /><span>Herramientas</span></button>
           <div className='tx-hintbar' aria-live='polite'>
             <b>{tool ? tool.label : ''}</b>
             <span>{dis ? 'Animación en curso: pausa para editar' : s.multi && s.tool === 'select' ? 'Selección múltiple activa: toca varias fichas' : tool ? tool.hint : ''}</span>
@@ -314,10 +319,10 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
         </aside>
       </div>
 
-      {bar && (
-        <div className={'tx-dockwrap bar-' + bar}>
-          {bar === 'tools' && anim && <Timeline ctl={ctl} s={s} progress={progress} />}
-          {bar === 'tools' && cat && cat !== 'more' && cat !== 'file' && cat !== 'view' && (
+      {(
+        <div className='tx-dockwrap'>
+          {anim && <Timeline ctl={ctl} s={s} progress={progress} />}
+          {cat && cat !== 'more' && (
           <div className='tx-fly' role='group' aria-label={CATS.find((c) => c.id === cat).label}>
             {cat === 'add' && (
               <>
@@ -342,7 +347,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
             )}
           </div>
         )}
-        {bar === 'tools' && cat === 'more' && (
+        {cat === 'more' && (
           <div className='tx-fly' role='group' aria-label='Más'>
             <button type='button' className={'tx-ft anim' + (anim ? ' on' : '')} onClick={() => { if (anim) { if (ctl) ctl.stop(); setAnim(false); } else setAnim(true); setCat(null); }} aria-pressed={anim} title='Mostrar pasos y reproducción'><Icon name='film' size={22} /><span>Animación</span></button>
             <button type='button' className={'tx-ft' + (s.tool === 'pan' ? ' on' : '')} onClick={() => { ctl.setTool('pan'); setCat(null); }} aria-pressed={s.tool === 'pan'} title='Desplazar el campo'><Icon name='pan' size={22} /><span>Mano</span></button>
@@ -357,21 +362,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
             <button type='button' className={'tx-ft danger' + (confirmClear ? ' on' : '')} disabled={!s.doc.players.length && !s.doc.shapes.length} onClick={() => { if (confirmClear) { ctl.clearBoard(); setConfirmClear(false); setCat(null); } else { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); } }}><Icon name='trash' size={22} /><span>{confirmClear ? '¿Seguro?' : 'Vaciar todo'}</span></button>
           </div>
         )}
-          {bar === 'menu' && cat === 'file' && (
-          <div className='tx-fly' role='group' aria-label='Archivo'>
-            <div className='tx-mname' title={s.doc.name}><b>{s.doc.name}</b><small className={saveState}>{SAVE_TXT[saveState]}</small></div>
-              <button type='button' className='tx-ft' onClick={() => newBoard()} title='Pizarra nueva'><Icon name='plus' size={22} /><span>Nueva</span></button>
-              <button type='button' className='tx-ft' onClick={() => { flush(); setLib(true); }} title='Abrir una pizarra guardada' aria-label='Biblioteca'><Icon name='folder' size={22} /><span>Abrir</span></button>
-              <button type='button' className='tx-ft' onClick={() => { flush(); flash('Guardado'); }} title='Guardar ahora'><Icon name='save' size={22} /><span>{saveState === 'saved' ? SAVE_TXT.saved : 'Guardar'}</span></button>
-          </div>
-          )}
-          {bar === 'menu' && cat === 'view' && (
-          <div className='tx-fly' role='group' aria-label='Vista'>
-              {views.map(([m, ic, t]) => <button type='button' key={m} className={'tx-ft' + (s.viewMode === m ? ' on' : '')} onClick={() => ctl.setViewMode(m)} title={t} aria-label={t} aria-pressed={s.viewMode === m}><Icon name={ic} size={22} /><span>{m === 'full' ? 'Completa' : m === 'left' ? 'Izquierda' : 'Derecha'}</span></button>)}
-              <button type='button' className='tx-ft' onClick={() => ctl.fit()} title='Ajustar al espacio' aria-label='Ajustar'><Icon name='fit' size={22} /><span>Ajustar</span></button>
-          </div>
-          )}
-          {bar === 'tools' && (
+          {(
             <div className='tx-dock' role='toolbar' aria-label='Herramientas'>
               <button type='button' className={'tx-db' + (s.tool === 'select' && !s.multi ? ' on' : '')} onClick={() => { ctl.setFlag('multi', false); ctl.setTool('select'); setCat(null); }} aria-pressed={s.tool === 'select' && !s.multi} title='Mover y seleccionar'><Icon name='select' size={22} /><span>Mover</span></button>
               {CATS.filter((c) => c.id !== 'more').map((c) => {
@@ -389,18 +380,8 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <button type='button' className={'tx-db cat' + (cat === 'more' ? ' open' : '') + (anim || s.shadow || s.tool === 'pan' || s.multi ? ' on' : '')} onClick={() => setCat(cat === 'more' ? null : 'more')} aria-expanded={cat === 'more'} title='Más'><Icon name='more' size={22} /><span>Más</span></button>
             </div>
           )}
-          {bar === 'menu' && (
-            <div className='tx-dock tx-menubar' role='toolbar' aria-label='Menú'>
-              <button type='button' className={'tx-db cat' + (cat === 'file' ? ' open' : '')} onClick={() => setCat(cat === 'file' ? null : 'file')} aria-expanded={cat === 'file'} title='Nueva, abrir y guardar'><Icon name='folder' size={22} /><span>Archivo</span></button>
-              <button type='button' className={'tx-db cat' + (cat === 'view' ? ' open' : '')} onClick={() => setCat(cat === 'view' ? null : 'view')} aria-expanded={cat === 'view'} title='Vista del campo'><Icon name='full' size={22} /><span>Vista</span></button>
-              <button type='button' className='tx-db' onClick={() => setFieldOpen(true)} title='Cambiar de cancha'><Icon name='board' size={22} /><span>Cancha</span></button>
-              <button type='button' className='tx-db' onClick={() => setExpOpen(true)} title='Exportar imagen, esquema, secuencia o animación' aria-label='Exportar'><Icon name='download' size={22} /><span>Compartir</span></button>
-              <button type='button' className={'tx-db' + (panel ? ' on' : '')} onClick={() => setPanel(!panel)} aria-pressed={panel} aria-label='Panel' title='Panel de la jugada: ajustes, plantel y notas'><Icon name='panel' size={22} /><span>Ajustes</span></button>
-              <button type='button' className='tx-db' onClick={requestClose} aria-label='Volver' title='Volver al inicio'><Icon name='back' size={22} /><span>Salir</span></button>
-            </div>
-          )}
           {(bar === 'red' || bar === 'blue') && (
-            <div className='tx-dock tx-roster' role='toolbar' aria-label={'Fichas del equipo ' + (bar === 'red' ? 'rojo' : 'azul')}>
+            <div className='tx-fly tx-roster' role='group' aria-label={'Fichas del equipo ' + (bar === 'red' ? 'rojo' : 'azul')}>
               <button type='button' className={'tx-tok ball'} onClick={() => ctl.placeBall(0, 0)} title='Poner el balón en el centro'><i><Icon name='ball' size={22} /></i><span>Balón</span></button>
               {Array.from({ length: MAX_PER_TEAM }, (_, i) => i + 1).map((n) => {
                 const used = s.doc.players.some((q) => (q.team || 'red') === bar && Number(q.num) === n);
@@ -416,6 +397,26 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
               <button type='button' className='tx-tok gear' onClick={() => setPanel(!panel)} title='Panel de la jugada y plantel'><i><Icon name='panel' size={22} /></i><span>Ajustes</span></button>
             </div>
           )}
+        </div>
+      )}
+      {menuOpen && (
+        <div className='tx-overlay tx-menuov' onClick={() => setMenuOpen(false)}>
+          <section className='tx-sheet tx-menusheet' role='dialog' aria-label='Menú' onClick={(e) => e.stopPropagation()}>
+            <div className='tx-sheet-head'><h3>{s.doc.name}<small className={saveState}>{SAVE_TXT[saveState]}</small></h3><button type='button' className='tx-icon' onClick={() => setMenuOpen(false)} aria-label='Cerrar'><Icon name='close' /></button></div>
+            <div className='tx-tiles'>
+              <button type='button' className='tx-tile' onClick={() => { setMenuOpen(false); newBoard(); }}><Icon name='plus' size={24} /><span>Nueva</span></button>
+              <button type='button' className='tx-tile' aria-label='Biblioteca' onClick={() => { setMenuOpen(false); flush(); setLib(true); }}><Icon name='folder' size={24} /><span>Abrir</span></button>
+              <button type='button' className='tx-tile' onClick={() => { flush(); flash('Guardado'); setMenuOpen(false); }}><Icon name='save' size={24} /><span>Guardar</span></button>
+              <button type='button' className='tx-tile' onClick={() => { setMenuOpen(false); setFieldOpen(true); }}><Icon name='board' size={24} /><span>Cancha</span></button>
+              <button type='button' className='tx-tile' aria-label='Exportar' onClick={() => { setMenuOpen(false); setExpOpen(true); }}><Icon name='download' size={24} /><span>Compartir</span></button>
+              <button type='button' className={'tx-tile' + (panel ? ' on' : '')} aria-label='Panel' aria-pressed={panel} onClick={() => { setMenuOpen(false); setPanel(!panel); }}><Icon name='panel' size={24} /><span>Ajustes</span></button>
+            </div>
+            <div className='tx-vseg' role='group' aria-label='Vista del campo'>
+              {views.map(([m, ic, vt]) => <button type='button' key={m} className={s.viewMode === m ? 'on' : ''} aria-label={vt} aria-pressed={s.viewMode === m} onClick={() => { ctl.setViewMode(m); setMenuOpen(false); }}><Icon name={ic} size={18} /><span>{m === 'full' ? 'Completa' : m === 'left' ? 'Izquierda' : 'Derecha'}</span></button>)}
+              <button type='button' aria-label='Ajustar' onClick={() => { ctl.fit(); setMenuOpen(false); }}><Icon name='fit' size={18} /><span>Ajustar</span></button>
+            </div>
+            <button type='button' className='tx-exit' onClick={() => { setMenuOpen(false); requestClose(); }}>Salir al inicio</button>
+          </section>
         </div>
       )}
       {expOpen && (

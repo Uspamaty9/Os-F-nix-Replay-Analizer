@@ -109,3 +109,10 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - FYI: en la repetición, Sombras de tiro y Conectar jugadores son botones propios (.rb-sh, .rb-ln) junto al sitio del antiguo ⋮; el ⋮ solo sale con sombras activas y abre «Quién proyecta sombra».
 - FYI (corrige la nota anterior): Sombras de tiro y Conectar jugadores son dos botones DENTRO del menú ⋮ (.rb-pop-tools); el ⋮ queda siempre visible.
 - FYI: al conectar jugadores en la repetición ya no sale el menú grande (.rb-bar/.rb-acts); solo una barra compacta .rb-linkbar (colores, grosor, Unir, terminar).
+
+## Rediseño minimalista de la pizarra (Claude B, a petición del usuario)
+- `TacticsBoard.js`: barra superior `.tx-top2` = botón atrás redondo en la ESQUINA (arriba-izq), píldora con el nombre de la pizarra y botón ☰ `aria-label="Menú"` (arriba-der). Los escudos rojo/azul bajaron (`top: 62px`).
+- Se eliminó el modo `bar` (Menú/Herramientas) y los botones de esquina `.tx-cbtn`: el dock de herramientas está siempre visible y flotante. La bandeja de fichas (escudo) es un `.tx-fly.tx-roster` sobre el dock.
+- Nueva hoja `.tx-menusheet` (estado `menuOpen`, `menuRef`, también en `__fenixBack` y Escape): Nueva, Abrir (`aria-label=Biblioteca`), Guardar, Cancha, Compartir (`Exportar`), Ajustes (`Panel`), vista del campo (`.tx-vseg`) y Salir. Icono `menu` en icons.js.
+- SCSS: bloque final "Rediseño minimalista" en tactics.scss (lo anterior queda como código muerto: `.tx-cbtn`, `.tx-menubar`, `.tx-home`).
+- Tests (ui/eraser/shadow) actualizados al nuevo flujo del menú.

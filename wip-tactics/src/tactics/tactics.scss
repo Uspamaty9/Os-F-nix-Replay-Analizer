@@ -378,3 +378,49 @@
 .tx-root .tx-fly .tx-mname { flex: 0 0 auto; justify-content: center; color: #F7F3E8; background: rgba(22, 20, 16, .5); border: 1px solid color-mix(in srgb, var(--tx-acc, #C89A3D) 45%, transparent); border-radius: 14px; padding: 0 12px; max-width: 150px; min-height: 42px; backdrop-filter: blur(6px); }
 .tx-root .tx-menubar .tx-db { flex: 1 1 0; min-width: 0; }
 .tx-root .tx-home { top: 8px; left: 78px; width: 42px; height: 42px; justify-content: center; border-radius: 12px; background: rgba(22, 20, 16, .5); border: 1px solid color-mix(in srgb, var(--tx-acc, #C89A3D) 45%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+/* ===== Rediseño minimalista (Claude B): esquina atrás, píldora de nombre, ☰ menú, dock flotante ===== */
+.tx-root {
+  --glass: rgba(14, 18, 26, .78);
+  --ring: rgba(255, 255, 255, .14);
+  --gold: #e8c15a;
+  [hidden] { display: none !important; }
+  .tx-top2 { position: absolute; z-index: 6; left: 0; right: 0; top: calc(8px + var(--int, 0px)); padding: 0 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; pointer-events: none; }
+  .tx-top2 > * { pointer-events: auto; }
+  .tx-round { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; padding: 0; color: #fff; background: var(--glass); border: 1px solid var(--ring); backdrop-filter: blur(8px); cursor: pointer; }
+  .tx-round.tx-back { border-color: var(--gold); color: var(--gold); }
+  .tx-round.on { background: var(--gold); color: #111; }
+  .tx-namepill { flex: 0 1 auto; min-width: 0; max-width: calc(100% - 120px); height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 999px; color: #fff; background: var(--glass); border: 1px solid var(--ring); font-size: 13px; cursor: pointer; }
+  .tx-namepill b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+  .tx-dot.dirty, .tx-dot.saving { background: #fbbf24; }
+  .tx-dot.error { background: #f87171; }
+  /* escudos bajados, simétricos y fuera de la esquina del botón atrás */
+  .tx-corner.tx-team { top: calc(62px + var(--int, 0px)); }
+  .tx-corner.tx-team.tl { left: 10px; right: auto; }
+  .tx-corner.tx-team.tr { right: 10px; left: auto; }
+  .tx-polybar, .tx-quick { top: auto; bottom: 44px; z-index: 4; }
+  .tx-hintbar { left: 50%; transform: translateX(-50%); bottom: 8px; max-width: calc(100% - 24px); }
+  /* dock flotante, siempre visible */
+  .tx-dockwrap { position: relative; margin: 8px 10px calc(10px + var(--inb, 0px)); padding: 0; border: 0; background: none; }
+  .tx-dockwrap .tx-dock { border-radius: 22px; background: var(--glass); border: 1px solid var(--ring); backdrop-filter: blur(10px); padding: 6px 8px; gap: 2px; justify-content: space-around; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
+  .tx-fly { background: transparent; border: 0; box-shadow: none; }
+  .tx-fly.tx-roster { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; }
+  /* hoja de menú */
+  .tx-menusheet { max-width: 420px; }
+  .tx-menusheet h3 { display: flex; flex-direction: column; gap: 2px; font-size: 16px; }
+  .tx-menusheet h3 small { font-size: 11px; font-weight: 400; opacity: .6; }
+  .tx-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+  .tx-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; border: 1px solid var(--ring); background: rgba(255, 255, 255, .05); color: inherit; font-size: 12px; cursor: pointer; }
+  .tx-tile.on { border-color: var(--gold); color: var(--gold); }
+  .tx-vseg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
+  .tx-vseg button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; font-size: 11px; border: 0; border-radius: 10px; background: none; color: inherit; cursor: pointer; }
+  .tx-vseg button.on { background: var(--gold); color: #111; }
+  .tx-vseg svg { width: 18px; height: 18px; }
+  .tx-tile svg { width: 24px; height: 24px; }
+  .tx-exit { display: block; margin: 14px auto 2px; background: none; border: 0; color: inherit; opacity: .6; font-size: 12px; text-decoration: underline; cursor: pointer; }
+}
+.tx-root .tx-panel { top: calc(60px + var(--int, 0px)); border-top-left-radius: 14px; }
+@media (max-width: 760px) { .tx-root .tx-panel { top: auto; border-top-left-radius: 0; } }
+.tx-root.flyopen .tx-hintbar { display: none; }
+@media (max-height: 520px) { .tx-root .tx-hintbar { display: none; } }
