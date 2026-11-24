@@ -6,7 +6,9 @@ import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, teamName,
 import { CRITERIA, finalRatings } from './analysis';
 
 const AUTO_HINT = {
-  passing: 'Posición percentil de la precisión de pases (completados / intentos).', finishing: 'Media de los percentiles de goles y tiros a puerta.', defense: 'Percentil de bloqueos + intercepciones.', recoveries: 'Percentil de recuperaciones.', involvement: 'Percentil de la cuota de toques del equipo.', creation: 'Media de los percentiles de asistencias y pases clave.',
+  positioning: 'Reparto de su juego entre ataque y defensa, dominio del balón de su equipo y su peso en los toques.', vision: 'Pases clave y asistencias, con la calidad de sus pases completados.',
+  passing: 'Precisión de pases (completados / intentos), comparada con el resto cuando hay datos.', finishing: 'Goles y tiros a puerta (los autogoles restan).', defense: 'Bloqueos e intercepciones, y los goles que encajó su equipo.',
+  recoveries: 'Balones recuperados.', involvement: 'Su cuota de los toques del equipo.', creation: 'Asistencias y pases que acaban en tiro.', decisions: 'Cuidar el balón (pérdidas por toque) y elegir bien los tiros.',
 };
 
 export default function Scouting({ model, view, nav, params }) {
@@ -34,15 +36,14 @@ function Evaluate({ model, view, params, nav }) {
   useEffect(() => { const r = key ? model.ratingMap.get(key) : null; setDraft({ manual: { ...((r && r.manual) || {}) }, notes: (r && r.notes) || '' }); setDirty(false); }, [key, model.ratingMap]);
   if (!model.matches.length) return <Card><Empty>Sin partidos analizados. Las calificaciones se vinculan siempre a un partido y a un jugador.</Empty></Card>;
   if (!m) return null;
-  const setC = (id, v) => { setDraft((d) => ({ ...d, manual: { ...d.manual, [id]: v } })); setDirty(true); };
-  const fin = rt ? rt.final : null; const auto = rt ? rt.auto : null;
+    const fin = rt ? rt.final : null; const auto = rt ? rt.auto : null;
   // la nota final de la vista previa usa el borrador (antes de guardar)
-  const preview = cur ? finalRatings(draft.manual, auto) : null;
+  const preview = cur ? finalRatings(null, auto) : null;
   async function save() {
-    const manual = {}; Object.keys(draft.manual).forEach((k) => { const v = draft.manual[k]; if (v !== null && v !== '' && v !== undefined && !isNaN(+v)) manual[k] = Math.max(0, Math.min(10, +v)); });
-    await db.put('ratings', { id: key, matchId: m.id, playerId: cur.playerId, manual, notes: draft.notes.trim(), updatedAt: Date.now() }); setDirty(false); toast('Calificación guardada');
+    const manual = {}; // las calificaciones son automáticas: solo se guardan las notas
+    await db.put('ratings', { id: key, matchId: m.id, playerId: cur.playerId, manual, notes: draft.notes.trim(), updatedAt: Date.now() }); setDirty(false); toast('Notas guardadas');
   }
-  async function clearAll() { await db.del('ratings', key); toast('Calificación manual borrada'); }
+  async function clearAll() { await db.del('ratings', key); toast('Notas borradas'); }
   const mates = cur ? players.filter((r) => r.side === cur.side && r.playerId !== cur.playerId).map((r) => { const g = getRating(model, m.id, r.playerId); return g && g.final && g.final.values.overall != null ? g.final.values.overall : null; }).filter((v) => v != null) : [];
   const mateAvg = mates.length ? mates.reduce((a, b) => a + b, 0) / mates.length : null;
   const sides = { R: teamName(model, m.redTeamId, 'Rojo'), B: teamName(model, m.blueTeamId, 'Azul') };
@@ -55,22 +56,21 @@ function Evaluate({ model, view, params, nav }) {
       </Card>
       {cur && <>
         <Card className="sc-phead"><Avatar player={model.playerById.get(cur.playerId)} size={52} /><div className="mid"><h2>{cur.nick}</h2><small>{sides[cur.side]} · {m.score[0]}–{m.score[1]} · {fmtDate(m.date)}</small></div>
-          <div className="sc-bigrate"><b>{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}</b><small>{preview && preview.sources.overall ? (preview.sources.overall === 'manual' ? 'Manual' : 'Calculada') : 'sin nota'}</small>{mateAvg != null && preview && preview.values.overall != null && <small className="sc-vs2">Equipo: {fmtNum(mateAvg, 1)} ({preview.values.overall - mateAvg >= 0 ? '+' : ''}{fmtNum(preview.values.overall - mateAvg, 1)})</small>}</div></Card>
+          <div className="sc-bigrate"><b>{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}</b><small>{preview && preview.sources.overall ? 'Calculada' : 'sin nota'}</small>{mateAvg != null && preview && preview.values.overall != null && <small className="sc-vs2">Equipo: {fmtNum(mateAvg, 1)} ({preview.values.overall - mateAvg >= 0 ? '+' : ''}{fmtNum(preview.values.overall - mateAvg, 1)})</small>}</div></Card>
         <div className="sc-kpis small"><Kpi label="Goles" value={cur.goals} prov="auto" /><Kpi label="Asist." value={cur.assists} prov="auto" /><Kpi label="Toques" value={cur.kicks} prov="auto" /><Kpi label="Pases" value={cur.passesCompleted + '/' + (cur.passesCompleted + cur.passesFailed)} prov="calc" sub={fmtPct(cur.passAccuracy)} /><Kpi label="Rec.+Int." value={cur.recoveries + cur.interceptions} prov="calc" /></div>
-        {auto && !auto.enough && <p className="sc-note warn">Valoración automática no disponible. {auto.reason}</p>}
-        <Card title="Criterios (0–10)" right={<span className="sc-sub">manual prevalece sobre automático</span>}>
-          {CRITERIA.map((c) => { const mv = draft.manual[c.id]; const av = auto && auto.values ? auto.values[c.id] : null; const has = mv !== undefined && mv !== null && mv !== ''; const shown = has ? +mv : av != null ? av : 5;
+        <Card title="Criterios (0–10)" right={<span className="sc-sub">calculados con el partido</span>}>
+          {auto && auto.reason && <p className="sc-note">{auto.reason}</p>}
+          {CRITERIA.map((c) => { const v = fin ? fin.values[c.id] : null;
             return (<div className="sc-crit" key={c.id}>
-              <div className="top"><b>{c.label}</b><span className={'val' + (has ? '' : ' dim')}>{has ? fmtNum(+mv, 1) : av != null ? fmtNum(av, 1) : '—'}{has ? <Prov k="manual" /> : av != null ? <Prov k="calc" /> : null}</span></div>
-              <input type="range" min="0" max="10" step="0.5" value={shown} onChange={(e) => setC(c.id, +e.target.value)} aria-label={c.label} />
-              <div className="sub">{c.auto ? (av != null ? <span>Auto: <b>{fmtNum(av, 1)}</b> <small>{AUTO_HINT[c.id]}</small></span> : <span>Auto: sin datos suficientes</span>) : <span>Solo manual: el motor no registra este dato.</span>}
-                <span className="act">{av != null && <button className="sc-link" onClick={() => setC(c.id, av)}>Usar auto</button>}{has && <button className="sc-link" onClick={() => setC(c.id, null)}>Quitar</button>}</span></div>
+              <div className="top"><b>{c.label}</b><span className="val">{v != null ? fmtNum(v, 1) : '—'}<Prov k="calc" /></span></div>
+              <div className="sc-bar" role="img" aria-label={c.label + ' ' + (v != null ? v : 0) + ' de 10'} style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (v != null ? v * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
+              <div className="sub"><span><small>{AUTO_HINT[c.id]}</small></span></div>
             </div>); })}
-          <div className="sc-crit"><div className="top"><b>Rendimiento general</b><span className="val">{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}{preview && preview.sources.overall && <Prov k={preview.sources.overall} />}</span></div>
-            <input type="range" min="0" max="10" step="0.5" value={draft.manual.overall != null && draft.manual.overall !== '' ? +draft.manual.overall : preview && preview.values.overall != null ? preview.values.overall : 5} onChange={(e) => setC('overall', +e.target.value)} aria-label="Rendimiento general" />
-            <div className="sub"><span>Si no la fijas, es la media de los criterios disponibles (mínimo 3).</span><span className="act">{draft.manual.overall != null && <button className="sc-link" onClick={() => setC('overall', null)}>Quitar</button>}</span></div></div>
+          <div className="sc-crit"><div className="top"><b>Rendimiento general</b><span className="val">{fin && fin.values.overall != null ? fmtNum(fin.values.overall, 1) : '—'}<Prov k="calc" /></span></div>
+            <div className="sc-bar" style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (fin && fin.values.overall != null ? fin.values.overall * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
+            <div className="sub"><span><small>75 % la media de los criterios + 25 % el resultado del partido{auto && auto.result != null ? ' (' + fmtNum(auto.result, 1) + ': ' + m.score[cur.side === 'R' ? 0 : 1] + '–' + m.score[cur.side === 'R' ? 1 : 0] + ' para su equipo)' : ''}.</small></span></div></div>
           <label className="sc-field"><span>Notas del partido <Prov k="manual" /></span><textarea rows={4} placeholder="Observaciones, puntos fuertes, a mejorar…" value={draft.notes} onChange={(e) => { setDraft((d) => ({ ...d, notes: e.target.value })); setDirty(true); }} /></label>
-          <div className="sc-row end"><button className="sc-btn ghost" onClick={() => nav('players', { playerId: cur.playerId })}>Ver perfil</button>{rt && rt.record && <button className="sc-btn ghost danger" onClick={clearAll}>Borrar manual</button>}<button className="sc-btn" disabled={!dirty} onClick={save}>{dirty ? 'Guardar' : 'Guardado'}</button></div>
+          <div className="sc-row end"><button className="sc-btn ghost" onClick={() => nav('players', { playerId: cur.playerId })}>Ver perfil</button>{rt && rt.record && rt.record.notes && <button className="sc-btn ghost danger" onClick={clearAll}>Borrar notas</button>}<button className="sc-btn" disabled={!dirty} onClick={save}>{dirty ? 'Guardar notas' : 'Notas guardadas'}</button></div>
         </Card>
         {preview && CRITERIA.some((c) => preview.values[c.id] != null) && <Card title="Perfil del partido"><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: cur.nick, values: preview.values }]} /></div></Card>}
       </>}

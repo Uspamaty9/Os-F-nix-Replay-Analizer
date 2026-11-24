@@ -28,7 +28,7 @@ export const DEFINITIONS = [
   ['Posesión', 'auto', 'Reparto de ticks en que el último toque fue de cada equipo (dato del motor).'],
   ['Conversión', 'calc', 'Goles / tiros a puerta. Puede superar 100 % si hubo goles sin trayectoria registrada como tiro.'],
   ['Valoración automática', 'calc', 'Posición percentil (0–10) del jugador frente al resto de actuaciones guardadas. Solo se muestra con ≥ 8 actuaciones de ≥ 2 partidos. 5,0 = mediana.'],
-  ['Calificaciones y notas', 'manual', 'Las introduce el usuario. Un valor manual siempre prevalece sobre el automático.'],
+  ['Calificaciones', 'calc', 'Se calculan solas con el resultado del partido, los goles, tiros, pases, toques y recuperaciones del jugador (y su comparación con el resto de actuaciones guardadas). Las notas escritas son del usuario.'],
 ];
 
 const r1 = (n) => Math.round(n * 10) / 10;
@@ -231,15 +231,15 @@ export function aggregateRows(rows) {
 
 // ---------- 4. Calificaciones ----------
 export const CRITERIA = [
-  { id: 'positioning', label: 'Posicionamiento', auto: false },
-  { id: 'vision', label: 'Visión de juego', auto: false },
+  { id: 'positioning', label: 'Posicionamiento', auto: true },
+  { id: 'vision', label: 'Visión de juego', auto: true },
   { id: 'passing', label: 'Precisión de pases', auto: true },
   { id: 'finishing', label: 'Definición', auto: true },
   { id: 'defense', label: 'Defensa', auto: true },
   { id: 'recoveries', label: 'Recuperaciones', auto: true },
   { id: 'involvement', label: 'Participación', auto: true },
   { id: 'creation', label: 'Creación de oportunidades', auto: true },
-  { id: 'decisions', label: 'Decisiones', auto: false },
+  { id: 'decisions', label: 'Decisiones', auto: true },
 ];
 export const MIN_POP_ROWS = 8, MIN_POP_MATCHES = 2, MIN_PLAYER_KICKS = 3;
 
@@ -249,37 +249,70 @@ function pctRank(v, pop) {
   return (lt + 0.5 * eq) / pop.length;
 }
 const mean = (a) => { const v = a.filter((x) => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+const clamp10 = (x) => Math.max(0, Math.min(10, x));
 
-// population: filas {matchId, ...métricas}. Devuelve { values: {critId: 0-10|null}, enough, reason }
+// Nota del resultado del partido para el equipo del jugador (0–10): victoria 7–10 según la diferencia, empate 5, derrota 0–3.
+export function resultScore(gf, ga) {
+  if (gf == null || ga == null) return null;
+  const d = gf - ga;
+  return d > 0 ? Math.min(10, 7 + 0.75 * d) : d < 0 ? Math.max(0, 3 + 0.75 * d) : 5;
+}
+
+// TODAS las calificaciones salen del motor: del partido (resultado, goles, tiros, pases, toques, recuperaciones…) y, si hay suficientes datos,
+// se mezclan con el percentil del jugador frente al resto de actuaciones guardadas. No hay nada manual.
+// row.ctx = contexto del equipo en ese partido { gf, ga, poss, size, shotsOTAgainst }.
 export function autoRatings(row, population) {
-  const matchesInPop = new Set(population.map((r) => r.matchId)).size;
-  if (population.length < MIN_POP_ROWS || matchesInPop < MIN_POP_MATCHES) return { values: {}, enough: false, reason: 'Datos insuficientes: se necesitan al menos ' + MIN_POP_ROWS + ' actuaciones de ' + MIN_POP_MATCHES + ' partidos (hay ' + population.length + ' de ' + matchesInPop + ').' };
-  if (row.kicks < MIN_PLAYER_KICKS) return { values: {}, enough: false, reason: 'El jugador tiene menos de ' + MIN_PLAYER_KICKS + ' toques en este partido.' };
+  const ctx = row.ctx || {};
+  const popOk = population.length >= MIN_POP_ROWS && new Set(population.map((r) => r.matchId)).size >= MIN_POP_MATCHES;
   const col = (f) => population.map(f);
-  const acc = (r) => { const a = r.passesCompleted + r.passesFailed; return a >= 3 ? r.passesCompleted / a : null; };
-  const popAcc = col(acc).filter((x) => x != null);
-  const s = (p) => (p == null ? null : Math.round(p * 100) / 10);
-  const v = {
-    passing: s(pctRank(acc(row), popAcc)),
-    finishing: s(mean([pctRank(row.goals, col((r) => r.goals)), pctRank(row.shotsOT, col((r) => r.shotsOT))])),
-    defense: s(pctRank(row.blocks + row.interceptions, col((r) => r.blocks + r.interceptions))),
-    recoveries: s(pctRank(row.recoveries, col((r) => r.recoveries))),
-    involvement: s(pctRank(row.kickShare, col((r) => r.kickShare).filter((x) => x != null))),
-    creation: s(mean([pctRank(row.assists, col((r) => r.assists)), pctRank(row.keyPasses, col((r) => r.keyPasses))])),
-  };
-  return { values: v, enough: true, reason: '' };
+  const att = row.passesCompleted + row.passesFailed;
+  const acc = att >= 3 ? row.passesCompleted / att : null;
+  const accOf = (r) => { const a = r.passesCompleted + r.passesFailed; return a >= 3 ? r.passesCompleted / a : null; };
+  const blend = (abs, pct) => (abs == null ? null : popOk && pct != null ? 0.5 * abs + 0.5 * (pct * 10) : abs);
+  const lowData = row.kicks < MIN_PLAYER_KICKS;
+  const size = ctx.size > 0 ? ctx.size : 3;
+  const share = row.kickShare != null ? row.kickShare : null;
+
+  // ---- criterios (siempre un valor 0–10)
+  const passing = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : 5;
+  const shots = row.shotsOT + row.goals;
+  const finAbs = clamp10(5 + 1.8 * row.goals + 0.6 * Math.max(0, row.shotsOT - row.goals) - 1.5 * row.ownGoals);
+  const finishing = blend(finAbs, mean([pctRank(row.goals, col((r) => r.goals)), pctRank(row.shotsOT, col((r) => r.shotsOT))]));
+  const defCount = row.blocks + row.interceptions;
+  const concededPenalty = ctx.ga != null ? Math.min(2.5, 0.6 * ctx.ga) : 0, cleanBonus = ctx.ga === 0 ? 1 : 0;
+  const defAbs = clamp10(5 + 1.1 * defCount + (row.defParticipation != null ? 1.5 * (row.defParticipation - 1 / size) * size / 2 : 0) - concededPenalty + cleanBonus - 1.5 * row.ownGoals);
+  const defense = blend(defAbs, pctRank(defCount, col((r) => r.blocks + r.interceptions)));
+  const recAbs = clamp10(4 + 1.0 * row.recoveries + 0.4 * row.interceptions);
+  const recoveries = blend(recAbs, pctRank(row.recoveries, col((r) => r.recoveries)));
+  const invAbs = share != null ? clamp10(5 * (share * size)) : 5;
+  const involvement = blend(invAbs, share != null ? pctRank(share, col((r) => r.kickShare).filter((x) => x != null)) : null);
+  const creAbs = clamp10(4 + 2.2 * row.assists + 1.0 * row.keyPasses);
+  const creation = blend(creAbs, mean([pctRank(row.assists, col((r) => r.assists)), pctRank(row.keyPasses, col((r) => r.keyPasses))]));
+  // Posicionamiento: participa en las dos fases (ataque y defensa) y el equipo domina el balón cuando él juega.
+  const bal = row.offParticipation != null && row.defParticipation != null ? 1 - Math.min(1, Math.abs(row.offParticipation - row.defParticipation) * size) : 0.5;
+  const dom = ctx.poss != null ? ctx.poss - 0.5 : 0;
+  const positioning = clamp10(4 + 3 * bal + 6 * dom + (share != null ? 2 * Math.min(1, share * size / 2) : 0));
+  // Visión de juego: pases clave y asistencias, con pases completados de calidad.
+  const vision = clamp10(0.45 * creation + 0.35 * passing + 0.2 * involvement);
+  // Decisiones: cuidar el balón (pérdidas por toque) y elegir bien los tiros.
+  const sec = row.kicks > 0 ? 1 - row.turnovers / row.kicks : null;
+  const decAbs = sec != null ? clamp10((sec - 0.45) / 0.5 * 10) : 5;
+  const decisions = clamp10(shots > 0 ? 0.8 * decAbs + 0.2 * finAbs : decAbs);
+  const values = { positioning, vision, passing, finishing, defense, recoveries, involvement, creation, decisions };
+  Object.keys(values).forEach((k) => { values[k] = r1(clamp10(values[k])); });
+  const res = resultScore(ctx.gf, ctx.ga);
+  return { values, enough: true, lowData, result: res, popOk, reason: lowData ? 'Pocos toques en este partido (' + row.kicks + '): la nota se apoya sobre todo en el resultado y el resto del equipo.' : '' };
 }
 
 // Valor final por criterio: manual > automático. La nota general sale de la media de criterios disponibles (≥ 3) salvo que haya una manual.
 export function finalRatings(manual, auto) {
+  // La calificación es 100 % calculada (el parámetro manual se conserva solo por compatibilidad con copias antiguas y se ignora).
   const out = {}, src = {};
-  CRITERIA.forEach((c) => {
-    const m = manual && manual[c.id]; const a = auto && auto.values ? auto.values[c.id] : null;
-    if (m != null && m !== '') { out[c.id] = +m; src[c.id] = 'manual'; } else if (a != null) { out[c.id] = a; src[c.id] = 'calc'; } else { out[c.id] = null; src[c.id] = null; }
-  });
+  CRITERIA.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
   const vals = CRITERIA.map((c) => out[c.id]).filter((x) => x != null);
-  if (manual && manual.overall != null && manual.overall !== '') { out.overall = +manual.overall; src.overall = 'manual'; }
-  else if (vals.length >= 3) { out.overall = Math.round(mean(vals) * 10) / 10; src.overall = 'calc'; }
-  else { out.overall = null; src.overall = null; }
+  if (vals.length >= 3) {
+    const base = mean(vals), res = auto && auto.result != null ? auto.result : null;
+    out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
+  } else { out.overall = null; src.overall = null; }
   return { values: out, sources: src };
 }

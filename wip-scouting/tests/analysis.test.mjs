@@ -23,13 +23,18 @@ assert.strictEqual(by('A').keyPasses, 1, 'A→B y B dispara en su racha');
 assert.strictEqual(a.teams.R.possession, 0.7); assert.strictEqual(a.teams.R.goals, 1); assert.strictEqual(a.teams.B.goalsAgainst, 1);
 assert.strictEqual(a.teams.B.shotsOTAgainst, 1); assert.strictEqual(a.teams.B.savesImplied, 0);
 assert.ok(a.teams.R.shotsOT === 1);
-// valoraciones: pocos datos => no se inventa
+// valoraciones: siempre automáticas (con o sin población), con el resultado del partido
+const ctxB = { gf: a.score[1], ga: a.score[0], poss: a.teams.B.possession, size: a.teams.B.players };
 const pop = [by('A'), by('B')].map((r) => ({ ...r, matchId: 'm1' }));
-assert.strictEqual(autoRatings(by('B'), pop).enough, false);
+const small = autoRatings({ ...by('B'), ctx: ctxB }, pop); assert.strictEqual(small.enough, true); assert.strictEqual(small.popOk, false);
 const big = []; for (let m = 0; m < 3; m++) for (const p of a.players) big.push({ ...p, matchId: 'm' + m });
-const ar = autoRatings(by('B'), big); assert.strictEqual(ar.enough, true);
-Object.values(ar.values).forEach((v) => { if (v != null) assert.ok(v >= 0 && v <= 10); });
-const fr = finalRatings({ vision: 8 }, ar); assert.strictEqual(fr.values.vision, 8); assert.strictEqual(fr.sources.vision, 'manual');
+const ar = autoRatings({ ...by('B'), ctx: ctxB }, big); assert.strictEqual(ar.enough, true); assert.strictEqual(ar.popOk, true);
+['positioning', 'vision', 'passing', 'finishing', 'defense', 'recoveries', 'involvement', 'creation', 'decisions'].forEach((k) => { assert.ok(typeof ar.values[k] === 'number' && ar.values[k] >= 0 && ar.values[k] <= 10, k + ' ' + ar.values[k]); });
+const fr = finalRatings({ vision: 8 }, ar); assert.strictEqual(fr.values.vision, ar.values.vision, 'lo manual se ignora'); assert.strictEqual(fr.sources.vision, 'calc');
+assert.ok(fr.values.overall >= 0 && fr.values.overall <= 10); assert.strictEqual(fr.sources.overall, 'calc');
+// el resultado pesa: mismo jugador, ganando 5-0 sale mejor que perdiendo 0-5
+const win = finalRatings(null, autoRatings({ ...by('B'), ctx: { ...ctxB, gf: 5, ga: 0 } }, big)).values.overall, lose = finalRatings(null, autoRatings({ ...by('B'), ctx: { ...ctxB, gf: 0, ga: 5 } }, big)).values.overall;
+assert.ok(win > lose, 'ganar puntúa más que perder: ' + win + ' vs ' + lose);
 console.log('autoRatings B', ar.values, 'final', fr.values.overall);
 const agg = aggregateRows([by('A'), by('B')]); assert.strictEqual(agg.goals, 1); assert.strictEqual(agg.matches, 2);
 console.log('OK analysis');

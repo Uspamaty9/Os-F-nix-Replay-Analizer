@@ -34,7 +34,7 @@ export function buildModel(store) {
       const pl = idx.get(normNick(p.nick));
       if (pl) seen.set(pl.id, (seen.get(pl.id) || 0) + 1);
       if (pl && pl.ignored) return;
-      rows.push(Object.assign({}, p, { matchId: rec.id, date: m.date, playerId: pl ? pl.id : null, side: p.team, teamId: p.team === 'R' ? m.redTeamId : m.blueTeamId, seasonId: m.seasonId, competitionId: m.competitionId, won: outcomeOf(an.score[p.team === 'R' ? 0 : 1], an.score[p.team === 'R' ? 1 : 0]) }));
+      rows.push(Object.assign({}, p, { matchId: rec.id, date: m.date, playerId: pl ? pl.id : null, side: p.team, teamId: p.team === 'R' ? m.redTeamId : m.blueTeamId, seasonId: m.seasonId, competitionId: m.competitionId, won: outcomeOf(an.score[p.team === 'R' ? 0 : 1], an.score[p.team === 'R' ? 1 : 0]), ctx: { gf: an.score[p.team === 'R' ? 0 : 1], ga: an.score[p.team === 'R' ? 1 : 0], poss: (an.teams[p.team] || {}).possession, size: (an.teams[p.team] || {}).players, shotsOTAgainst: (an.teams[p.team] || {}).shotsOTAgainst }, }));
     });
   });
   ms.sort((a, b) => b.date - a.date);
