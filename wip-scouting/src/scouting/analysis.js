@@ -278,6 +278,17 @@ export const CRITERIA = [
   { id: 'creation', label: 'Creación de oportunidades', auto: true },
   { id: 'decisions', label: 'Decisiones', auto: true },
 ];
+// Criterios propios del portero (se usan cuando en ese partido jugó de portero)
+export const GK_CRITERIA = [
+  { id: 'saves', label: 'Paradas', auto: true },
+  { id: 'concede', label: 'Goles encajados', auto: true },
+  { id: 'gkPosition', label: 'Colocación', auto: true },
+  { id: 'clearances', label: 'Despejes y salidas', auto: true },
+  { id: 'distribution', label: 'Distribución', auto: true },
+  { id: 'security', label: 'Seguridad con el balón', auto: true },
+];
+export const GK_WEIGHTS = { saves: 2.2, concede: 2.2, gkPosition: 1.4, clearances: 1, distribution: 1, security: 1 };
+export const criteriaFor = (role) => (role === 'GK' ? GK_CRITERIA : CRITERIA);
 export const MIN_POP_ROWS = 8, MIN_POP_MATCHES = 2, MIN_PLAYER_KICKS = 3;
 
 function pctRank(v, pop) {
@@ -320,6 +331,23 @@ export function autoRatings(row, population) {
   const size = ctx.size > 0 ? ctx.size : 3;
   const share = row.kickShare != null ? row.kickShare : null;
   const gk = role === 'GK', def = role === 'DEF', fwd = role === 'FWD';
+  if (gk) { // ---- criterios de portero (0–10; null = sin datos para valorarlo en este partido)
+    const faced = ctx.shotsOTAgainst != null ? ctx.shotsOTAgainst : null, ga = ctx.ga != null ? ctx.ga : null;
+    const saved = faced != null && ga != null ? Math.max(0, faced - ga) : null;
+    const saves = faced != null && faced > 0 && saved != null ? clamp10(10 * (saved / faced) * 0.9 + Math.min(1.5, 0.5 * saved)) : null;
+    const concede = ga != null ? clamp10(10 - 2.2 * ga - 1.5 * row.ownGoals + (faced != null && faced > 0 ? 0.6 * Math.min(saved || 0, 3) : 0)) : null;
+    const zone = row.depth != null ? clamp10(10 - 7 * Math.abs(row.depth + 0.8)) : null;
+    const gkPosition = zone != null ? zone : 5;
+    const act = row.blocks + row.interceptions + row.recoveries;
+    const clearances = clamp10(5 + 1.2 * act - 0.4 * (row.turnovers > 2 ? row.turnovers - 2 : 0));
+    const distribution = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : null;
+    const sec = row.kicks > 0 ? 1 - row.turnovers / row.kicks : null;
+    const security = sec != null ? clamp10((sec - 0.45) / 0.5 * 10) : null;
+    const values = { saves, concede, gkPosition, clearances, distribution, security };
+    Object.keys(values).forEach((k) => { values[k] = values[k] == null ? null : r1(clamp10(values[k])); });
+    const res = resultScore(ctx.gf, ctx.ga);
+    return { values, enough: true, lowData, role, criteria: 'GK', weights: GK_WEIGHTS, result: res, popOk, faced, saved, reason: faced === 0 ? 'Su portería no recibió tiros a puerta: las paradas no se puntúan y la nota se apoya en lo demás.' : (lowData ? 'Pocos toques en este partido (' + row.kicks + '): la nota se apoya sobre todo en las paradas, los goles encajados y el resultado.' : '') };
+  }
 
   // ---- criterios (valor 0–10, o null si no aplica a su rol en este partido)
   const passing = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : 5;
@@ -361,13 +389,14 @@ export function autoRatings(row, population) {
 // Valor final por criterio: manual > automático. La nota general sale de la media de criterios disponibles (≥ 3) salvo que haya una manual.
 export function finalRatings(manual, auto) {
   // La calificación es 100 % calculada (el parámetro manual se conserva solo por compatibilidad con copias antiguas y se ignora).
+  const list = criteriaFor(auto && auto.criteria === 'GK' ? 'GK' : null);
   const out = {}, src = {};
-  CRITERIA.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
-  const vals = CRITERIA.map((c) => out[c.id]).filter((x) => x != null);
+  list.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
+  const vals = list.map((c) => out[c.id]).filter((x) => x != null);
   if (vals.length >= 3) {
-    const w = (auto && auto.weights) || {}; let sw = 0, sv = 0; CRITERIA.forEach((c) => { if (out[c.id] != null) { const k = w[c.id] != null ? w[c.id] : 1; sw += k; sv += k * out[c.id]; } });
+    const w = (auto && auto.weights) || {}; let sw = 0, sv = 0; list.forEach((c) => { if (out[c.id] != null) { const k = w[c.id] != null ? w[c.id] : 1; sw += k; sv += k * out[c.id]; } });
     const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? auto.result : null;
     out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
   } else { out.overall = null; src.overall = null; }
-  return { values: out, sources: src };
+  return { values: out, sources: src, criteria: auto && auto.criteria === 'GK' ? 'GK' : 'STD' };
 }

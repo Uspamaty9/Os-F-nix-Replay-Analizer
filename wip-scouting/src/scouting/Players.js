@@ -3,7 +3,7 @@ import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
 import { ownTeamId, playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
-import { aggregateRows, CRITERIA, ROLE_LABEL } from './analysis';
+import { aggregateRows, CRITERIA, GK_CRITERIA, ROLE_LABEL } from './analysis';
 import { buildPlayerReport } from './report';
 import { normNick } from './ingest';
 import { PickPlayers, wipePlayers } from './PickPlayers';
@@ -141,6 +141,8 @@ function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, 
           return <Card title="Posiciones jugadas" right={<span className="sc-sub">deducidas de dónde tocó el balón</span>}><div className="sc-chips">{ks.map((k) => <span key={k} className="sc-chip on">{ROLE_LABEL[k]} · {cnt[k]} {cnt[k] === 1 ? 'partido' : 'partidos'}</span>)}</div><p className="sc-note">Cada partido se puntúa según el puesto en el que jugó: un delantero que juega de portero se evalúa como portero.</p></Card>; })()}
         <Card title="Estadísticas acumuladas"><table className="sc-table"><thead><tr><th>Métrica</th><th>Total</th><th>/ partido</th></tr></thead><tbody>{METRICS.map(([k, l, pv]) => <tr key={k}><td>{l}<Prov k={pv} /></td><td>{a[k]}</td><td>{fmtNum(a.perMatch[k], 2)}</td></tr>)}
           <tr><td>Precisión de pases<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.passAccuracy)}</td></tr><tr><td>Conversión (goles / tiros a puerta)<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.conversion)}</td></tr><tr><td>Cuota de toques del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.kickShare)}</td></tr><tr><td>Participación en goles del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.goalShare)}</td></tr></tbody></table></Card>
+        {(() => { const gids = new Set(pr.rows.filter((r) => r.role === 'GK').map((r) => r.matchId)); if (!gids.size) return null; const ga = criteriaAverage(model, player.id, gids, GK_CRITERIA); if (!GK_CRITERIA.some((c) => ga[c.id] != null)) return null;
+          return <Card title="Perfil como portero" right={<span className="sc-sub">{gids.size} {gids.size === 1 ? 'partido' : 'partidos'} · media 0–10</span>}><div className="sc-center"><Radar axes={GK_CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ga }]} /></div></Card>; })()}
         {CRITERIA.some((c) => ca[c.id] != null) && <Card title="Perfil de scouting" right={<span className="sc-sub">media 0–10</span>}><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ca }]} /></div></Card>}
         {bySeason.length > 0 && <Card title="Histórico por temporada"><div className="sc-scrollx"><table className="sc-table"><thead><tr><th>Temporada</th><th>PJ</th><th>G</th><th>A</th><th>Toques</th><th>Pases</th></tr></thead><tbody>{bySeason.map((s) => <tr key={s.k}><td>{s.name}</td><td>{s.agg.matches}</td><td>{s.agg.goals}</td><td>{s.agg.assists}</td><td>{s.agg.kicks}</td><td>{s.agg.passesCompleted}</td></tr>)}</tbody></table></div></Card>}
       </>}

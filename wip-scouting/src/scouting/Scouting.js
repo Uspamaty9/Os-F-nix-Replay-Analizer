@@ -3,7 +3,7 @@ import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Prov, Hint, toast } from './ui';
 import { Radar } from './charts';
 import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, teamName, fmtNum, fmtDate, fmtPct } from './model';
-import { CRITERIA, finalRatings, ROLE_LABEL } from './analysis';
+import { CRITERIA, GK_CRITERIA, criteriaFor, finalRatings, ROLE_LABEL } from './analysis';
 
 const AUTO_HINT = {
   positioning: 'Reparto de su juego entre ataque y defensa, dominio del balón de su equipo y su peso en los toques.', vision: 'Pases clave y asistencias, con la calidad de sus pases completados.',
@@ -60,9 +60,9 @@ function Evaluate({ model, view, params, nav }) {
         <div className="sc-kpis small"><Kpi label="Goles" value={cur.goals} prov="auto" /><Kpi label="Asist." value={cur.assists} prov="auto" /><Kpi label="Toques" value={cur.kicks} prov="auto" /><Kpi label="Pases" value={cur.passesCompleted + '/' + (cur.passesCompleted + cur.passesFailed)} prov="calc" sub={fmtPct(cur.passAccuracy)} /><Kpi label="Rec.+Int." value={cur.recoveries + cur.interceptions} prov="calc" /></div>
         <Card title="Criterios (0–10)" right={<span className="sc-sub">calculados con el partido</span>}>
           {auto && auto.role && (() => { const hab = (model.playerById.get(cur.playerId) || {}).position; const map = { Portero: 'GK', Defensa: 'DEF', Mediocentro: 'MID', Delantero: 'FWD' }; const diff = hab && map[hab] && map[hab] !== auto.role;
-            return <p className="sc-note"><b>Jugó de {ROLE_LABEL[auto.role].toLowerCase()}</b> en este partido{diff ? ' (su posición habitual es ' + hab.toLowerCase() + ')' : ''}: se le puntúa por lo que hizo en ese puesto{auto.role === 'GK' ? ' (paradas, goles encajados y portería a cero; no se le exige marcar ni crear)' : auto.role === 'DEF' ? ' (no se le exige marcar ni crear)' : auto.role === 'FWD' ? ' (no se le castiga por no defender)' : ''}.</p>; })()}
+            return <p className="sc-note"><b>Jugó de {ROLE_LABEL[auto.role].toLowerCase()}</b> en este partido{diff ? ' (su posición habitual es ' + hab.toLowerCase() + ')' : ''}: se le puntúa por lo que hizo en ese puesto{auto.role === 'GK' ? ' (criterios de portero: paradas, goles encajados, colocación, despejes, distribución y seguridad con el balón)' : auto.role === 'DEF' ? ' (no se le exige marcar ni crear)' : auto.role === 'FWD' ? ' (no se le castiga por no defender)' : ''}.</p>; })()}
           {auto && auto.reason && <p className="sc-note">{auto.reason}</p>}
-          {CRITERIA.map((c) => { const v = fin ? fin.values[c.id] : null;
+          {criteriaFor(auto && auto.criteria === 'GK' ? 'GK' : null).map((c) => { const v = fin ? fin.values[c.id] : null;
             return (<div className="sc-crit" key={c.id}>
               <div className="top"><b>{c.label}</b><span className="val">{v != null ? fmtNum(v, 1) : '—'}<Prov k="calc" /></span></div>
               <div className="sc-bar" role="img" aria-label={c.label + ' ' + (v != null ? v : 0) + ' de 10'} style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (v != null ? v * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
@@ -70,11 +70,11 @@ function Evaluate({ model, view, params, nav }) {
             </div>); })}
           <div className="sc-crit"><div className="top"><b>Rendimiento general</b><span className="val">{fin && fin.values.overall != null ? fmtNum(fin.values.overall, 1) : '—'}<Prov k="calc" /></span></div>
             <div className="sc-bar" style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (fin && fin.values.overall != null ? fin.values.overall * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
-            <div className="sub"><span><small>75 % la media de los criterios + 25 % el resultado del partido{auto && auto.result != null ? ' (' + fmtNum(auto.result, 1) + ': ' + m.score[cur.side === 'R' ? 0 : 1] + '–' + m.score[cur.side === 'R' ? 1 : 0] + ' para su equipo)' : ''}.</small></span></div></div>
+            <div className="sub"><span><small>75 % la media de los criterios{auto && auto.criteria === 'GK' ? ' de portero (paradas y goles encajados pesan más)' : ''} + 25 % el resultado del partido{auto && auto.result != null ? ' (' + fmtNum(auto.result, 1) + ': ' + m.score[cur.side === 'R' ? 0 : 1] + '–' + m.score[cur.side === 'R' ? 1 : 0] + ' para su equipo)' : ''}.</small></span></div></div>
           <label className="sc-field"><span>Notas del partido <Prov k="manual" /></span><textarea rows={4} placeholder="Observaciones, puntos fuertes, a mejorar…" value={draft.notes} onChange={(e) => { setDraft((d) => ({ ...d, notes: e.target.value })); setDirty(true); }} /></label>
           <div className="sc-row end"><button className="sc-btn ghost" onClick={() => nav('players', { playerId: cur.playerId })}>Ver perfil</button>{rt && rt.record && rt.record.notes && <button className="sc-btn ghost danger" onClick={clearAll}>Borrar notas</button>}<button className="sc-btn" disabled={!dirty} onClick={save}>{dirty ? 'Guardar notas' : 'Notas guardadas'}</button></div>
         </Card>
-        {preview && CRITERIA.some((c) => preview.values[c.id] != null) && <Card title="Perfil del partido"><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: cur.nick, values: preview.values }]} /></div></Card>}
+        {preview && criteriaFor(preview.criteria === 'GK' ? 'GK' : null).some((c) => preview.values[c.id] != null) && <Card title={preview.criteria === 'GK' ? 'Perfil del partido (portero)' : 'Perfil del partido'}><div className="sc-center"><Radar axes={criteriaFor(preview.criteria === 'GK' ? 'GK' : null).map((c) => ({ id: c.id, label: c.label }))} series={[{ name: cur.nick, values: preview.values }]} /></div></Card>}
       </>}
     </>
   );

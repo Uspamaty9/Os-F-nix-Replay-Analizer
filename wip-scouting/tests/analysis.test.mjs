@@ -37,7 +37,10 @@ const win = finalRatings(null, autoRatings({ ...by('B'), ctx: { ...ctxB, gf: 5, 
 assert.ok(win > lose, 'ganar puntúa más que perder: ' + win + ' vs ' + lose);
 // roles: un jugador que solo toca cerca de su propia portería es portero y no se le exige marcar ni crear
 const mk = (o) => ({ passesCompleted: 4, passesFailed: 1, kicks: 6, shotsOT: 0, goals: 0, assists: 0, ownGoals: 0, blocks: 0, interceptions: 0, recoveries: 1, turnovers: 1, keyPasses: 0, kickShare: 0.15, offParticipation: 0, defParticipation: 0.3, ctx: { gf: 1, ga: 1, poss: 0.5, size: 4, shotsOTAgainst: 3 }, ...o });
-const gkR = autoRatings(mk({ role: 'GK', depth: -0.85 }), []); assert.strictEqual(gkR.values.finishing, null, 'portero sin tiros: finishing no aplica'); assert.strictEqual(gkR.values.creation, null); assert.ok(gkR.values.defense > 5, 'paradas: ' + gkR.values.defense);
+const gkR = autoRatings(mk({ role: 'GK', depth: -0.85 }), []); assert.strictEqual(gkR.criteria, 'GK'); ['saves', 'concede', 'gkPosition', 'clearances', 'distribution', 'security'].forEach((k) => assert.ok(typeof gkR.values[k] === 'number', 'criterio de portero ' + k));
+assert.strictEqual(gkR.values.finishing, undefined, 'el portero no tiene criterios de delantero'); assert.ok(gkR.values.saves > 5, 'paradas: ' + gkR.values.saves);
+const gkBad = autoRatings(mk({ role: 'GK', depth: -0.85, ctx: { gf: 0, ga: 5, poss: 0.5, size: 4, shotsOTAgainst: 5 } }), []); assert.ok(finalRatings(null, gkBad).values.overall < finalRatings(null, gkR).values.overall, 'encajar más puntúa menos');
+const gkClean = autoRatings(mk({ role: 'GK', depth: -0.85, ctx: { gf: 2, ga: 0, poss: 0.5, size: 4, shotsOTAgainst: 4 } }), []); assert.ok(gkClean.values.concede === 10 && gkClean.values.saves >= 9, 'portería a cero con paradas');
 const fwR = autoRatings(mk({ role: 'FWD', depth: 0.4 }), []); assert.ok(fwR.values.finishing != null && fwR.values.finishing <= 4, 'delantero sin tiros se nota'); assert.strictEqual(fwR.values.defense, null, 'delantero sin defensa: no se castiga');
 const ovGK = finalRatings(null, gkR).values.overall; assert.ok(ovGK != null && ovGK > 4, 'portero con paradas no sale castigado: ' + ovGK);
 console.log('autoRatings B', ar.values, 'final', fr.values.overall);
