@@ -63,3 +63,6 @@ Tactics: botón de pantalla completa + cancha horizontal en la pizarra suelta; h
 Tests: `wip-scouting/tests/browser/run.js … run6.js` (run6 cubre lo nuevo). Pendiente: punto 20 (identificar los botones ≡ y de sliders de la captura del usuario).
 - (17 nov, Claude C) Descargas: `askExport()` (ui.js) pregunta antes de sacar PDF/copia; `saveFile()` avisa «✓ Descargado/Guardado en Descargas: nombre». Pizarra: `saved()` en TacticsBoard y aviso «✓ Captura…» en replayBoard. Regla: todo archivo que se genere debe avisar al terminar.
 - (17 nov, Claude C) Jugadores: botón «Solo mi equipo» (ignora a los que no son de «Mi equipo», con Deshacer). `ingest.js` guarda en kv `pendingNewPlayers` los jugadores nuevos; al abrir el Centro sale `NewPlayersSheet` (More.js) para elegir cuáles son de tu equipo. Test: `tests/browser/run7.js`.
+
+## Jugadores: abrir solo con «Mi equipo» (Claude B, a petición del usuario)
+- `Players.js`: el filtro «Mostrar» arranca en el equipo propio (`ownTeamId`) si existe; aviso con «Ver todos» y «Ocultarlos del análisis» (reutiliza `onlyMine`, con «Deshacer»). Los jugadores nuevos de repeticiones ya quedaban ocultos por `hideNewPlayers`. Verificado solo con compilación de sintaxis (el arnés de `tests/browser` no compila en este entorno por no resolver `react`).
