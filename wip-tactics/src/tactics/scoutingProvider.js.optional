@@ -4,7 +4,7 @@
 //
 // Se copia a src/tactics/scoutingProvider.js SOLO cuando existe src/scouting (ver integrate.py --with-scouting).
 import { loadAll, getKv } from '../scouting/db';
-import { buildModel, playerProfile, ratingAverage, teamName, EMPTY_FILTERS } from '../scouting/model';
+import { buildModel, playerProfile, ratingAverage, teamName, ownTeamId, EMPTY_FILTERS } from '../scouting/model';
 import { normNick } from '../scouting/ingest';
 
 const pct = (v) => (v == null ? null : Math.round(v * 100) + '%');
@@ -13,6 +13,7 @@ export async function scoutingPlayers() {
   const store = await loadAll();
   if (!store.players || !store.players.length) return [];
   const model = buildModel(store);
+  const own = ownTeamId(model);
   return model.players.map((p) => {
     const prof = playerProfile(model, p.id, EMPTY_FILTERS);
     const a = prof.agg;
@@ -32,7 +33,7 @@ export async function scoutingPlayers() {
     ];
     return {
       key: normNick(p.nick), nick: p.nick, aliases: p.aliases || [], nation: '', team: null,
-      teamName: teamName(model, p.teamId, ''), position: p.position || '', info: p.notes || '', avatar: p.avatar || null,
+      teamName: teamName(model, p.teamId, ''), position: p.position || '', info: p.notes || '', avatar: p.avatar || null, mine: !!own && p.teamId === own,
       stats, rating: rt ? { value: Math.round(rt.avg * 10) / 10, n: rt.n, prov: sources.length && sources.every((s) => s === 'manual') ? 'M' : 'C' } : null,
     };
   });

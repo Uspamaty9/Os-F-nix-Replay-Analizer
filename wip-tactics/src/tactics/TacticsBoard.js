@@ -52,6 +52,7 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
   const [anim, setAnim] = useState(false);
   const [bar, setBar] = useState(null); // bandeja de fichas abierta: 'red' | 'blue' | null
   const [menuOpen, setMenuOpen] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(true); // solo jugadores de «Mi equipo» del Centro de análisis
   const [regMode, setRegMode] = useState(false); // bandeja: fichas numeradas o jugadores analizados
   const [slots, setSlots] = useState(5); // fichas numeradas visibles en la bandeja (5–11)
   const [fieldOpen, setFieldOpen] = useState(false);
@@ -383,7 +384,10 @@ export default function TacticsBoard({ onClose, playerProvider, stadiumProvider,
                 <button type='button' className='tx-tok toggle' onClick={() => setRegMode(false)} title='Volver a las fichas numeradas'><i>1·2</i><span>Numeradas</span></button>
               )}
               {regMode && registry.length === 0 && <span className='tx-tok-empty'>Aún no hay jugadores analizados. Abre una repetición para analizarlos.</span>}
-              {regMode && [...registry].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
+              {regMode && registry.some((r) => r.mine) && (
+                <button type='button' className={'tx-tok toggle' + (onlyMine ? ' on' : '')} onClick={() => setOnlyMine(!onlyMine)} aria-pressed={onlyMine} title='Mostrar solo a los jugadores de Mi equipo'><i><Icon name='team' size={22} /></i><span>{onlyMine ? 'Mi equipo' : 'Todos'}</span></button>
+              )}
+              {regMode && [...(registry.some((r) => r.mine) && onlyMine ? registry.filter((r) => r.mine) : registry)].sort((a, b) => ((b.team || 'neutral') === bar) - ((a.team || 'neutral') === bar)).map((r) => (
                 <button type='button' key={r.key} className={'tx-tok reg ' + bar + ((r.team || null) === bar ? ' mine' : '') + (s.doc.players.some((q) => q.regKey === r.key) ? ' used' : '') + (r.avatar ? ' av' : '')} onClick={() => addRegistered(r)} title={'Añadir a ' + r.nick}>
                   <i>{r.avatar ? <img src={r.avatar} alt='' /> : (avatarOf(avMap, r) ? <b className='tx-avtxt'>{avatarOf(avMap, r)}</b> : <Icon name='user' size={22} />)}</i><span>{r.nick}</span>
                 </button>
