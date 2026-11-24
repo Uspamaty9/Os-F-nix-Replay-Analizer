@@ -3,7 +3,7 @@ import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
 import { ownTeamId, playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
-import { aggregateRows, CRITERIA } from './analysis';
+import { aggregateRows, CRITERIA, ROLE_LABEL } from './analysis';
 import { buildPlayerReport } from './report';
 import { normNick } from './ingest';
 import { PickPlayers, wipePlayers } from './PickPlayers';
@@ -137,6 +137,8 @@ function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, 
       <Seg value={tab} onChange={setTab} options={[['sum', 'Resumen'], ['hist', 'Historial'], ['evo', 'Evolución']]} />
       {!a.matches && <Card><Empty small>Este jugador no tiene partidos con los filtros actuales.</Empty></Card>}
       {tab === 'sum' && a.matches > 0 && <>
+        {(() => { const cnt = {}; pr.rows.forEach((r) => { if (r.role) cnt[r.role] = (cnt[r.role] || 0) + 1; }); const ks = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x]); if (!ks.length) return null;
+          return <Card title="Posiciones jugadas" right={<span className="sc-sub">deducidas de dónde tocó el balón</span>}><div className="sc-chips">{ks.map((k) => <span key={k} className="sc-chip on">{ROLE_LABEL[k]} · {cnt[k]} {cnt[k] === 1 ? 'partido' : 'partidos'}</span>)}</div><p className="sc-note">Cada partido se puntúa según el puesto en el que jugó: un delantero que juega de portero se evalúa como portero.</p></Card>; })()}
         <Card title="Estadísticas acumuladas"><table className="sc-table"><thead><tr><th>Métrica</th><th>Total</th><th>/ partido</th></tr></thead><tbody>{METRICS.map(([k, l, pv]) => <tr key={k}><td>{l}<Prov k={pv} /></td><td>{a[k]}</td><td>{fmtNum(a.perMatch[k], 2)}</td></tr>)}
           <tr><td>Precisión de pases<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.passAccuracy)}</td></tr><tr><td>Conversión (goles / tiros a puerta)<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.conversion)}</td></tr><tr><td>Cuota de toques del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.kickShare)}</td></tr><tr><td>Participación en goles del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.goalShare)}</td></tr></tbody></table></Card>
         {CRITERIA.some((c) => ca[c.id] != null) && <Card title="Perfil de scouting" right={<span className="sc-sub">media 0–10</span>}><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ca }]} /></div></Card>}

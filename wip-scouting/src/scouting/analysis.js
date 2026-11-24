@@ -198,6 +198,7 @@ export function analyzePart(part) {
     const att = p.passesCompleted + p.passesFailed; p.passAccuracy = att > 0 ? p.passesCompleted / att : null;
     p.conversion = p.shotsOT > 0 ? p.goals / p.shotsOT : null;
   });
+  const formations = detectRoles(part, P); R.formation = formations.R; B.formation = formations.B;
   const arr = (o) => Object.keys(o).map((k) => { const s = k.split('>'); return { a: +s[0], b: +s[1], n: o[k] }; });
   // Verificación cruzada contra los contadores del motor
   const engineGoalsR = part.goals.filter((g) => g.f === 'R').length, engineGoalsB = part.goals.filter((g) => g.f === 'B').length;
@@ -209,6 +210,42 @@ export function analyzePart(part) {
     kicksMatch: part.kicks.length === part.kicksRed + part.kicksBlue,
   };
   return { players: P, teams: T, pairs: arr(pairs), lost: arr(lost), consistency, spaceMode: part.spaceMode, ticks: part.ticks, stadium: part.stadium, score: [part.scoreRed, part.scoreBlue], goalsList: part.goals, names: part.players.map((p) => p.nick) };
+}
+
+
+// ---------- Roles y formación por partido ----------
+// A partir de DÓNDE tocó el balón cada jugador (posición del balón en sus toques) se deduce de qué jugó en ese partido:
+// 'GK' portero, 'DEF' defensa, 'MID' medio, 'FWD' delantero. Así un 9 que se puso de portero se juzga como portero.
+export const ROLE_LABEL = { GK: 'Portero', DEF: 'Defensa', MID: 'Medio', FWD: 'Delantero' };
+export function detectRoles(part, P) {
+  const dir = {};
+  ['R', 'B'].forEach((code) => {
+    const xs = [];
+    part.shots.forEach((sh) => { if (P[sh[0]] && P[sh[0]].team === code && sh[1] >= 0 && part.kicks[sh[1]]) xs.push(part.kicks[sh[1]][1]); });
+    part.goals.forEach((g) => { if (g.f === code && !g.own && g.ki >= 0 && part.kicks[g.ki]) xs.push(part.kicks[g.ki][1]); });
+    const m = xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0; dir[code] = Math.abs(m) > 20 ? Math.sign(m) : 0;
+  });
+  if (!dir.R && dir.B) dir.R = -dir.B; if (!dir.B && dir.R) dir.B = -dir.R;
+  ['R', 'B'].forEach((code) => { // sin tiros ni goles: se supone que cada equipo toca más en campo rival
+    if (dir[code]) return; let n = 0, sx = 0; P.forEach((p) => { if (p.team === code) { n += p.kicks; sx += p.sx; } }); dir[code] = n && Math.abs(sx / n) > 20 ? Math.sign(sx / n) : 0;
+  });
+  const xsAll = part.kicks.map((k) => Math.abs(k[1])); const half = xsAll.length >= 6 ? Math.max(200, Math.max.apply(null, xsAll)) : 0;
+  const form = {};
+  ['R', 'B'].forEach((code) => {
+    const mem = P.filter((p) => p.team === code); mem.forEach((p) => { p.depth = null; p.role = null; });
+    if (!dir[code] || !half) { form[code] = null; return; }
+    const rated = mem.filter((p) => p.kicks >= 2);
+    rated.forEach((p) => { p.depth = Math.max(-1, Math.min(1, dir[code] * (p.sx / p.kicks) / half)); });
+    rated.sort((a, b) => a.depth - b.depth);
+    rated.forEach((p, i) => {
+      const gap = rated[i + 1] ? rated[i + 1].depth - p.depth : 1;
+      if (i === 0 && rated.length >= 2 && p.depth <= -0.45 && (gap >= 0.12 || p.depth <= -0.7)) p.role = 'GK';
+      else p.role = p.depth < -0.12 ? 'DEF' : p.depth > 0.22 ? 'FWD' : 'MID';
+    });
+    const c = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; rated.forEach((p) => { c[p.role]++; });
+    form[code] = { GK: c.GK, DEF: c.DEF, MID: c.MID, FWD: c.FWD, text: (c.GK ? 'Portero + ' : '') + [c.DEF, c.MID, c.FWD].join('-'), dir: dir[code] };
+  });
+  return form;
 }
 
 // Tramo principal de una repetición (el de más duración, igual que el historial de la app)
@@ -259,12 +296,22 @@ export function resultScore(gf, ga) {
 }
 
 // TODAS las calificaciones salen del motor: del partido (resultado, goles, tiros, pases, toques, recuperaciones…) y, si hay suficientes datos,
-// se mezclan con el percentil del jugador frente al resto de actuaciones guardadas. No hay nada manual.
+// se mezclan con el percentil del jugador frente a otras actuaciones EN EL MISMO ROL. No hay nada manual.
+// Se juzga según lo que jugó en ESE partido (row.role: GK/DEF/MID/FWD): a un portero no se le exige marcar ni crear, a un delantero no se le
+// castiga por no defender. Los criterios que no aplican al rol quedan sin valor (null) y no entran en la media.
 // row.ctx = contexto del equipo en ese partido { gf, ga, poss, size, shotsOTAgainst }.
+export const ROLE_WEIGHTS = {
+  GK: { defense: 2.5, positioning: 1.5, passing: 1, decisions: 1, recoveries: 0.7, vision: 0.5 },
+  DEF: { defense: 1.6, recoveries: 1.2, positioning: 1.2, passing: 1, decisions: 1, involvement: 0.8, vision: 0.8, creation: 0.6, finishing: 0.6 },
+  MID: { passing: 1.2, vision: 1.2, creation: 1.2, recoveries: 1, involvement: 1.2, positioning: 1, decisions: 1, defense: 0.8, finishing: 0.8 },
+  FWD: { finishing: 1.8, creation: 1.2, involvement: 1, positioning: 1, passing: 0.8, decisions: 1, vision: 0.8, recoveries: 0.5, defense: 0.4 },
+};
 export function autoRatings(row, population) {
   const ctx = row.ctx || {};
-  const popOk = population.length >= MIN_POP_ROWS && new Set(population.map((r) => r.matchId)).size >= MIN_POP_MATCHES;
-  const col = (f) => population.map(f);
+  const role = row.role || null;
+  const pop = role ? population.filter((r) => r.role === role) : population;
+  const popOk = pop.length >= MIN_POP_ROWS && new Set(pop.map((r) => r.matchId)).size >= MIN_POP_MATCHES;
+  const col = (f) => pop.map(f);
   const att = row.passesCompleted + row.passesFailed;
   const acc = att >= 3 ? row.passesCompleted / att : null;
   const accOf = (r) => { const a = r.passesCompleted + r.passesFailed; return a >= 3 ? r.passesCompleted / a : null; };
@@ -272,36 +319,43 @@ export function autoRatings(row, population) {
   const lowData = row.kicks < MIN_PLAYER_KICKS;
   const size = ctx.size > 0 ? ctx.size : 3;
   const share = row.kickShare != null ? row.kickShare : null;
+  const gk = role === 'GK', def = role === 'DEF', fwd = role === 'FWD';
 
-  // ---- criterios (siempre un valor 0–10)
+  // ---- criterios (valor 0–10, o null si no aplica a su rol en este partido)
   const passing = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : 5;
   const shots = row.shotsOT + row.goals;
-  const finAbs = clamp10(5 + 1.8 * row.goals + 0.6 * Math.max(0, row.shotsOT - row.goals) - 1.5 * row.ownGoals);
-  const finishing = blend(finAbs, mean([pctRank(row.goals, col((r) => r.goals)), pctRank(row.shotsOT, col((r) => r.shotsOT))]));
+  const finAbs = clamp10((fwd ? 4 : 5) + 1.8 * row.goals + 0.6 * Math.max(0, row.shotsOT - row.goals) - 1.5 * row.ownGoals);
+  const finishing = (gk || def || role === 'MID') && shots === 0 && row.ownGoals === 0 ? null : blend(finAbs, mean([pctRank(row.goals, col((r) => r.goals)), pctRank(row.shotsOT, col((r) => r.shotsOT))]));
   const defCount = row.blocks + row.interceptions;
   const concededPenalty = ctx.ga != null ? Math.min(2.5, 0.6 * ctx.ga) : 0, cleanBonus = ctx.ga === 0 ? 1 : 0;
-  const defAbs = clamp10(5 + 1.1 * defCount + (row.defParticipation != null ? 1.5 * (row.defParticipation - 1 / size) * size / 2 : 0) - concededPenalty + cleanBonus - 1.5 * row.ownGoals);
-  const defense = blend(defAbs, pctRank(defCount, col((r) => r.blocks + r.interceptions)));
-  const recAbs = clamp10(4 + 1.0 * row.recoveries + 0.4 * row.interceptions);
-  const recoveries = blend(recAbs, pctRank(row.recoveries, col((r) => r.recoveries)));
+  let defense;
+  if (gk) { // portero: paradas (tiros a puerta que le llegaron y no fueron gol), goles encajados y portería a cero
+    const faced = ctx.shotsOTAgainst != null ? ctx.shotsOTAgainst : null, saves = faced != null && ctx.ga != null ? Math.max(0, faced - ctx.ga) : 0;
+    defense = clamp10(5 + 1.0 * saves + 0.4 * defCount - 1.4 * (ctx.ga || 0) + (ctx.ga === 0 ? 1.5 : 0) - 1.5 * row.ownGoals);
+  } else if (fwd && defCount === 0 && row.ownGoals === 0) defense = null;
+  else defense = blend(clamp10(5 + 1.1 * defCount + (row.defParticipation != null ? 1.5 * (row.defParticipation - 1 / size) * size / 2 : 0) - (fwd ? 0 : concededPenalty) + (fwd ? 0 : cleanBonus) - 1.5 * row.ownGoals), pctRank(defCount, col((r) => r.blocks + r.interceptions)));
+  const recAbs = clamp10((gk ? 5 : 4) + (gk ? 0.8 : 1.0) * row.recoveries + 0.4 * row.interceptions);
+  const recoveries = fwd && row.recoveries === 0 && row.interceptions === 0 ? null : blend(recAbs, pctRank(row.recoveries, col((r) => r.recoveries)));
   const invAbs = share != null ? clamp10(5 * (share * size)) : 5;
-  const involvement = blend(invAbs, share != null ? pctRank(share, col((r) => r.kickShare).filter((x) => x != null)) : null);
+  const involvement = gk ? null : blend(invAbs, share != null ? pctRank(share, col((r) => r.kickShare).filter((x) => x != null)) : null);
   const creAbs = clamp10(4 + 2.2 * row.assists + 1.0 * row.keyPasses);
-  const creation = blend(creAbs, mean([pctRank(row.assists, col((r) => r.assists)), pctRank(row.keyPasses, col((r) => r.keyPasses))]));
-  // Posicionamiento: participa en las dos fases (ataque y defensa) y el equipo domina el balón cuando él juega.
-  const bal = row.offParticipation != null && row.defParticipation != null ? 1 - Math.min(1, Math.abs(row.offParticipation - row.defParticipation) * size) : 0.5;
+  const creation = (gk || def) && row.assists === 0 && row.keyPasses === 0 ? null : blend(creAbs, mean([pctRank(row.assists, col((r) => r.assists)), pctRank(row.keyPasses, col((r) => r.keyPasses))]));
+  // Posicionamiento: qué tan bien ocupó la zona que le toca a su rol (portero atrás, defensa atrás-medio, medio centro, delantero arriba) y si su equipo dominó.
+  const ideal = gk ? -0.8 : def ? -0.35 : fwd ? 0.4 : 0;
   const dom = ctx.poss != null ? ctx.poss - 0.5 : 0;
-  const positioning = clamp10(4 + 3 * bal + 6 * dom + (share != null ? 2 * Math.min(1, share * size / 2) : 0));
-  // Visión de juego: pases clave y asistencias, con pases completados de calidad.
-  const vision = clamp10(0.45 * creation + 0.35 * passing + 0.2 * involvement);
+  const zone = row.depth != null ? clamp10(10 - 7 * Math.abs(row.depth - ideal)) : null;
+  const bal = row.offParticipation != null && row.defParticipation != null ? 1 - Math.min(1, Math.abs(row.offParticipation - row.defParticipation) * size) : 0.5;
+  const positioning = zone != null ? clamp10(0.75 * zone + 2.5 * 0.5 + 3 * dom) : clamp10(4 + 3 * bal + 6 * dom + (share != null ? 2 * Math.min(1, share * size / 2) : 0));
+  // Visión: pases clave y asistencias con pases de calidad (portero y defensa: solo la calidad del pase)
+  const vision = gk || def ? (creation != null ? 0.5 * creation + 0.5 * passing : passing) : clamp10(0.45 * creation + 0.35 * passing + 0.2 * (involvement != null ? involvement : 5));
   // Decisiones: cuidar el balón (pérdidas por toque) y elegir bien los tiros.
   const sec = row.kicks > 0 ? 1 - row.turnovers / row.kicks : null;
   const decAbs = sec != null ? clamp10((sec - 0.45) / 0.5 * 10) : 5;
   const decisions = clamp10(shots > 0 ? 0.8 * decAbs + 0.2 * finAbs : decAbs);
   const values = { positioning, vision, passing, finishing, defense, recoveries, involvement, creation, decisions };
-  Object.keys(values).forEach((k) => { values[k] = r1(clamp10(values[k])); });
+  Object.keys(values).forEach((k) => { values[k] = values[k] == null ? null : r1(clamp10(values[k])); });
   const res = resultScore(ctx.gf, ctx.ga);
-  return { values, enough: true, lowData, result: res, popOk, reason: lowData ? 'Pocos toques en este partido (' + row.kicks + '): la nota se apoya sobre todo en el resultado y el resto del equipo.' : '' };
+  return { values, enough: true, lowData, role, weights: ROLE_WEIGHTS[role] || null, result: res, popOk, reason: lowData ? 'Pocos toques en este partido (' + row.kicks + '): la nota se apoya sobre todo en el resultado y el resto del equipo.' : '' };
 }
 
 // Valor final por criterio: manual > automático. La nota general sale de la media de criterios disponibles (≥ 3) salvo que haya una manual.
@@ -311,7 +365,8 @@ export function finalRatings(manual, auto) {
   CRITERIA.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
   const vals = CRITERIA.map((c) => out[c.id]).filter((x) => x != null);
   if (vals.length >= 3) {
-    const base = mean(vals), res = auto && auto.result != null ? auto.result : null;
+    const w = (auto && auto.weights) || {}; let sw = 0, sv = 0; CRITERIA.forEach((c) => { if (out[c.id] != null) { const k = w[c.id] != null ? w[c.id] : 1; sw += k; sv += k * out[c.id]; } });
+    const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? auto.result : null;
     out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
   } else { out.overall = null; src.overall = null; }
   return { values: out, sources: src };

@@ -3,7 +3,7 @@ import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Prov, Hint, toast } from './ui';
 import { Radar } from './charts';
 import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, teamName, fmtNum, fmtDate, fmtPct } from './model';
-import { CRITERIA, finalRatings } from './analysis';
+import { CRITERIA, finalRatings, ROLE_LABEL } from './analysis';
 
 const AUTO_HINT = {
   positioning: 'Reparto de su juego entre ataque y defensa, dominio del balón de su equipo y su peso en los toques.', vision: 'Pases clave y asistencias, con la calidad de sus pases completados.',
@@ -59,6 +59,8 @@ function Evaluate({ model, view, params, nav }) {
           <div className="sc-bigrate"><b>{preview && preview.values.overall != null ? fmtNum(preview.values.overall, 1) : '—'}</b><small>{preview && preview.sources.overall ? 'Calculada' : 'sin nota'}</small>{mateAvg != null && preview && preview.values.overall != null && <small className="sc-vs2">Equipo: {fmtNum(mateAvg, 1)} ({preview.values.overall - mateAvg >= 0 ? '+' : ''}{fmtNum(preview.values.overall - mateAvg, 1)})</small>}</div></Card>
         <div className="sc-kpis small"><Kpi label="Goles" value={cur.goals} prov="auto" /><Kpi label="Asist." value={cur.assists} prov="auto" /><Kpi label="Toques" value={cur.kicks} prov="auto" /><Kpi label="Pases" value={cur.passesCompleted + '/' + (cur.passesCompleted + cur.passesFailed)} prov="calc" sub={fmtPct(cur.passAccuracy)} /><Kpi label="Rec.+Int." value={cur.recoveries + cur.interceptions} prov="calc" /></div>
         <Card title="Criterios (0–10)" right={<span className="sc-sub">calculados con el partido</span>}>
+          {auto && auto.role && (() => { const hab = (model.playerById.get(cur.playerId) || {}).position; const map = { Portero: 'GK', Defensa: 'DEF', Mediocentro: 'MID', Delantero: 'FWD' }; const diff = hab && map[hab] && map[hab] !== auto.role;
+            return <p className="sc-note"><b>Jugó de {ROLE_LABEL[auto.role].toLowerCase()}</b> en este partido{diff ? ' (su posición habitual es ' + hab.toLowerCase() + ')' : ''}: se le puntúa por lo que hizo en ese puesto{auto.role === 'GK' ? ' (paradas, goles encajados y portería a cero; no se le exige marcar ni crear)' : auto.role === 'DEF' ? ' (no se le exige marcar ni crear)' : auto.role === 'FWD' ? ' (no se le castiga por no defender)' : ''}.</p>; })()}
           {auto && auto.reason && <p className="sc-note">{auto.reason}</p>}
           {CRITERIA.map((c) => { const v = fin ? fin.values[c.id] : null;
             return (<div className="sc-crit" key={c.id}>
