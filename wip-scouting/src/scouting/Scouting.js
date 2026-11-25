@@ -8,7 +8,7 @@ import { CRITERIA, GK_CRITERIA, criteriaFor, finalRatings, ROLE_LABEL } from './
 const AUTO_HINT = {
   positioning: 'Reparto de su juego entre ataque y defensa, dominio del balón de su equipo y su peso en los toques.', vision: 'Pases clave y asistencias, con la calidad de sus pases completados.',
   passing: 'Precisión de pases (completados / intentos), comparada con el resto cuando hay datos.', finishing: 'Goles y tiros a puerta (los autogoles restan).', defense: 'Bloqueos e intercepciones, y los goles que encajó su equipo.',
-  recoveries: 'Balones recuperados.', involvement: 'Su cuota de los toques del equipo.', creation: 'Asistencias y pases que acaban en tiro.', decisions: 'Cuidar el balón (pérdidas por toque) y elegir bien los tiros.',
+  recoveries: 'Balones recuperados.', saves: 'Paradas según los tiros a puerta que recibió su equipo (más paradas, mejor nota).', concede: 'Goles encajados por su equipo: cuantos menos, mejor.', gkPosition: 'Cómo se coloca respecto a su portería y al balón.', clearances: 'Despejes y salidas para cortar el peligro.', distribution: 'Calidad de sus pases al sacar el balón.', security: 'Cuidar el balón: pocas pérdidas por toque.', involvement: 'Su cuota de los toques del equipo.', creation: 'Asistencias y pases que acaban en tiro.', decisions: 'Cuidar el balón (pérdidas por toque) y elegir bien los tiros.',
 };
 
 export default function Scouting({ model, view, nav, params }) {

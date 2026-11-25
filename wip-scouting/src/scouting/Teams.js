@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import * as db from './db';
-import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, toast } from './ui';
+import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, useLocal, toast } from './ui';
 import { PlayerEditor } from './Players';
 import { toInputDate, standings, headToHead, teamName, fmtDate, fmtNum } from './model';
 
@@ -10,7 +10,7 @@ export default function Teams({ model, nav }) {
   const [tab, setTab] = useState('teams');
   return (
     <div className="sc-view">
-      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['teams', 'Equipos'], ['seasons', 'Temporadas'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Enfrentamientos']]} /></div>
+      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['teams', 'Equipos'], ['seasons', 'Temporadas'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Amistosos']]} /></div>
       {tab === 'teams' && <TeamsTab model={model} nav={nav} />}
       {tab === 'seasons' && <SeasonsTab model={model} />}
       {tab === 'comps' && <CompsTab model={model} />}
@@ -136,9 +136,10 @@ function FixtureEditor({ model, fx, defComp, onClose }) {
 }
 
 function H2H({ model }) {
-  const [a, setA] = useState(''); const [b, setB] = useState('');
+  const [sel, setSel] = useLocal('sc.friendlies', { a: '', b: '' }); const a = sel.a, b = sel.b;
+  const setA = (v) => setSel({ ...sel, a: v }); const setB = (v) => setSel({ ...sel, b: v });
   const h = a && b && a !== b ? headToHead(model, a, b) : null;
-  return <Card title="Historial de enfrentamientos"><div className="sc-grid2"><Select label="Equipo A" value={a} onChange={setA} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /><Select label="Equipo B" value={b} onChange={setB} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /></div>
+  return <Card title="Amistosos" right={<span className="sc-sub">se guarda tu selección</span>}><div className="sc-grid2"><Select label="Equipo A" value={a} onChange={setA} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /><Select label="Equipo B" value={b} onChange={setB} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /></div>
     {!h ? <Empty small>Elige dos equipos distintos.</Empty> : !h.list.length ? <Empty small>No hay partidos registrados entre estos equipos.</Empty> : <>
       <div className="sc-kpis small"><div className="sc-kpi good"><b>{h.W}</b><span>Victorias {teamName(model, a)}</span></div><div className="sc-kpi"><b>{h.D}</b><span>Empates</span></div><div className="sc-kpi bad"><b>{h.L}</b><span>Victorias {teamName(model, b)}</span></div><div className="sc-kpi"><b>{h.gf}–{h.ga}</b><span>Goles</span></div></div>
       <ul className="sc-list">{h.list.map((r) => <li key={r.key}><span className={'sc-res ' + r.outcome}>{r.outcome === 'W' ? 'V' : r.outcome === 'D' ? 'E' : 'D'}</span><div className="mid"><b>{teamName(model, a)} {r.gf} – {r.ga} {teamName(model, b)}</b><small>{fmtDate(r.date)} · {r.source === 'manual' ? 'resultado manual' : 'repetición analizada'}</small></div></li>)}</ul></>}

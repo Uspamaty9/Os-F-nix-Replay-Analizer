@@ -74,3 +74,8 @@ Capa "Sistema de diseño unificado" al final de `scouting.scss` (tokens `--fx-*`
 - Panel: 6 cifras visibles; Jugadores/Equipos/Asistencias/Posesión + Promedios dentro de «Más cifras y promedios» (`Fold`); segundo gráfico y «Goles por partido» en «Más gráficos»; quitado el gráfico de barras duplicado de «Jugadores destacados».
 - Scouting: la explicación de cada criterio va tras un «?» (`Hint`). Partidos: «Editar datos del partido» plegado. Más: texto de copia de seguridad tras «?».
 - Solo presentación; los datos y cálculos no cambian.
+
+## Ajustes (Claude B)
+- Portero: añadidas las explicaciones (`AUTO_HINT`) de saves/concede/gkPosition/clearances/distribution/security.
+- `Radar` (charts.js): lienzo más ancho (380x260) y etiquetas en dos líneas, ya no se recortan.
+- Equipos › «Enfrentamientos» renombrado a «Amistosos»; el par de equipos elegido se guarda (`useLocal('sc.friendlies')`).

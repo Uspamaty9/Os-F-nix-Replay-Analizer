@@ -118,13 +118,14 @@ export function Donut({ parts, size = 120, center }) {
 }
 
 // ---------- Radar ----------
-export function Radar({ axes, series, max = 10, size = 260 }) {
-  const cx = 130, cy = 130, R = 88, n = axes.length;
+export function Radar({ axes, series, max = 10, size = 380 }) {
+  const cx = 190, cy = 130, R = 80, n = axes.length;
+  const lines = (t) => { const w = String(t).split(' '); if (w.length < 2) return [String(t)]; let best = 0, bd = 1e9; for (let k = 1; k < w.length; k++) { const d = Math.abs(w.slice(0, k).join(' ').length - w.slice(k).join(' ').length); if (d < bd) { bd = d; best = k; } } return [w.slice(0, best).join(' '), w.slice(best).join(' ')]; };
   const pt = (i, v) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + Math.cos(a) * R * (v / max), cy + Math.sin(a) * R * (v / max)]; };
   return (
-    <svg viewBox="0 0 260 260" width="100%" style={{ maxWidth: size }} role="img" aria-label="Gráfico radar">
+    <svg viewBox="0 0 380 260" width="100%" style={{ maxWidth: size }} role="img" aria-label="Gráfico radar">
       {[0.25, 0.5, 0.75, 1].map((k) => <polygon key={k} points={axes.map((_, i) => pt(i, max * k).join(',')).join(' ')} className="grid" fill="none" />)}
-      {axes.map((a, i) => { const [x, y] = pt(i, max); const [lx, ly] = pt(i, max * 1.2); return <g key={a.id}><line x1={cx} y1={cy} x2={x} y2={y} className="grid" /><text x={lx} y={ly + 3} textAnchor={lx < cx - 6 ? 'end' : lx > cx + 6 ? 'start' : 'middle'} className="ax">{a.label}</text></g>; })}
+      {axes.map((a, i) => { const [x, y] = pt(i, max); const [lx, ly] = pt(i, max * 1.16); return <g key={a.id}><line x1={cx} y1={cy} x2={x} y2={y} className="grid" /><text x={lx} y={ly + 3 - (lines(a.label).length - 1) * 6} textAnchor={lx < cx - 6 ? 'end' : lx > cx + 6 ? 'start' : 'middle'} className="ax">{lines(a.label).map((t, k) => <tspan key={k} x={lx} dy={k ? 12 : 0}>{t}</tspan>)}</text></g>; })}
       {series.map((s, si) => {
         const c = s.color || col(si); const pts = axes.map((a, i) => pt(i, s.values[a.id] == null ? 0 : s.values[a.id]));
         return <g key={si}><polygon points={pts.map((p) => p.join(',')).join(' ')} fill={c} fillOpacity=".18" stroke={c} strokeWidth="2" strokeLinejoin="round">{s.name && <title>{s.name}</title>}</polygon>{pts.map((p, i) => s.values[axes[i].id] != null && <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={c}><title>{axes[i].label + ': ' + (Math.round(s.values[axes[i].id] * 10) / 10)}</title></circle>)}</g>;

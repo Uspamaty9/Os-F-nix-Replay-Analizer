@@ -197,7 +197,7 @@ hr { border: 0; border-top: 1px solid var(--sc-line); margin: 12px 0; }
 .sc-chart svg, .sc-net { display: block; overflow: visible; }
 .sc-chart .grid, .sc-chart svg .grid, svg .grid { stroke: var(--sc-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 svg polygon.grid { fill: none; }
-.sc-chart .ax, svg .ax { fill: var(--sc-mute); font: 500 9px 'Poppins', sans-serif; }
+.sc-chart .ax, svg .ax { fill: var(--sc-mute); font: 500 10px 'Poppins', sans-serif; }
 .sc-chart .guide { stroke: var(--sc-acc); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; vector-effect: non-scaling-stroke; }
 svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .dn-sm { fill: var(--sc-mute); font: 500 8px 'Poppins', sans-serif; }
 .sc-tip { position: absolute; z-index: 3; pointer-events: none; background: #000d; color: #fff; border: 1px solid var(--sc-line); border-radius: 9px; padding: 6px 9px; font-size: 11px; line-height: 1.35; white-space: nowrap; }
