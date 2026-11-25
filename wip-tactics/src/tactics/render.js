@@ -156,6 +156,7 @@ export function drawShape(ctx, v, shape, pts, opts = {}) {
   ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.setLineDash(shape.dashed || shape.type === 'dline' ? [lw * 2.6, lw * 1.8] : []);
   const t = shape.type;
+  if (t !== 'text' && !opts.noShadow) { ctx.shadowColor = 'rgba(0,0,0,0.32)'; ctx.shadowBlur = 3 * Math.max(v.k, 0.7); ctx.shadowOffsetY = 1; } // sombra suave: las jugadas se leen sobre cualquier fondo
   if (t === 'text') {
     ctx.setLineDash([]);
     const fs = Math.max(11, (shape.width || 3) * 4 * Math.max(v.k, 0.7));
@@ -242,7 +243,9 @@ export function drawPlayer(ctx, v, pl, p, st = {}) {
   }
   // Ficha igual a la del juego HaxBall: relleno del equipo, borde negro fino, dorsal blanco en negrita (Arial Black) y nombre blanco ARRIBA de la ficha
   ctx.fillStyle = pl.color; ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_W * v.k;
-  ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowBlur = 7 * Math.max(v.k, 0.7); ctx.shadowOffsetY = 2.5 * Math.max(v.k, 0.7); // sombra de contacto con el césped
+  ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.stroke();
   const txt = pl.num !== '' && pl.num != null ? String(pl.num) : '';
   if (txt) {
     const fs = r * (txt.length > 2 ? 0.8 : txt.length > 1 ? 0.95 : 1.06);
@@ -273,7 +276,9 @@ export function drawBall(ctx, v, p, st = {}) {
   if (st.ghost) ctx.globalAlpha = 0.3;
   if (st.selected) { ctx.strokeStyle = '#C89A3D'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(s.x, s.y, r + 4, 0, TAU); ctx.stroke(); }
   ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = EDGE_W * v.k;
-  ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.shadowColor = 'rgba(0,0,0,0.38)'; ctx.shadowBlur = 5 * Math.max(v.k, 0.7); ctx.shadowOffsetY = 2 * Math.max(v.k, 0.7);
+  ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.stroke();
   ctx.restore();
 }
 

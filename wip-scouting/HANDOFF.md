@@ -66,3 +66,6 @@ Tests: `wip-scouting/tests/browser/run.js … run6.js` (run6 cubre lo nuevo). Pe
 
 ## Jugadores: abrir solo con «Mi equipo» (Claude B, a petición del usuario)
 - `Players.js`: el filtro «Mostrar» arranca en el equipo propio (`ownTeamId`) si existe; aviso con «Ver todos» y «Ocultarlos del análisis» (reutiliza `onlyMine`, con «Deshacer»). Los jugadores nuevos de repeticiones ya quedaban ocultos por `hideNewPlayers`. Cuidado: no poner comentarios `//` en la línea larga de `useState` de Players.js (se come las declaraciones siguientes y rompe `npm build` por eslint).
+
+## Rediseño visual integral (Claude B)
+Capa "Sistema de diseño unificado" al final de `scouting.scss` (tokens `--fx-*`). Solo estilos; ver `wip-tactics/HANDOFF.md`.

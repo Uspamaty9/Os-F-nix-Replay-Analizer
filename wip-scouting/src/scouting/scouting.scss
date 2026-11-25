@@ -270,3 +270,91 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-selbar .sc-btn.small { padding: 6px 10px; min-height: 32px; white-space: nowrap; }
 .sc-selbar .sc-btn.small.danger { border: 1px solid var(--sc-red2); }
 .sc-root .sc-btn.small.danger:disabled { border-color: var(--sc-line); }
+
+/* =====================================================================================
+   Sistema de diseño unificado (Claude B) · mismos tokens `--fx-*` en Centro de análisis,
+   pizarra y botones de la repetición. Solo estilos: no toca lógica ni estructura.
+   Escala de espacio 4·8·12·16·24 · radios 8/12/16 · una sola elevación suave · acento dorado.
+   ===================================================================================== */
+.sc-root, .sc-toast {
+  --fx-s1: 4px; --fx-s2: 8px; --fx-s3: 12px; --fx-s4: 16px; --fx-s5: 24px;
+  --fx-r-sm: 8px; --fx-r-md: 12px; --fx-r-lg: 16px;
+  --fx-surface-2: color-mix(in srgb, var(--sc-card) 90%, var(--sc-txt) 10%);
+  --fx-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .16);
+  --fx-ring: 0 0 0 2px color-mix(in srgb, var(--sc-acc) 55%, transparent);
+  --fx-ease: cubic-bezier(.2, .7, .2, 1);
+}
+.sc-root {
+  /* cabecera: más aire, título centrado en su altura y botones del mismo lenguaje */
+  .sc-top { min-height: 56px; padding: var(--fx-s2) var(--fx-s3); gap: var(--fx-s3); box-shadow: 0 1px 0 var(--sc-line); }
+  .sc-top h1 { font-size: 15px; letter-spacing: .05em; }
+  .sc-x, .sc-iconbtn { width: 40px; height: 40px; border-radius: var(--fx-r-md); transition: background .15s var(--fx-ease); }
+  .sc-x:hover, .sc-iconbtn:hover { background: color-mix(in srgb, var(--sc-txt) 12%, transparent); }
+  .sc-filterbtn { border-radius: 999px; min-height: 40px; padding: 0 var(--fx-s4); letter-spacing: .02em; }
+  .sc-main { padding: var(--fx-s3) var(--fx-s3) var(--fx-s5); }
+  .sc-view { gap: var(--fx-s3); }
+
+  /* barra inferior: indicador redondeado y etiquetas más legibles */
+  .sc-tabs { box-shadow: 0 -1px 0 var(--sc-line); }
+  .sc-tabs button { gap: 4px; padding: 10px 6px 8px; font-size: 10.5px; letter-spacing: .02em; border-top: 0; position: relative; transition: color .15s var(--fx-ease); }
+  .sc-tabs button::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--sc-acc); transform: scaleX(0); transition: transform .2s var(--fx-ease); }
+  .sc-tabs button.on::before { transform: scaleX(1); }
+
+  /* tarjetas: una sola elevación, cabeceras con marca de acento */
+  .sc-card { border-radius: var(--fx-r-lg); padding: var(--fx-s4); box-shadow: var(--fx-shadow); }
+  .sc-card > header { margin-bottom: var(--fx-s3); }
+  .sc-card > header h3 { display: flex; align-items: center; gap: var(--fx-s2); font-size: 14px; letter-spacing: .08em; }
+  .sc-card > header h3::before { content: ''; width: 3px; height: 14px; border-radius: 2px; background: var(--sc-acc); flex: none; }
+  .sc-card h4 { margin: var(--fx-s4) 0 var(--fx-s2); font-size: 11px; letter-spacing: .1em; }
+  .sc-card .sc-card { box-shadow: none; background: var(--sc-soft); }
+
+  /* indicadores: filas completas (sin huecos al final) y jerarquía número > etiqueta */
+  .sc-kpis { gap: var(--fx-s2); }
+  .sc-kpi { border-radius: var(--fx-r-md); padding: var(--fx-s3) var(--fx-s3) var(--fx-s3) var(--fx-s4); gap: 2px; }
+  .sc-kpi::before { top: var(--fx-s3); bottom: var(--fx-s3); left: 6px; }
+  .sc-kpi b { font-size: 22px; padding-left: 0; letter-spacing: .01em; }
+  .sc-kpi span, .sc-kpi small { padding-left: 0; }
+  .sc-kpi span { font-size: 11px; }
+
+  /* listas: filas con respiración y estados claros */
+  .sc-list > li { padding: var(--fx-s2) var(--fx-s2); border-radius: var(--fx-r-md); min-height: 52px; transition: background .12s var(--fx-ease); }
+  .sc-list > li:hover { background: var(--sc-soft); }
+  .sc-list > li:active { background: color-mix(in srgb, var(--sc-txt) 10%, transparent); }
+  .sc-list > li + li { margin-top: 1px; }
+
+  /* botones y formularios */
+  .sc-btn { border-radius: var(--fx-r-md); min-height: 44px; padding: 0 var(--fx-s4); letter-spacing: .01em; transition: filter .15s var(--fx-ease), transform .1s var(--fx-ease); }
+  .sc-btn:hover:not(:disabled) { filter: brightness(1.07); }
+  .sc-btn:active:not(:disabled) { transform: translateY(1px); }
+  .sc-btn.small { min-height: 34px; padding: 0 var(--fx-s3); border-radius: var(--fx-r-sm); }
+  .sc-btn.ghost { border-color: color-mix(in srgb, var(--sc-txt) 20%, transparent); }
+  .sc-field { gap: 6px; }
+  .sc-field > span { font-size: 10.5px; letter-spacing: .08em; }
+  .sc-field input, .sc-field select, .sc-field textarea, .sc-search { border-radius: var(--fx-r-md); min-height: 44px; padding: 10px var(--fx-s3); transition: border-color .15s, box-shadow .15s; }
+  .sc-field input:focus, .sc-field select:focus, .sc-field textarea:focus, .sc-search:focus { outline: 0; border-color: var(--sc-acc); box-shadow: var(--fx-ring); }
+  .sc-seg { padding: 4px; border-radius: var(--fx-r-md); }
+  .sc-seg button { border-radius: var(--fx-r-sm); min-height: 36px; }
+  .sc-chip { min-height: 36px; padding: 0 var(--fx-s3); }
+
+  /* tablas */
+  .sc-table th { padding: 10px var(--fx-s2); }
+  .sc-table td { padding: 10px var(--fx-s2); }
+  .sc-table tbody tr:hover { background: color-mix(in srgb, var(--sc-txt) 8%, transparent); }
+
+  /* hojas y menús */
+  .sc-overlay { background: rgba(0, 0, 0, .55); backdrop-filter: blur(3px); }
+  .sc-sheet { box-shadow: 0 -8px 40px rgba(0, 0, 0, .5); border-radius: 22px 22px 0 0; }
+  .sc-sheet-head { padding: var(--fx-s4) var(--fx-s4) var(--fx-s2); }
+  .sc-sheet-body { padding: var(--fx-s2) var(--fx-s4) var(--fx-s4); }
+  .sc-sheet-foot { padding: var(--fx-s3) var(--fx-s4) var(--fx-s4); }
+  .sc-menu button { padding-top: var(--fx-s3); padding-bottom: var(--fx-s3); }
+  .sc-empty { padding: var(--fx-s5) var(--fx-s3); }
+}
+@media (min-width: 720px) {
+  .sc-root .sc-main { padding: var(--fx-s5) var(--fx-s5) 32px; }
+  .sc-root .sc-view { max-width: 1040px; }
+  .sc-root .sc-kpis:not(.small) { grid-template-columns: repeat(5, 1fr); }
+  .sc-root .sc-sheet { border-radius: 22px; }
+}
+.sc-root .sc-card > .sc-row.wrap .sc-btn.small { flex: 1 1 calc(33.333% - var(--fx-s2)); white-space: nowrap; }
+.sc-root .sc-menu button svg { flex: none; width: 22px; height: 22px; }

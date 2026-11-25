@@ -133,3 +133,9 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - FYI: Calificaciones 100 % automáticas (analysis.js autoRatings/finalRatings/resultScore): los 9 criterios salen del partido (resultado, goles, tiros, pases, toques, recuperaciones) mezclados con percentiles si hay datos; general = 75 % criterios + 25 % resultado. model.js añade row.ctx (gf, ga, poss, size). Scouting.js: criterios de solo lectura; solo se guardan notas.
 - FYI: roles por partido (analysis.js detectRoles/ROLE_LABEL/ROLE_WEIGHTS): se deduce GK/DEF/MID/FWD de dónde tocó el balón cada jugador y la formación de cada equipo; las calificaciones se ajustan al rol (portero sin exigir gol/creación, delantero sin castigo por no defender; percentiles dentro del mismo rol). Se muestra en Evaluar, detalle del partido (formaciones) y perfil (Posiciones jugadas). Nota: run5.js y run7.js de tests/browser ya fallaban antes de este cambio (jugadores nuevos ocultos por defecto).
 - FYI: el portero tiene criterios propios (analysis.js GK_CRITERIA/GK_WEIGHTS/criteriaFor): Paradas, Goles encajados, Colocación, Despejes y salidas, Distribución, Seguridad con el balón. Evaluar los usa cuando el rol del partido es GK; el perfil del jugador muestra 'Perfil como portero'.
+
+## Rediseño visual integral (Claude B)
+- Capa final "Sistema de diseño unificado" en `tactics.scss` y `scouting.scss`: mismos tokens `--fx-*` (espaciado 4/8/12/16/24, radios 8/12/16, sombra, anillo de foco).
+- Bordes pesados (rojo 2px, dorado en ventanas) → filetes finos; el rojo de marca queda como filete fino en dock y panel.
+- `render.js`: sombras suaves en formas, fichas y balón. Proporciones de cancha y lógica intactas.
+- Sin cambios de lógica ni de funciones; solo CSS + sombras de canvas.
