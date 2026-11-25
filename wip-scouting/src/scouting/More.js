@@ -1,12 +1,15 @@
 // Menú «Más»: secciones secundarias (Pases, Informes), papelera y copia de seguridad.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Hint, Sheet, Avatar, useConfirm, toast, saveFile, askExport, textBytes, pickFile, stamp } from './ui';
 import { fmtDate, teamName, ownTeamId } from './model';
+import { pendingReplays } from './ingest';
 
 const ICON = (d) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 
 export default function More({ model, nav }) {
+  const [pendN, setPendN] = useState(0);
+  useEffect(() => { let alive = true; pendingReplays().then((p) => { if (alive) setPendN(p.length); }).catch(() => { }); return () => { alive = false; }; }, [model.matches.length]);
   const trashN = model.trash.length + model.allPlayers.filter((p) => p.hidden).length;
   return (
     <div className="sc-view">
@@ -14,6 +17,7 @@ export default function More({ model, nav }) {
         <div className="sc-menu">
           <button onClick={() => nav('network')}>{ICON('M5 6a2 2 0 100-4 2 2 0 000 4zM19 6a2 2 0 100-4 2 2 0 000 4zM12 22a2 2 0 100-4 2 2 0 000 4zM6.5 5.5l4.5 12M17.5 5.5L13 17.5M7 4h10')}<span>Red de pases<small>Quién pasa a quién, rutas y conexiones</small></span><span className="chev">›</span></button>
           <button onClick={() => nav('reports')}>{ICON('M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h8')}<span>Informes en PDF<small>Equipo, jugador y partido · cómo se calcula cada dato</small></span><span className="chev">›</span></button>
+          <button onClick={() => nav('pending')}>{ICON('M12 8v5l3 2M21 12a9 9 0 11-3-6.7M21 4v5h-5')}<span>Repeticiones no analizadas{pendN ? ' (' + pendN + ')' : ''}<small>Abre una vez cada repetición para guardar sus estadísticas</small></span><span className="chev">›</span></button>
           <button onClick={() => nav('trash')}>{ICON('M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15')}<span>Papelera{trashN ? ' (' + trashN + ')' : ''}<small>Restaura partidos, equipos y jugadores borrados</small></span><span className="chev">›</span></button>
           <button onClick={() => nav('backup')}>{ICON('M12 3v12M7 10l5 5 5-5M4 21h16')}<span>Copia de seguridad<small>Guardar o restaurar todos los datos del Centro de análisis</small></span><span className="chev">›</span></button>
         </div>
@@ -96,5 +100,18 @@ export function NewPlayersSheet({ model, ids, onClose }) {
       <div className="sc-selbar" style={{ marginTop: 8 }}><button className="sc-btn small ghost" onClick={() => setOn(new Set(list.map((p) => p.id)))}>Todos</button><button className="sc-btn small ghost" onClick={() => setOn(new Set())}>Ninguno</button></div>
       <ul className="sc-list">{list.map((p) => <li key={p.id} onClick={() => toggle(p.id)}><span className={'sc-check' + (on.has(p.id) ? ' on' : '')}>{on.has(p.id) ? '✓' : ''}</span><Avatar player={p} size={32} /><div className="mid"><b>{p.nick}</b><small>{on.has(p.id) ? 'De mi equipo' : 'Ignorar'}</small></div></li>)}</ul>
     </Sheet>
+  );
+}
+
+export function Pending({ openReplay }) {
+  const [pending, setPending] = useState(null);
+  useEffect(() => { let alive = true; pendingReplays().then((p) => { if (alive) setPending(p); }).catch(() => { if (alive) setPending([]); }); return () => { alive = false; }; }, []);
+  return (
+    <div className="sc-view">
+      <Card title="Repeticiones no analizadas" right={<span className="sc-sub">{pending ? pending.length : ''}</span>}>
+        <p className="sc-note">Se guardaron antes de existir este módulo. Ábrelas una vez: al terminar el análisis, sus estadísticas se guardan solas.</p>
+        {pending && !pending.length ? <Empty small>No tienes repeticiones pendientes.</Empty> : <ul className="sc-list">{(pending || []).map((r) => <li key={r.id} onClick={() => openReplay(r.id)}><div className="mid"><b>{r.name}</b><small>{r.info ? r.info.red + ' - ' + r.info.blue : 'Sin analizar'} · {fmtDate(r.addedAt)}</small></div><span className="sc-btn small">Analizar</span></li>)}</ul>}
+      </Card>
+    </div>
   );
 }

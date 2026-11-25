@@ -375,3 +375,7 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-root .sc-selbar .sc-btn.small { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; min-height: 36px; font-size: 12.5px; border-radius: 999px; flex: 0 0 auto; }
 .sc-root .sc-selbar .sc-btn.small svg { flex: none; }
 .sc-root .sc-avatar.txt { display: inline-flex; align-items: center; justify-content: center; line-height: 1; overflow: hidden; }
+.sc-root .sc-selbar .sc-btn.small.icon { width: 42px; min-height: 40px; padding: 0; justify-content: center; border-radius: 12px; }
+.sc-root .sc-selbar .sc-btn.small.icon svg { width: 18px; height: 18px; }
+.sc-kpi.draw b { color: #9aa0a6; } .sc-kpi.draw::before { background: #9aa0a6; }
+.sc-res.D { background: #7f868d; }

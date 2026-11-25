@@ -88,3 +88,8 @@ Equipos › Amistosos (`H2H` en Teams.js, reescrito): siempre «Mi equipo» vs u
 - Jugadores: barra de acciones compacta con iconos (`BtnIc` en ui.js).
 - Equipos: quitada la pestaña Temporadas (código y datos intactos); el selector de competición ya no ofrece «Amistosos» (los existentes siguen mostrándose).
 - Avatares: `avatarTexts()/avatarTextOf()` en ui.js (misma clave `fenix.avatars.v1` que la pizarra). `ingestStats` guarda `player.avatarText` en cada análisis; `Avatar` usa foto > `avatarText` > iniciales.
+
+## Ajustes 25/11 (2) (Claude B)
+- Empates en gris: `Kpi tone="draw"` / `.sc-kpi.draw` (Panel y Amistosos).
+- «Repeticiones no analizadas» pasa de Panel a Más › nueva pantalla `pending` (`Pending` en More.js, ruta añadida en ScoutingApp.js).
+- Jugadores: barra solo con iconos (aria-label/title), quitado el botón «Mi equipo» (`onlyMine` sigue usándose en «Ocultarlos del análisis»).

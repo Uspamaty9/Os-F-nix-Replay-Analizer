@@ -172,7 +172,7 @@ function H2H({ model }) {
       <div className="sc-row end"><button className="sc-btn" disabled={!pick || !oppName} onClick={add}>Añadir a Amistosos</button></div>
     </Card>
     {list.length > 0 && <Card title={oppName ? 'Contra ' + oppName : 'Todos los amistosos'}>
-      <div className="sc-kpis small"><div className="sc-kpi good"><b>{W}</b><span>Victorias</span></div><div className="sc-kpi"><b>{D}</b><span>Empates</span></div><div className="sc-kpi bad"><b>{L}</b><span>Derrotas</span></div><div className="sc-kpi"><b>{gf}–{ga}</b><span>Goles</span></div></div>
+      <div className="sc-kpis small"><div className="sc-kpi good"><b>{W}</b><span>Victorias</span></div><div className="sc-kpi draw"><b>{D}</b><span>Empates</span></div><div className="sc-kpi bad"><b>{L}</b><span>Derrotas</span></div><div className="sc-kpi"><b>{gf}–{ga}</b><span>Goles</span></div></div>
       <ul className="sc-list">{list.map((m) => { const o = m.score[mine(m)] - m.score[1 - mine(m)]; const oppId = mine(m) === 0 ? m.blueTeamId : m.redTeamId; return <li key={m.id}><span className={'sc-res ' + (o > 0 ? 'W' : o < 0 ? 'L' : 'D')}>{o > 0 ? 'V' : o < 0 ? 'D' : 'E'}</span><div className="mid"><b>{teamName(model, own)} {m.score[mine(m)]} – {m.score[1 - mine(m)]} {teamName(model, oppId, 'Rival')}</b><small>{fmtDate(m.date)} · {m.rec.name}</small></div><button className="sc-btn small ghost" onClick={() => remove(m)}>Quitar</button></li>; })}</ul>
     </Card>}
     {!list.length && <Card><Empty small>{all.length ? 'No hay amistosos contra ese equipo.' : 'Escribe el nombre del rival, elige una repetición y añádela.'}</Empty></Card>}

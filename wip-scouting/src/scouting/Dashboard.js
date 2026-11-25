@@ -27,7 +27,7 @@ export default function Dashboard({ model, view: baseView, nav, openReplay }) {
       <div className="sc-kpis">
         <Kpi label="Partidos analizados" value={d.matchCount} prov="auto" />
         <Kpi label={hasTeam ? 'Victorias' : 'Partidos con ganador'} value={hasTeam ? d.W : d.decisive} tone={hasTeam ? 'good' : ''} />
-        <Kpi label={hasTeam ? 'Empates' : 'Empates'} value={hasTeam ? d.D : d.draws} />
+        <Kpi label="Empates" value={hasTeam ? d.D : d.draws} tone="draw" />
         <Kpi label={hasTeam ? 'Derrotas' : 'Equipo'} value={hasTeam ? d.L : '—'} tone={hasTeam ? 'bad' : ''} sub={hasTeam ? '' : 'Elige uno en los filtros'} />
         <Kpi label="Victorias (%)" value={fmtPct(d.winPct)} prov="calc" sub={hasTeam ? teamName(model, d.perspective) : 'Requiere equipo'} />
         <Kpi label="Goles" value={hasTeam && d.played ? d.goals + ' / ' + d.goalsAgainst : d.goals} sub={hasTeam ? 'a favor / en contra' : 'totales'} prov="auto" />
@@ -80,13 +80,6 @@ export default function Dashboard({ model, view: baseView, nav, openReplay }) {
         </>}
       </Card>
 
-      {pending.length > 0 && (
-        <Fold title={'Repeticiones no analizadas (' + pending.length + ')'}>
-          <p className="sc-note">Estas repeticiones del historial se guardaron antes de existir este módulo. Ábrelas una vez: al terminar el análisis, sus estadísticas se guardan solas.</p>
-          <ul className="sc-list">{pending.slice(0, 6).map((r) => <li key={r.id} onClick={() => openReplay(r.id)}><div className="mid"><b>{r.name}</b><small>{r.info ? r.info.red + ' - ' + r.info.blue : 'Sin analizar'} · {fmtDate(r.addedAt)}</small></div><span className="sc-btn small">Analizar</span></li>)}</ul>
-          {pending.length > 6 && <p className="sc-note">y {pending.length - 6} más en el historial.</p>}
-        </Fold>
-      )}
     </div>
   );
 }

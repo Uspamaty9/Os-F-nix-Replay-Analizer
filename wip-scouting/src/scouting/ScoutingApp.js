@@ -10,7 +10,7 @@ import Matches from './Matches';
 import Network from './Network';
 import Teams from './Teams';
 import Reports from './Reports';
-import More, { Trash, Backup, SearchSheet, NewPlayersSheet } from './More';
+import More, { Trash, Pending, Backup, SearchSheet, NewPlayersSheet } from './More';
 
 class Boundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -20,7 +20,7 @@ class Boundary extends React.Component {
 }
 
 const TABS = [['dash', 'Panel', 'M4 20V10M10 20V4M16 20v-7M22 20H2'], ['players', 'Jugadores', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['scouting', 'Scouting', 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z'], ['matches', 'Partidos', 'M3 5h18v14H3zM12 5v14M3 12h18'], ['teams', 'Equipos', 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6'], ['more', 'Más', 'M5 12h.01M12 12h.01M19 12h.01']];
-const MORE = ['more', 'network', 'reports', 'trash', 'backup']; // pantallas dentro de «Más»
+const MORE = ['more', 'network', 'reports', 'trash', 'pending', 'backup']; // pantallas dentro de «Más»
 
 export default function ScoutingApp({ onClose, openReplay }) {
   const { model, error } = useModel();
@@ -38,7 +38,7 @@ export default function ScoutingApp({ onClose, openReplay }) {
   const view = model ? applyFilters(model, f) : null;
   const active = Object.values(f).filter(Boolean).length;
   const set = (k) => (v) => setFilters({ ...f, [k]: v });
-  const showFilters = !['teams', 'reports', 'more', 'trash', 'backup'].includes(tab);
+  const showFilters = !['teams', 'reports', 'more', 'trash', 'pending', 'backup'].includes(tab);
   return (
     <div className="sc-root sc-overlay-full" role="dialog" aria-label="Centro de análisis">
       <header className="sc-top">
@@ -66,6 +66,7 @@ export default function ScoutingApp({ onClose, openReplay }) {
             {MORE.includes(tab) && tab !== 'more' && <button className="sc-link back" onClick={() => nav('more', {})}>‹ Más</button>}
             {tab === 'more' && <More model={model} nav={nav} />}
             {tab === 'trash' && <Trash model={model} />}
+            {tab === 'pending' && <Pending model={model} openReplay={open} />}
             {tab === 'backup' && <Backup />}
             {tab === 'network' && <Network model={model} view={view} filters={f} nav={nav} params={params} />}
             {tab === 'teams' && <Teams model={model} nav={nav} />}
