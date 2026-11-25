@@ -99,3 +99,6 @@ Jugadores: barra en una sola fila (`nowrap`, botones con icono + texto corto: Co
 
 ## Ajustes 25/11 (4) (Claude B)
 Jugadores › Nuevo abre una hoja con dos opciones: «Crear desde cero» (`PlayerEditor`) y «Meter un jugador analizado» (asigna `teamId = Mi equipo` y `ignored=false` a un jugador ya analizado). Lo segundo ya existía en Equipos › plantilla del equipo.
+
+## Ajustes 25/11 (5) (Claude B)
+Jugadores › Nuevo › «Meter un jugador analizado»: ya no usa el `<select>` nativo de Android; lista propia con buscador y avatar, y confirmación (`useConfirm`) antes de asignarlo al equipo.

@@ -61,7 +61,7 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
 const METRICS = [['goals', 'Goles', 'auto'], ['assists', 'Asistencias', 'auto'], ['kicks', 'Toques', 'auto'], ['shotsOT', 'Tiros a puerta', 'auto'], ['passesCompleted', 'Pases completados', 'calc'], ['passesReceived', 'Pases recibidos', 'calc'], ['passesFailed', 'Pases fallidos', 'calc'], ['turnovers', 'Pérdidas', 'calc'], ['recoveries', 'Recuperaciones', 'calc'], ['interceptions', 'Intercepciones', 'calc'], ['blocks', 'Bloqueos', 'calc'], ['keyPasses', 'Pases clave', 'calc'], ['goalInvolvements', 'Participaciones en gol', 'calc'], ['ownGoals', 'Goles en propia', 'auto']];
 
 export default function Players({ model, view, filters, nav, params }) {
-  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [newMenu, setNewMenu] = useState(0); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [sortBy, setSortBy] = useState('inv'); const [teamF, setTeamF] = useState(() => ownTeamId(model) || ''); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
+  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [newMenu, setNewMenu] = useState(0); const [nq, setNq] = useState(''); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [sortBy, setSortBy] = useState('inv'); const [teamF, setTeamF] = useState(() => ownTeamId(model) || ''); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
   const sel = params && params.playerId; const setSel = (id) => nav('players', { playerId: id });
   const ids = useMemo(() => new Set(view.matches.map((m) => m.id)), [view]);
   const list = useMemo(() => {
@@ -111,8 +111,13 @@ export default function Players({ model, view, filters, nav, params }) {
         <Sheet title="Nuevo jugador" onClose={close}>
           {newMenu === 1 ? <div className="sc-menu">
             <button onClick={() => { close(); setEdit({}); }}><BtnIc n="add" /><span>Crear desde cero<small>Un jugador nuevo con su apodo, posición y foto</small></span><span className="chev">›</span></button>
-            <button disabled={!own || !cand.length} onClick={() => setNewMenu(2)}><BtnIc n="mine" /><span>Meter un jugador analizado<small>{own ? 'Añade a ' + teamName(model, own) + ' a alguien que ya salió en una repetición' : 'Primero marca tu equipo como «Mi equipo»'}</small></span><span className="chev">›</span></button>
-          </div> : <Select label={'Añadir a ' + teamName(model, own)} value="" placeholder="Elegir jugador…" onChange={async (v) => { const x = model.playerById.get(v) || model.allPlayers.find((z) => z.id === v); if (x) { await db.put('players', { ...x, teamId: own, ignored: false, updatedAt: Date.now() }); toast(x.nick + ' ahora es de ' + teamName(model, own)); } close(); }} options={cand.map((x) => [x.id, x.nick + (x.teamId ? ' (' + teamName(model, x.teamId) + ')' : '')])} />}
+            <button disabled={!own || !cand.length} onClick={() => { setNq(''); setNewMenu(2); }}><BtnIc n="mine" /><span>Meter un jugador analizado<small>{own ? 'Añade a ' + teamName(model, own) + ' a alguien que ya salió en una repetición' : 'Primero marca tu equipo como «Mi equipo»'}</small></span><span className="chev">›</span></button>
+          </div> : <div>
+            <input className="sc-search" placeholder="Buscar por nickname…" value={nq} onChange={(e) => setNq(e.target.value)} />
+            <ul className="sc-list" style={{ maxHeight: '52vh', overflowY: 'auto', marginTop: 8 }}>{cand.filter((x) => !nq.trim() || x.nick.toLowerCase().includes(nq.trim().toLowerCase())).map((x) => (
+              <li key={x.id} onClick={async () => { if (!(await confirm('¿Meter a «' + x.nick + '» en ' + teamName(model, own) + '?' + (x.teamId ? ' Dejará de estar en ' + teamName(model, x.teamId) + '.' : ''), 'Meter en el equipo'))) return; await db.put('players', { ...x, teamId: own, ignored: false, updatedAt: Date.now() }); toast(x.nick + ' ahora es de ' + teamName(model, own)); close(); }}><Avatar player={x} size={34} /><div className="mid"><b>{x.nick}</b><small>{x.teamId ? teamName(model, x.teamId) : 'Sin equipo'}</small></div><span className="chev">›</span></li>
+            ))}</ul>
+          </div>}
         </Sheet>); })()}
       {edit && <PlayerEditor model={model} player={edit.id ? edit : null} onClose={() => setEdit(null)} onSaved={(r) => r && setSel(r.id)} />}
       {confirmEl}
