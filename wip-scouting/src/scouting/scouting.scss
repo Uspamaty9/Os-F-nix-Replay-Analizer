@@ -379,3 +379,6 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-root .sc-selbar .sc-btn.small.icon svg { width: 18px; height: 18px; }
 .sc-kpi.draw b { color: #9aa0a6; } .sc-kpi.draw::before { background: #9aa0a6; }
 .sc-res.D { background: #7f868d; }
+/* Una sola fila: botones con icono + texto corto, reparten el ancho */
+.sc-root .sc-selbar { flex-wrap: nowrap; }
+.sc-root .sc-selbar .sc-btn.small { flex: 1 1 0; min-width: 0; width: auto; padding: 0 8px; justify-content: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

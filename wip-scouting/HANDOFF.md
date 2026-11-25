@@ -93,3 +93,6 @@ Equipos › Amistosos (`H2H` en Teams.js, reescrito): siempre «Mi equipo» vs u
 - Empates en gris: `Kpi tone="draw"` / `.sc-kpi.draw` (Panel y Amistosos).
 - «Repeticiones no analizadas» pasa de Panel a Más › nueva pantalla `pending` (`Pending` en More.js, ruta añadida en ScoutingApp.js).
 - Jugadores: barra solo con iconos (aria-label/title), quitado el botón «Mi equipo» (`onlyMine` sigue usándose en «Ocultarlos del análisis»).
+
+## Ajustes 25/11 (3) (Claude B)
+Jugadores: barra en una sola fila (`nowrap`, botones con icono + texto corto: Comparar, Seleccionar, Nuevo). Quitado el botón «Elegir» de la barra: el enlace «Elegir jugadores» de la nota abre lo mismo (`PickPlayers`).
