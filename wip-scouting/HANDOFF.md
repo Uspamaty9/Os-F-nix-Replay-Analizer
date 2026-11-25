@@ -96,3 +96,6 @@ Equipos › Amistosos (`H2H` en Teams.js, reescrito): siempre «Mi equipo» vs u
 
 ## Ajustes 25/11 (3) (Claude B)
 Jugadores: barra en una sola fila (`nowrap`, botones con icono + texto corto: Comparar, Seleccionar, Nuevo). Quitado el botón «Elegir» de la barra: el enlace «Elegir jugadores» de la nota abre lo mismo (`PickPlayers`).
+
+## Ajustes 25/11 (4) (Claude B)
+Jugadores › Nuevo abre una hoja con dos opciones: «Crear desde cero» (`PlayerEditor`) y «Meter un jugador analizado» (asigna `teamId = Mi equipo` y `ignored=false` a un jugador ya analizado). Lo segundo ya existía en Equipos › plantilla del equipo.
