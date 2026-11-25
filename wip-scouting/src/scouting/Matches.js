@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import * as db from './db';
-import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Prov, useConfirm, toast, saveFile, askExport, slug, stamp } from './ui';
+import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Prov, Fold, useConfirm, toast, saveFile, askExport, slug, stamp } from './ui';
 import { NetworkGraph, StackBar } from './charts';
 import { toInputDate, passNetwork, teamName, fmtPct, fmtNum, fmtDate, fmtDur } from './model';
 import { suggestTeams, mergeMatches, undoMerge } from './ingest';
@@ -78,6 +78,7 @@ function Detail({ model, m, nav, openReplay }) {
         {(an.teams.R.formation || an.teams.B.formation) && <p className="sc-note"><b>Formaciones</b> (deducidas de dónde tocó el balón cada jugador): {rn}: {an.teams.R.formation ? an.teams.R.formation.text : '—'} · {bn}: {an.teams.B.formation ? an.teams.B.formation.text : '—'}</p>}
         {an.spaceMode && <p className="sc-note">Partida en modo especial: los pases se reconstruyen de la secuencia de toques.</p>}
       </Card>
+      <Fold title="Editar datos del partido">
       <Card title="Datos del partido" right={<span className="sc-sub">manual <Prov k="manual" /></span>}>
         <div className="sc-grid2">
           <Input label="Nombre" value={rec.name} onChange={(v) => upd({ name: v })} />
@@ -93,6 +94,7 @@ function Detail({ model, m, nav, openReplay }) {
         <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={suggest}>Sugerir equipos por plantilla</button>{rec.fixtureId && <small className="sc-sub">Vinculado a la jornada: el resultado sale de la repetición.</small>}</div>
         {rec.parts.length > 1 && <><hr /><p className="sc-note">La repetición contiene {rec.parts.length} tramos. Se usa uno para las estadísticas del partido:</p><Seg value={String(rec.partIdx)} onChange={(v) => upd({ partIdx: +v })} options={rec.parts.map((p, i) => [String(i), 'Tramo ' + (i + 1) + ' · ' + p.scoreRed + '–' + p.scoreBlue + ' · ' + fmtDur(p.ticks)])} /></>}
       </Card>
+      </Fold>
       <Card title="Comparativa de equipos"><div className="sc-vs">{cmpRows.map(([l, a, b, pv, fm]) => { const f = fm || ((v) => v); const na = typeof a === 'number' ? a : null, nb = typeof b === 'number' ? b : null; return <div key={l} className="row"><b className={na != null && nb != null && na > nb ? 'win' : ''}>{a == null ? '—' : f(a)}</b><span>{l}<Prov k={pv} /></span><b className={na != null && nb != null && nb > na ? 'win' : ''}>{b == null ? '—' : f(b)}</b></div>; })}</div>
         <div className="sc-legend"><span><i style={{ background: '#B23A48' }} />{rn}</span><span><i style={{ background: '#3A78B5' }} />{bn}</span></div>
         {R.possession != null && <StackBar parts={[{ label: rn, value: Math.round(R.possession * 100), color: '#B23A48' }, { label: bn, value: Math.round(B.possession * 100), color: '#3A78B5' }]} />}</Card>

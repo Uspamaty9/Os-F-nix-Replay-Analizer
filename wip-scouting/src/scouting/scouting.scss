@@ -358,3 +358,14 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 }
 .sc-root .sc-card > .sc-row.wrap .sc-btn.small { flex: 1 1 calc(33.333% - var(--fx-s2)); white-space: nowrap; }
 .sc-root .sc-menu button svg { flex: none; width: 22px; height: 22px; }
+
+/* Simplificación: ayudas plegadas dentro de títulos de criterio */
+.sc-root .sc-crit .top b .sc-hint { display: inline; margin-left: var(--fx-s2); }
+.sc-root .sc-crit .top b .sc-hint .sc-note { display: block; margin-top: var(--fx-s2); font-weight: 400; }
+.sc-root .sc-fold { margin: 0; }
+.sc-root .sc-view > .sc-fold { background: var(--sc-card); border: 1px solid var(--sc-line); border-radius: var(--fx-r-lg); padding: 0 var(--fx-s4); box-shadow: var(--fx-shadow); }
+.sc-root .sc-view > .sc-fold > summary { min-height: 48px; padding: 0; }
+.sc-root .sc-view > .sc-fold[open] > summary { border-bottom: 1px solid var(--sc-line); }
+.sc-root .sc-view > .sc-fold > div { padding: var(--fx-s3) 0 var(--fx-s4); display: grid; gap: var(--fx-s3); }
+.sc-root .sc-view > .sc-fold .sc-card { box-shadow: none; border: 0; padding: 0; background: transparent; }
+.sc-root .sc-bigrate small { display: block; }

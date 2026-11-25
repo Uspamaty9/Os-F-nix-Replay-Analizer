@@ -69,3 +69,8 @@ Tests: `wip-scouting/tests/browser/run.js … run6.js` (run6 cubre lo nuevo). Pe
 
 ## Rediseño visual integral (Claude B)
 Capa "Sistema de diseño unificado" al final de `scouting.scss` (tokens `--fx-*`). Solo estilos; ver `wip-tactics/HANDOFF.md`.
+
+## Centro de análisis simplificado (Claude B)
+- Panel: 6 cifras visibles; Jugadores/Equipos/Asistencias/Posesión + Promedios dentro de «Más cifras y promedios» (`Fold`); segundo gráfico y «Goles por partido» en «Más gráficos»; quitado el gráfico de barras duplicado de «Jugadores destacados».
+- Scouting: la explicación de cada criterio va tras un «?» (`Hint`). Partidos: «Editar datos del partido» plegado. Más: texto de copia de seguridad tras «?».
+- Solo presentación; los datos y cálculos no cambian.

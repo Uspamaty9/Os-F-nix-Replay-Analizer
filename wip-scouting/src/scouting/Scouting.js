@@ -64,13 +64,12 @@ function Evaluate({ model, view, params, nav }) {
           {auto && auto.reason && <p className="sc-note">{auto.reason}</p>}
           {criteriaFor(auto && auto.criteria === 'GK' ? 'GK' : null).map((c) => { const v = fin ? fin.values[c.id] : null;
             return (<div className="sc-crit" key={c.id}>
-              <div className="top"><b>{c.label}</b><span className="val">{v != null ? fmtNum(v, 1) : '—'}<Prov k="calc" /></span></div>
+              <div className="top"><b>{c.label}<Hint>{AUTO_HINT[c.id]}</Hint></b><span className="val">{v != null ? fmtNum(v, 1) : '—'}<Prov k="calc" /></span></div>
               <div className="sc-bar" role="img" aria-label={c.label + ' ' + (v != null ? v : 0) + ' de 10'} style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (v != null ? v * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
-              <div className="sub"><span><small>{AUTO_HINT[c.id]}</small></span></div>
             </div>); })}
-          <div className="sc-crit"><div className="top"><b>Rendimiento general</b><span className="val">{fin && fin.values.overall != null ? fmtNum(fin.values.overall, 1) : '—'}<Prov k="calc" /></span></div>
+          <div className="sc-crit"><div className="top"><b>Rendimiento general<Hint>75 % la media de los criterios{auto && auto.criteria === 'GK' ? ' de portero (paradas y goles encajados pesan más)' : ''} + 25 % el resultado del partido{auto && auto.result != null ? ' (' + fmtNum(auto.result, 1) + ': ' + m.score[cur.side === 'R' ? 0 : 1] + '–' + m.score[cur.side === 'R' ? 1 : 0] + ' para su equipo)' : ''}.</Hint></b><span className="val">{fin && fin.values.overall != null ? fmtNum(fin.values.overall, 1) : '—'}<Prov k="calc" /></span></div>
             <div className="sc-bar" style={{ height: 8, borderRadius: 6, background: 'var(--sc-line, rgba(255,255,255,.12))', overflow: 'hidden' }}><i style={{ display: 'block', height: '100%', width: (fin && fin.values.overall != null ? fin.values.overall * 10 : 0) + '%', background: 'var(--sc-acc, #C89A3D)' }} /></div>
-            <div className="sub"><span><small>75 % la media de los criterios{auto && auto.criteria === 'GK' ? ' de portero (paradas y goles encajados pesan más)' : ''} + 25 % el resultado del partido{auto && auto.result != null ? ' (' + fmtNum(auto.result, 1) + ': ' + m.score[cur.side === 'R' ? 0 : 1] + '–' + m.score[cur.side === 'R' ? 1 : 0] + ' para su equipo)' : ''}.</small></span></div></div>
+            </div>
           <label className="sc-field"><span>Notas del partido <Prov k="manual" /></span><textarea rows={4} placeholder="Observaciones, puntos fuertes, a mejorar…" value={draft.notes} onChange={(e) => { setDraft((d) => ({ ...d, notes: e.target.value })); setDirty(true); }} /></label>
           <div className="sc-row end"><button className="sc-btn ghost" onClick={() => nav('players', { playerId: cur.playerId })}>Ver perfil</button>{rt && rt.record && rt.record.notes && <button className="sc-btn ghost danger" onClick={clearAll}>Borrar notas</button>}<button className="sc-btn" disabled={!dirty} onClick={save}>{dirty ? 'Guardar notas' : 'Notas guardadas'}</button></div>
         </Card>

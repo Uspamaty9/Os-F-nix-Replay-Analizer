@@ -1,7 +1,7 @@
 // Menú «Más»: secciones secundarias (Pases, Informes), papelera y copia de seguridad.
 import React, { useState } from 'react';
 import * as db from './db';
-import { Card, Empty, Sheet, Avatar, useConfirm, toast, saveFile, askExport, textBytes, pickFile, stamp } from './ui';
+import { Card, Empty, Hint, Sheet, Avatar, useConfirm, toast, saveFile, askExport, textBytes, pickFile, stamp } from './ui';
 import { fmtDate, teamName, ownTeamId } from './model';
 
 const ICON = (d) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
@@ -53,7 +53,7 @@ export function Backup() {
   return (
     <div className="sc-view">
       <Card title="Copia de seguridad">
-        <p className="sc-note">Guarda equipos, jugadores (con fotos), partidos analizados, calificaciones, competiciones y papelera. Los datos ya se guardan solos en este dispositivo; la copia sirve para pasarlos a otro dispositivo, a la app nueva o protegerlos. Restaurar no borra nada: solo añade o actualiza.</p>
+        <p className="sc-note">Los datos se guardan solos en este dispositivo.<Hint>Guarda equipos, jugadores (con fotos), partidos analizados, calificaciones, competiciones y papelera. Los datos ya se guardan solos en este dispositivo; la copia sirve para pasarlos a otro dispositivo, a la app nueva o protegerlos. Restaurar no borra nada: solo añade o actualiza.</Hint></p>
         <div className="sc-row wrap"><button className="sc-btn" onClick={backup}>Crear copia</button><button className="sc-btn ghost" onClick={restore}>Restaurar copia</button></div>
       </Card>
     </div>
