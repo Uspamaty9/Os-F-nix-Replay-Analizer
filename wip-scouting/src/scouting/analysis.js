@@ -288,7 +288,24 @@ export const GK_CRITERIA = [
   { id: 'security', label: 'Seguridad con el balón', auto: true },
 ];
 export const GK_WEIGHTS = { saves: 2.2, concede: 2.2, gkPosition: 1.4, clearances: 1, distribution: 1, security: 1 };
-export const criteriaFor = (role) => (role === 'GK' ? GK_CRITERIA : CRITERIA);
+// Criterios propios de cada puesto de campo
+export const DEF_CRITERIA = [
+  { id: 'cuts', label: 'Cortes', auto: true }, { id: 'solidity', label: 'Solidez defensiva', auto: true }, { id: 'defPosition', label: 'Colocación defensiva', auto: true },
+  { id: 'recoveries', label: 'Recuperaciones', auto: true }, { id: 'buildUp', label: 'Salida de balón', auto: true }, { id: 'security', label: 'Seguridad con el balón', auto: true },
+];
+export const MID_CRITERIA = [
+  { id: 'passing', label: 'Precisión de pases', auto: true }, { id: 'creation', label: 'Creación', auto: true }, { id: 'vision', label: 'Visión de juego', auto: true },
+  { id: 'control', label: 'Control del juego', auto: true }, { id: 'work', label: 'Trabajo sin balón', auto: true }, { id: 'midPosition', label: 'Colocación', auto: true }, { id: 'decisions', label: 'Decisiones', auto: true },
+];
+export const FWD_CRITERIA = [
+  { id: 'finishing', label: 'Definición', auto: true }, { id: 'shooting', label: 'Remate', auto: true }, { id: 'threat', label: 'Peligro en ataque', auto: true },
+  { id: 'linkup', label: 'Juego asociado', auto: true }, { id: 'fwdPosition', label: 'Desmarque y ubicación', auto: true }, { id: 'pressing', label: 'Presión', auto: true }, { id: 'decisions', label: 'Decisiones', auto: true },
+];
+export const DEF_WEIGHTS = { cuts: 1.8, solidity: 1.6, defPosition: 1.3, recoveries: 1.2, buildUp: 1, security: 1 };
+export const MID_WEIGHTS = { passing: 1.2, creation: 1.2, vision: 1.2, control: 1.2, work: 1, midPosition: 1, decisions: 1 };
+export const FWD_WEIGHTS = { finishing: 2, shooting: 1.4, threat: 1.4, linkup: 1, fwdPosition: 1.1, pressing: 0.5, decisions: 1 };
+export const ROLE_SETS = { GK: GK_CRITERIA, DEF: DEF_CRITERIA, MID: MID_CRITERIA, FWD: FWD_CRITERIA };
+export const criteriaFor = (role) => ROLE_SETS[role] || CRITERIA;
 export const MIN_POP_ROWS = 8, MIN_POP_MATCHES = 2, MIN_PLAYER_KICKS = 3;
 
 function pctRank(v, pop) {
@@ -331,6 +348,44 @@ export function autoRatings(row, population) {
   const size = ctx.size > 0 ? ctx.size : 3;
   const share = row.kickShare != null ? row.kickShare : null;
   const gk = role === 'GK', def = role === 'DEF', fwd = role === 'FWD';
+  const fieldRole = role === 'DEF' || role === 'MID' || role === 'FWD';
+  if (fieldRole) { // ---- criterios propios del puesto de campo (0–10; null = no aplica / sin datos)
+    const gaC = ctx.ga != null ? ctx.ga : null, dom = ctx.poss != null ? ctx.poss - 0.5 : 0;
+    const defN = row.blocks + row.interceptions, work = defN + row.recoveries;
+    const accScore = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : null;
+    const sec = row.kicks > 0 ? 1 - row.turnovers / row.kicks : null;
+    const secScore = sec != null ? clamp10((sec - 0.45) / 0.5 * 10) : null;
+    const zoneOf = (ideal) => (row.depth != null ? clamp10(10 - 7 * Math.abs(row.depth - ideal)) : 5);
+    const creS = blend(clamp10(4 + 2.2 * row.assists + 1.0 * row.keyPasses), mean([pctRank(row.assists, col((r) => r.assists)), pctRank(row.keyPasses, col((r) => r.keyPasses))]));
+    const shotsN = row.shotsOT + row.goals;
+    const finS = blend(clamp10(4 + 1.8 * row.goals + 0.6 * Math.max(0, row.shotsOT - row.goals) - 1.5 * row.ownGoals), mean([pctRank(row.goals, col((r) => r.goals)), pctRank(row.shotsOT, col((r) => r.shotsOT))]));
+    let values;
+    if (def) values = {
+      cuts: blend(clamp10(3.5 + 1.8 * defN - 1.5 * row.ownGoals), pctRank(defN, col((r) => r.blocks + r.interceptions))),
+      solidity: gaC != null ? clamp10(10 - 1.8 * gaC - 1.5 * row.ownGoals + 0.5 * Math.min(3, defN)) : null,
+      defPosition: zoneOf(-0.35),
+      recoveries: blend(clamp10(4 + 1.0 * row.recoveries + 0.4 * row.interceptions), pctRank(row.recoveries, col((r) => r.recoveries))),
+      buildUp: accScore, security: secScore,
+    };
+    else if (role === 'MID') values = {
+      passing: accScore != null ? accScore : 5, creation: creS,
+      vision: clamp10(0.5 * creS + 0.5 * (accScore != null ? accScore : 5)),
+      control: clamp10(0.6 * (share != null ? clamp10(5 * share * size) : 5) + 0.4 * clamp10(5 + 10 * dom)),
+      work: blend(clamp10(4 + 0.9 * work), pctRank(work, col((r) => r.blocks + r.interceptions + r.recoveries))),
+      midPosition: clamp10(0.75 * zoneOf(0) + 2.5 * 0.5 + 3 * dom), decisions: secScore != null ? clamp10(shotsN > 0 ? 0.85 * secScore + 0.15 * finS : secScore) : 5,
+    };
+    else values = {
+      finishing: finS,
+      shooting: shotsN === 0 ? 3 : clamp10(3 + 1.4 * row.shotsOT + (row.shotsOT > 0 ? 3 * row.goals / row.shotsOT : 0)),
+      threat: row.offParticipation != null ? clamp10(2 + 10 * row.offParticipation * size / 2) : 4,
+      linkup: clamp10(0.6 * clamp10(4 + 2.2 * row.assists + 1.0 * row.keyPasses) + 0.4 * (accScore != null ? accScore : 5)),
+      fwdPosition: clamp10(0.75 * zoneOf(0.4) + 2.5 * 0.5 + 3 * dom),
+      pressing: work === 0 ? null : clamp10(3.5 + 1.0 * work),
+      decisions: secScore != null ? clamp10(shotsN > 0 ? 0.85 * secScore + 0.15 * finS : secScore) : 5,
+    };
+    Object.keys(values).forEach((k) => { values[k] = values[k] == null ? null : r1(clamp10(values[k])); });
+    return { values, enough: true, lowData, role, criteria: role, weights: role === 'DEF' ? DEF_WEIGHTS : role === 'MID' ? MID_WEIGHTS : FWD_WEIGHTS, result: resultScore(ctx.gf, ctx.ga), popOk, reason: lowData ? 'Pocos toques en este partido (' + row.kicks + '): la nota se apoya sobre todo en el resultado y el resto del equipo.' : '' };
+  }
   if (gk) { // ---- criterios de portero (0–10; null = sin datos para valorarlo en este partido)
     const faced = ctx.shotsOTAgainst != null ? ctx.shotsOTAgainst : null, ga = ctx.ga != null ? ctx.ga : null;
     const saved = faced != null && ga != null ? Math.max(0, faced - ga) : null;
@@ -389,7 +444,7 @@ export function autoRatings(row, population) {
 // Valor final por criterio: manual > automático. La nota general sale de la media de criterios disponibles (≥ 3) salvo que haya una manual.
 export function finalRatings(manual, auto) {
   // La calificación es 100 % calculada (el parámetro manual se conserva solo por compatibilidad con copias antiguas y se ignora).
-  const list = criteriaFor(auto && auto.criteria === 'GK' ? 'GK' : null);
+  const list = criteriaFor(auto && auto.criteria);
   const out = {}, src = {};
   list.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
   const vals = list.map((c) => out[c.id]).filter((x) => x != null);
@@ -398,5 +453,5 @@ export function finalRatings(manual, auto) {
     const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? auto.result : null;
     out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
   } else { out.overall = null; src.overall = null; }
-  return { values: out, sources: src, criteria: auto && auto.criteria === 'GK' ? 'GK' : 'STD' };
+  return { values: out, sources: src, criteria: (auto && auto.criteria) || 'STD' };
 }

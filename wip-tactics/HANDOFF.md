@@ -139,3 +139,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - Bordes pesados (rojo 2px, dorado en ventanas) → filetes finos; el rojo de marca queda como filete fino en dock y panel.
 - `render.js`: sombras suaves en formas, fichas y balón. Proporciones de cancha y lógica intactas.
 - Sin cambios de lógica ni de funciones; solo CSS + sombras de canvas.
+- FYI (scouting): criterios propios por puesto también para DEF/MID/FWD (analysis.js DEF_CRITERIA/MID_CRITERIA/FWD_CRITERIA, ROLE_SETS, criteriaFor(role)); Ranking con filtro por puesto; perfil por puesto en jugador y PDF.

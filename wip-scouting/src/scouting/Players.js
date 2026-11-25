@@ -3,7 +3,7 @@ import * as db from './db';
 import { BtnIc, Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
 import { ownTeamId, playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
-import { aggregateRows, CRITERIA, GK_CRITERIA, ROLE_LABEL } from './analysis';
+import { aggregateRows, CRITERIA, ROLE_SETS, ROLE_LABEL } from './analysis';
 import { buildPlayerReport } from './report';
 import { normNick } from './ingest';
 import { PickPlayers, wipePlayers } from './PickPlayers';
@@ -128,7 +128,7 @@ export default function Players({ model, view, filters, nav, params }) {
 
 function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, onEdit, edit, setEdit }) {
   const pr = useMemo(() => playerProfile(model, player.id, { ...filters, playerId: player.id, teamId: filters.teamId }), [model, player, filters]);
-  const a = pr.agg; const ra = ratingAverage(model, player.id, new Set(pr.matches.map((m) => m.id))); const ca = criteriaAverage(model, player.id, new Set(pr.matches.map((m) => m.id)));
+  const a = pr.agg; const ra = ratingAverage(model, player.id, new Set(pr.matches.map((m) => m.id))); const caN = criteriaAverage(model, player.id, new Set(pr.rows.filter((r) => !r.role).map((r) => r.matchId)));
   const bySeason = useMemo(() => { const g = new Map(); pr.rows.forEach((r) => { const k = r.seasonId || ''; if (!g.has(k)) g.set(k, []); g.get(k).push(r); }); return Array.from(g.entries()).map(([k, rs]) => ({ k, name: k ? (model.seasons.find((s) => s.id === k) || {}).name : 'Sin temporada', agg: aggregateRows(rs) })); }, [pr, model]);
   const labels = pr.rows.map((r) => fmtDate(r.date).slice(0, 5));
   async function pdf() { if (!(await askExport('¿Sacar el informe en PDF de «' + player.nick + '»? Se descargará en tu dispositivo.', 'Sí, sacar PDF'))) return; try { const b = buildPlayerReport(model, player.id, filters); if (!b) return; await saveFile('Informe-' + slug(player.nick) + '-' + stamp() + '.pdf', 'application/pdf', b); } catch (e) { toast('No se pudo crear el informe'); } }
@@ -153,9 +153,9 @@ function Profile({ model, view, filters, player, ids, tab, setTab, nav, onBack, 
           return <Card title="Posiciones jugadas" right={<span className="sc-sub">deducidas de dónde tocó el balón</span>}><div className="sc-chips">{ks.map((k) => <span key={k} className="sc-chip on">{ROLE_LABEL[k]} · {cnt[k]} {cnt[k] === 1 ? 'partido' : 'partidos'}</span>)}</div><p className="sc-note">Cada partido se puntúa según el puesto en el que jugó: un delantero que juega de portero se evalúa como portero.</p></Card>; })()}
         <Card title="Estadísticas acumuladas"><table className="sc-table"><thead><tr><th>Métrica</th><th>Total</th><th>/ partido</th></tr></thead><tbody>{METRICS.map(([k, l, pv]) => <tr key={k}><td>{l}<Prov k={pv} /></td><td>{a[k]}</td><td>{fmtNum(a.perMatch[k], 2)}</td></tr>)}
           <tr><td>Precisión de pases<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.passAccuracy)}</td></tr><tr><td>Conversión (goles / tiros a puerta)<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.conversion)}</td></tr><tr><td>Cuota de toques del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.kickShare)}</td></tr><tr><td>Participación en goles del equipo<Prov k="calc" /></td><td colSpan={2}>{fmtPct(a.goalShare)}</td></tr></tbody></table></Card>
-        {(() => { const gids = new Set(pr.rows.filter((r) => r.role === 'GK').map((r) => r.matchId)); if (!gids.size) return null; const ga = criteriaAverage(model, player.id, gids, GK_CRITERIA); if (!GK_CRITERIA.some((c) => ga[c.id] != null)) return null;
-          return <Card title="Perfil como portero" right={<span className="sc-sub">{gids.size} {gids.size === 1 ? 'partido' : 'partidos'} · media 0–10</span>}><div className="sc-center"><Radar axes={GK_CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ga }]} /></div></Card>; })()}
-        {CRITERIA.some((c) => ca[c.id] != null) && <Card title="Perfil de scouting" right={<span className="sc-sub">media 0–10</span>}><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ca }]} /></div></Card>}
+        {['GK', 'DEF', 'MID', 'FWD'].map((rk) => { const gids = new Set(pr.rows.filter((r) => r.role === rk).map((r) => r.matchId)); if (!gids.size) return null; const set = ROLE_SETS[rk]; const ga = criteriaAverage(model, player.id, gids, set); if (!set.some((c) => ga[c.id] != null)) return null;
+          return <Card key={rk} title={'Perfil como ' + ROLE_LABEL[rk].toLowerCase()} right={<span className="sc-sub">{gids.size} {gids.size === 1 ? 'partido' : 'partidos'} · media 0–10</span>}><div className="sc-center"><Radar axes={set.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: ga }]} /></div></Card>; })}
+        {CRITERIA.some((c) => caN[c.id] != null) && <Card title="Perfil de scouting" right={<span className="sc-sub">media 0–10</span>}><div className="sc-center"><Radar axes={CRITERIA.map((c) => ({ id: c.id, label: c.label }))} series={[{ name: player.nick, values: caN }]} /></div></Card>}
         {bySeason.length > 0 && <Card title="Histórico por temporada"><div className="sc-scrollx"><table className="sc-table"><thead><tr><th>Temporada</th><th>PJ</th><th>G</th><th>A</th><th>Toques</th><th>Pases</th></tr></thead><tbody>{bySeason.map((s) => <tr key={s.k}><td>{s.name}</td><td>{s.agg.matches}</td><td>{s.agg.goals}</td><td>{s.agg.assists}</td><td>{s.agg.kicks}</td><td>{s.agg.passesCompleted}</td></tr>)}</tbody></table></div></Card>}
       </>}
       {tab === 'hist' && a.matches > 0 && <Card title="Historial de partidos"><ul className="sc-list">{pr.history.slice().reverse().map((h) => { const m = h.match; const sd = h.row.side; const gf = m.score[sd === 'R' ? 0 : 1], ga = m.score[sd === 'R' ? 1 : 0]; const o = gf > ga ? 'W' : gf < ga ? 'L' : 'D'; const ov = h.rating && h.rating.final.values.overall; return (

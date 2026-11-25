@@ -1,7 +1,7 @@
 // Informes profesionales en PDF (equipo, jugador, partido). Todo el contenido sale del modelo: ninguna cifra se inventa.
 import { Pdf, PAGE, textWidth } from './pdf';
 import { applyFilters, dashboardData, playerProfile, passNetwork, ratingAverage, criteriaAverage, getRating, teamName, fmtPct, fmtNum, fmtDate, fmtDur, EMPTY_FILTERS } from './model';
-import { CRITERIA, PROV_LABEL, DEFINITIONS, aggregateRows } from './analysis';
+import { CRITERIA, ROLE_SETS, ROLE_LABEL, PROV_LABEL, DEFINITIONS, aggregateRows } from './analysis';
 
 const C = { gold: '#C89A3D', red: '#7A0E1A', dark: '#111111', ivory: '#F7F3E8', grey: '#6b6b6b', light: '#ECE6D6', line: '#D8D0BB', blue: '#3A78B5', green: '#3C8D50' };
 const M = 40, CW = PAGE.w - 2 * M;
@@ -170,7 +170,7 @@ const tn = (model, d) => teamName(model, d.perspective);
 // ------------------------------------------------------------------ INFORME DE JUGADOR
 export function buildPlayerReport(model, playerId, filters) {
   const f = Object.assign({}, EMPTY_FILTERS, filters || {}, { playerId }); const pr = playerProfile(model, playerId, f); const pl = pr.player; if (!pl) return null;
-  const a = pr.agg; const ids = new Set(pr.matches.map((m) => m.id)); const ra = ratingAverage(model, playerId, ids); const ca = criteriaAverage(model, playerId, ids);
+  const a = pr.agg; const ids = new Set(pr.matches.map((m) => m.id)); const ra = ratingAverage(model, playerId, ids); const ca = criteriaAverage(model, playerId, new Set(pr.rows.filter((r) => !r.role).map((r) => r.matchId)));
   const doc = new Doc('Informe individual · ' + pl.nick, [pl.position || 'Posición sin definir', teamName(model, pl.teamId, 'Sin equipo'), filterSummary(model, Object.assign({}, f, { playerId: '' })), 'Generado el ' + fmtDate(Date.now())].join(' · '));
   doc.h2('Resumen');
   doc.kpis([{ label: 'Partidos [E]', value: a.matches }, { label: 'Goles [E]', value: a.goals, sub: fmtNum(a.perMatch.goals, 2) + ' por partido' }, { label: 'Asistencias [E]', value: a.assists, sub: fmtNum(a.perMatch.assists, 2) + ' por partido' }, { label: 'Nota media', value: ra ? fmtNum(ra.avg, 1) : '—', sub: ra ? 'de ' + ra.n + ' partidos [M/C]' : 'sin calificaciones' },
@@ -180,6 +180,8 @@ export function buildPlayerReport(model, playerId, filters) {
     [['Toques', a.kicks, fmtNum(a.perMatch.kicks, 1), 'Extraído'], ['Tiros a puerta', a.shotsOT, fmtNum(a.perMatch.shotsOT, 1), 'Extraído'], ['Pases completados', a.passesCompleted, fmtNum(a.perMatch.passesCompleted, 1), 'Calculado'], ['Pases recibidos', a.passesReceived, fmtNum(a.perMatch.passesReceived, 1), 'Calculado'], ['Pases fallidos', a.passesFailed, fmtNum(a.perMatch.passesFailed, 1), 'Calculado'], ['Pérdidas', a.turnovers, fmtNum(a.perMatch.turnovers, 1), 'Calculado'], ['Recuperaciones', a.recoveries, fmtNum(a.perMatch.recoveries, 1), 'Calculado'], ['Intercepciones', a.interceptions, fmtNum(a.perMatch.interceptions, 1), 'Calculado'], ['Bloqueos', a.blocks, fmtNum(a.perMatch.blocks, 1), 'Calculado'], ['Pases clave', a.keyPasses, fmtNum(a.perMatch.keyPasses, 1), 'Calculado'], ['Goles en propia', a.ownGoals, fmtNum(a.perMatch.ownGoals, 1), 'Extraído']]);
   const hasCrit = CRITERIA.some((c) => ca[c.id] != null);
   if (hasCrit) { doc.h2('Perfil de scouting (0–10)'); doc.radar(CRITERIA.map((c) => ({ id: c.id, label: c.label })), [{ values: ca, color: C.gold }]); doc.bars(CRITERIA.filter((c) => ca[c.id] != null).map((c) => ({ label: c.label, value: ca[c.id], color: C.gold })), (v) => fmtNum(v, 1), { labelW: 130 }); }
+  const roleProf = ['GK', 'DEF', 'MID', 'FWD'].map((rk) => { const g = new Set(pr.rows.filter((r) => r.role === rk).map((r) => r.matchId)); if (!g.size) return null; const set = ROLE_SETS[rk]; const av = criteriaAverage(model, playerId, g, set); return set.some((c) => av[c.id] != null) ? { rk, set, av, n: g.size } : null; }).filter(Boolean);
+  roleProf.forEach((x) => { doc.h2('Perfil como ' + ROLE_LABEL[x.rk].toLowerCase() + ' (0–10, ' + x.n + (x.n === 1 ? ' partido)' : ' partidos)')); doc.radar(x.set.map((c) => ({ id: c.id, label: c.label })), [{ values: x.av, color: C.gold }]); doc.bars(x.set.filter((c) => x.av[c.id] != null).map((c) => ({ label: c.label, value: x.av[c.id], color: C.gold })), (v) => fmtNum(v, 1), { labelW: 130 }); });
   const rated = pr.history.filter((h) => h.rating && h.rating.final.values.overall != null);
   if (rated.length > 1) { doc.h2('Evolución de la nota'); doc.lineChart(rated.map((h) => fmtDate(h.row.date).slice(0, 5)), [{ name: 'Nota general', color: C.gold, data: rated.map((h) => h.rating.final.values.overall) }], { fmt: (v) => fmtNum(v, 1) }); }
   doc.h2('Historial de partidos');
@@ -195,6 +197,7 @@ export function buildPlayerReport(model, playerId, filters) {
     if (a.passAccuracy != null) out.push('Completó ' + a.passesCompleted + ' pases con una precisión calculada del ' + fmtPct(a.passAccuracy) + ' y generó ' + a.keyPasses + ' pases clave.');
     if (a.recoveries + a.interceptions + a.blocks > 0) out.push('En defensa acumula ' + a.recoveries + ' recuperaciones, ' + a.interceptions + ' intercepciones y ' + a.blocks + ' bloqueos (calculados).');
     if (ra) out.push('Su nota media es ' + fmtNum(ra.avg, 1) + ' sobre ' + ra.n + ' partidos calificados.'); else out.push('Aún no hay calificaciones suficientes para valorar su rendimiento general.');
+    roleProf.forEach((x) => { const b = x.set.filter((c) => x.av[c.id] != null).sort((p, q) => x.av[q.id] - x.av[p.id]); if (b.length) out.push('Como ' + ROLE_LABEL[x.rk].toLowerCase() + ': mejor ' + b[0].label + ' (' + fmtNum(x.av[b[0].id], 1) + ')' + (b.length > 1 ? ', más bajo ' + b[b.length - 1].label + ' (' + fmtNum(x.av[b[b.length - 1].id], 1) + ').' : '.')); });
     if (hasCrit) { const best = CRITERIA.filter((c) => ca[c.id] != null).sort((x, y) => ca[y.id] - ca[x.id]); out.push('Mejor criterio: ' + best[0].label + ' (' + fmtNum(ca[best[0].id], 1) + ')' + (best.length > 1 ? '; el más bajo: ' + best[best.length - 1].label + ' (' + fmtNum(ca[best[best.length - 1].id], 1) + ').' : '.')); }
   }
   doc.bullets(out);
