@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, useLocal, toast } from './ui';
 import { PlayerEditor } from './Players';
-import { toInputDate, standings, headToHead, teamName, fmtDate, fmtNum } from './model';
+import { toInputDate, standings, ownTeamId, teamName, fmtDate, fmtNum } from './model';
 
 const TYPES = [['liga', 'Liga'], ['torneo', 'Torneo'], ['amistoso', 'Amistosos']];
 
@@ -136,14 +136,46 @@ function FixtureEditor({ model, fx, defComp, onClose }) {
 }
 
 function H2H({ model }) {
-  const [sel, setSel] = useLocal('sc.friendlies', { a: '', b: '' }); const a = sel.a, b = sel.b;
-  const setA = (v) => setSel({ ...sel, a: v }); const setB = (v) => setSel({ ...sel, b: v });
-  const h = a && b && a !== b ? headToHead(model, a, b) : null;
-  return <Card title="Amistosos" right={<span className="sc-sub">se guarda tu selección</span>}><div className="sc-grid2"><Select label="Equipo A" value={a} onChange={setA} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /><Select label="Equipo B" value={b} onChange={setB} placeholder="Elegir…" options={model.teams.map((t) => [t.id, t.name])} /></div>
-    {!h ? <Empty small>Elige dos equipos distintos.</Empty> : !h.list.length ? <Empty small>No hay partidos registrados entre estos equipos.</Empty> : <>
-      <div className="sc-kpis small"><div className="sc-kpi good"><b>{h.W}</b><span>Victorias {teamName(model, a)}</span></div><div className="sc-kpi"><b>{h.D}</b><span>Empates</span></div><div className="sc-kpi bad"><b>{h.L}</b><span>Victorias {teamName(model, b)}</span></div><div className="sc-kpi"><b>{h.gf}–{h.ga}</b><span>Goles</span></div></div>
-      <ul className="sc-list">{h.list.map((r) => <li key={r.key}><span className={'sc-res ' + r.outcome}>{r.outcome === 'W' ? 'V' : r.outcome === 'D' ? 'E' : 'D'}</span><div className="mid"><b>{teamName(model, a)} {r.gf} – {r.ga} {teamName(model, b)}</b><small>{fmtDate(r.date)} · {r.source === 'manual' ? 'resultado manual' : 'repetición analizada'}</small></div></li>)}</ul></>}
-  </Card>;
+  // Amistosos: siempre «mi equipo» contra un rival cuyo nombre escribes tú; la repetición que elijas se guarda aquí.
+  const own = ownTeamId(model);
+  const [st, setSt] = useLocal('sc.friendlies', { opp: '', side: 'R' });
+  const [pick, setPick] = useState('');
+  const oppName = (st.opp || '').trim();
+  const oppTeam = model.teams.find((t) => t.id !== own && t.name.trim().toLowerCase() === oppName.toLowerCase());
+  const mine = (m) => (m.redTeamId === own ? 0 : 1);
+  const all = model.matches.filter((m) => m.rec.friendly);
+  const list = all.filter((m) => !oppName || (oppTeam && (m.redTeamId === oppTeam.id || m.blueTeamId === oppTeam.id))).sort((x, y) => y.date - x.date);
+  const cand = model.matches.filter((m) => !m.rec.friendly).sort((x, y) => y.date - x.date);
+  const W = list.filter((m) => m.score[mine(m)] > m.score[1 - mine(m)]).length, L = list.filter((m) => m.score[mine(m)] < m.score[1 - mine(m)]).length, D = list.length - W - L;
+  const gf = list.reduce((a, m) => a + m.score[mine(m)], 0), ga = list.reduce((a, m) => a + m.score[1 - mine(m)], 0);
+  async function add() {
+    if (!oppName) { toast('Escribe el nombre del otro equipo'); return; }
+    const m = model.matchById.get(pick); if (!m) { toast('Elige una repetición'); return; }
+    let opp = oppTeam;
+    if (!opp) { opp = { id: db.uid('t'), name: oppName, color: '#3A78B5', own: false, createdAt: Date.now(), updatedAt: Date.now() }; await db.put('teams', opp); }
+    const red = st.side === 'R';
+    await db.put('matches', { ...m.rec, friendly: true, redTeamId: red ? own : opp.id, blueTeamId: red ? opp.id : own, teamAuto: false });
+    setPick(''); toast('Añadida a Amistosos');
+  }
+  async function remove(m) { await db.put('matches', { ...m.rec, friendly: false }); toast('Quitada de Amistosos'); }
+  if (!own) return <Card title="Amistosos"><Empty>Primero marca tu equipo como «Mi equipo» (en Equipos › editar). Los amistosos siempre se juegan con él.</Empty></Card>;
+  return <>
+    <Card title="Amistosos" right={<span className="sc-sub">{list.length} {list.length === 1 ? 'partido' : 'partidos'}</span>}>
+      <div className="sc-grid2">
+        <label className="sc-field"><span>Mi equipo</span><input value={teamName(model, own)} readOnly /></label>
+        <label className="sc-field"><span>Otro equipo</span><input list="sc-opp" value={st.opp || ''} placeholder="Nombre del rival" onChange={(e) => setSt({ ...st, opp: e.target.value })} /></label>
+        <datalist id="sc-opp">{model.teams.filter((t) => t.id !== own).map((t) => <option key={t.id} value={t.name} />)}</datalist>
+      </div>
+      <Select label="Repetición que se guarda aquí" value={pick} onChange={setPick} placeholder="Elegir partido…" options={cand.map((m) => [m.id, fmtDate(m.date) + ' · ' + m.rec.name + ' · ' + m.score[0] + '-' + m.score[1]])} />
+      <div className="sc-row wrap"><Seg value={st.side} onChange={(v) => setSt({ ...st, side: v })} options={[['R', teamName(model, own) + ' = Rojo'], ['B', teamName(model, own) + ' = Azul']]} /></div>
+      <div className="sc-row end"><button className="sc-btn" disabled={!pick || !oppName} onClick={add}>Añadir a Amistosos</button></div>
+    </Card>
+    {list.length > 0 && <Card title={oppName ? 'Contra ' + oppName : 'Todos los amistosos'}>
+      <div className="sc-kpis small"><div className="sc-kpi good"><b>{W}</b><span>Victorias</span></div><div className="sc-kpi"><b>{D}</b><span>Empates</span></div><div className="sc-kpi bad"><b>{L}</b><span>Derrotas</span></div><div className="sc-kpi"><b>{gf}–{ga}</b><span>Goles</span></div></div>
+      <ul className="sc-list">{list.map((m) => { const o = m.score[mine(m)] - m.score[1 - mine(m)]; const oppId = mine(m) === 0 ? m.blueTeamId : m.redTeamId; return <li key={m.id}><span className={'sc-res ' + (o > 0 ? 'W' : o < 0 ? 'L' : 'D')}>{o > 0 ? 'V' : o < 0 ? 'D' : 'E'}</span><div className="mid"><b>{teamName(model, own)} {m.score[mine(m)]} – {m.score[1 - mine(m)]} {teamName(model, oppId, 'Rival')}</b><small>{fmtDate(m.date)} · {m.rec.name}</small></div><button className="sc-btn small ghost" onClick={() => remove(m)}>Quitar</button></li>; })}</ul>
+    </Card>}
+    {!list.length && <Card><Empty small>{all.length ? 'No hay amistosos contra ese equipo.' : 'Escribe el nombre del rival, elige una repetición y añádela.'}</Empty></Card>}
+  </>;
 }
 
 function SimpleEditor({ title, item, onClose, store, prefix, fields, usedBy }) {

@@ -79,3 +79,6 @@ Capa "Sistema de diseño unificado" al final de `scouting.scss` (tokens `--fx-*`
 - Portero: añadidas las explicaciones (`AUTO_HINT`) de saves/concede/gkPosition/clearances/distribution/security.
 - `Radar` (charts.js): lienzo más ancho (380x260) y etiquetas en dos líneas, ya no se recortan.
 - Equipos › «Enfrentamientos» renombrado a «Amistosos»; el par de equipos elegido se guarda (`useLocal('sc.friendlies')`).
+
+## Amistosos (Claude B)
+Equipos › Amistosos (`H2H` en Teams.js, reescrito): siempre «Mi equipo» vs un rival cuyo nombre escribe el usuario (se crea el equipo si no existe). La repetición elegida se marca `rec.friendly = true` y se asignan `redTeamId/blueTeamId` según el color de Mi equipo. «Quitar» solo desmarca `friendly`. El rival escrito se guarda en `useLocal('sc.friendlies')`.
