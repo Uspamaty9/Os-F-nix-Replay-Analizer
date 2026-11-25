@@ -82,3 +82,9 @@ Capa "Sistema de diseño unificado" al final de `scouting.scss` (tokens `--fx-*`
 
 ## Amistosos (Claude B)
 Equipos › Amistosos (`H2H` en Teams.js, reescrito): siempre «Mi equipo» vs un rival cuyo nombre escribe el usuario (se crea el equipo si no existe). La repetición elegida se marca `rec.friendly = true` y se asignan `redTeamId/blueTeamId` según el color de Mi equipo. «Quitar» solo desmarca `friendly`. El rival escrito se guarda en `useLocal('sc.friendlies')`.
+
+## Ajustes 25/11 (Claude B)
+- Panel: «Repeticiones no analizadas (N)» ahora es un `Fold` plegable.
+- Jugadores: barra de acciones compacta con iconos (`BtnIc` en ui.js).
+- Equipos: quitada la pestaña Temporadas (código y datos intactos); el selector de competición ya no ofrece «Amistosos» (los existentes siguen mostrándose).
+- Avatares: `avatarTexts()/avatarTextOf()` en ui.js (misma clave `fenix.avatars.v1` que la pizarra). `ingestStats` guarda `player.avatarText` en cada análisis; `Avatar` usa foto > `avatarText` > iniciales.

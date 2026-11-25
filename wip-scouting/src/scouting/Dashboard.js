@@ -81,11 +81,11 @@ export default function Dashboard({ model, view: baseView, nav, openReplay }) {
       </Card>
 
       {pending.length > 0 && (
-        <Card title="Repeticiones sin estadísticas" right={<span className="sc-sub">{pending.length}</span>}>
+        <Fold title={'Repeticiones no analizadas (' + pending.length + ')'}>
           <p className="sc-note">Estas repeticiones del historial se guardaron antes de existir este módulo. Ábrelas una vez: al terminar el análisis, sus estadísticas se guardan solas.</p>
           <ul className="sc-list">{pending.slice(0, 6).map((r) => <li key={r.id} onClick={() => openReplay(r.id)}><div className="mid"><b>{r.name}</b><small>{r.info ? r.info.red + ' - ' + r.info.blue : 'Sin analizar'} · {fmtDate(r.addedAt)}</small></div><span className="sc-btn small">Analizar</span></li>)}</ul>
           {pending.length > 6 && <p className="sc-note">y {pending.length - 6} más en el historial.</p>}
-        </Card>
+        </Fold>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 // Puente entre el analizador de repeticiones y el módulo de estadísticas.
 // Se llama cuando el motor termina de analizar una repetición; NO modifica el motor ni su flujo.
 import * as db from './db';
+import { avatarTexts, avatarTextOf } from './ui';
 import { compactPart, mainPartIndex, mergeParts } from './analysis';
 import { getMeta, listReplays } from '../storage/history';
 
@@ -85,6 +86,8 @@ export async function ingestStats(replayId, stats) {
     const np = { id: db.uid('p'), nick: p.nick, aliases: [], teamId: null, position: '', avatar: null, notes: '', source: 'replay', ignored: !!hideNew, createdAt: Date.now(), updatedAt: Date.now() };
     idx.set(normNick(p.nick), np); fresh.push(np); players.push(np);
   }));
+  // Avatar de HaxBall (texto) visto en la repetición: se guarda en el jugador cada vez que se analiza
+  try { const am = avatarTexts(); const upd = []; const seen = new Set(); parts.forEach((pt) => pt.players.forEach((p) => { const pl = idx.get(normNick(p.nick)); if (!pl || seen.has(pl.id)) return; seen.add(pl.id); const at = avatarTextOf(am, pl); if (at && pl.avatarText !== at) { pl.avatarText = at; if (!fresh.includes(pl)) upd.push(pl); } })); if (upd.length) await db.putMany('players', upd); } catch (e) { /* no crítico */ }
   if (fresh.length) await db.putMany('players', fresh);
   if (fresh.length) { try { const pend = await db.getKv('pendingNewPlayers', []); await db.setKv('pendingNewPlayers', pend.concat(fresh.map((p) => p.id))); } catch (e) { /* no crítico */ } } // se le preguntará al usuario cuáles son de su equipo
   const old = await db.get('matches', replayId);

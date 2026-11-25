@@ -70,9 +70,23 @@ export function Hint({ children }) { const [o, setO] = useState(false); return <
 export function Fold({ title, children, open }) { return <details className="sc-fold" open={open}><summary>{title}</summary><div>{children}</div></details>; }
 export function Seg({ value, onChange, options }) { return <div className="sc-seg" role="tablist">{options.map((o) => <button key={o[0]} role="tab" aria-selected={value === o[0]} className={value === o[0] ? 'on' : ''} onClick={() => onChange(o[0])}>{o[1]}</button>)}</div>; }
 const hue = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; };
+// Avatares de HaxBall (texto) que publica el motor al reproducir; misma clave que la pizarra (`fenix.avatars.v1`).
+const AV_KEY = 'fenix.avatars.v1';
+export function avatarTexts() {
+  let stored = {}; try { stored = JSON.parse(localStorage.getItem(AV_KEY) || '{}') || {}; } catch (e) { stored = {}; }
+  let live = {}; try { live = window.__fenixAvatars || {}; } catch (e) { live = {}; }
+  const merged = { ...stored, ...live };
+  try { if (window.__fenixAvatarsDirty) { localStorage.setItem(AV_KEY, JSON.stringify(merged)); window.__fenixAvatarsDirty = false; } } catch (e) { /* sin almacenamiento */ }
+  return merged;
+}
+export function avatarTextOf(map, p) { const names = [p.nick].concat(p.aliases || []); for (const n of names) { const v = map[String(n == null ? '' : n).trim().toLowerCase()]; if (v) return v; } return null; }
+const Ic = { cmp: 'M5 20V10M12 20V4M19 20v-7', sel: 'M4 12l5 5L20 6', mine: 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z', pick: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', add: 'M12 5v14M5 12h14', x: 'M6 6l12 12M18 6L6 18' };
+export function BtnIc({ n }) { return <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={Ic[n]} /></svg>; }
 export function Avatar({ player, size = 40 }) {
   const nick = (player && player.nick) || '?';
   if (player && player.avatar) return <img className="sc-avatar" src={player.avatar} alt="" width={size} height={size} style={{ width: size, height: size }} />;
+  const at = player ? (player.avatarText || avatarTextOf(avatarTexts(), player)) : null;
+  if (at) return <span className="sc-avatar init txt" style={{ width: size, height: size, fontSize: size * (Array.from(at).length > 1 ? 0.42 : 0.55), background: 'hsl(' + hue(nick) + ',38%,32%)' }}>{at}</span>;
   return <span className="sc-avatar init" style={{ width: size, height: size, fontSize: size * 0.4, background: 'hsl(' + hue(nick) + ',38%,32%)' }}>{nick.slice(0, 2).toUpperCase()}</span>;
 }
 export function Select({ value, onChange, options, placeholder, label, className }) {

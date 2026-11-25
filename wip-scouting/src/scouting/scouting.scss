@@ -369,3 +369,9 @@ svg .dn-big { fill: var(--sc-txt); font: 600 20px 'Oswald', sans-serif; } svg .d
 .sc-root .sc-view > .sc-fold > div { padding: var(--fx-s3) 0 var(--fx-s4); display: grid; gap: var(--fx-s3); }
 .sc-root .sc-view > .sc-fold .sc-card { box-shadow: none; border: 0; padding: 0; background: transparent; }
 .sc-root .sc-bigrate small { display: block; }
+
+/* Barra de acciones compacta (Jugadores): botones pequeños con icono, todo en una fila */
+.sc-root .sc-selbar { flex-wrap: wrap; gap: 6px; }
+.sc-root .sc-selbar .sc-btn.small { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; min-height: 36px; font-size: 12.5px; border-radius: 999px; flex: 0 0 auto; }
+.sc-root .sc-selbar .sc-btn.small svg { flex: none; }
+.sc-root .sc-avatar.txt { display: inline-flex; align-items: center; justify-content: center; line-height: 1; overflow: hidden; }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
-import { Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
+import { BtnIc, Card, Kpi, Empty, Avatar, Seg, Select, Input, Sheet, Prov, useConfirm, toast, POSITIONS, pickFile, resizeImage, saveFile, askExport, slug, stamp } from './ui';
 import { LineChart, Radar, HBars } from './charts';
 import { ownTeamId, playerProfile, ratingAverage, criteriaAverage, teamName, fmtPct, fmtNum, fmtDate, EMPTY_FILTERS } from './model';
 import { aggregateRows, CRITERIA, GK_CRITERIA, ROLE_LABEL } from './analysis';
@@ -82,7 +82,7 @@ export default function Players({ model, view, filters, nav, params }) {
 
   return (
     <div className="sc-view">
-      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}>{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}>{selMode ? 'Listo' : 'Seleccionar'}</button>}{!selMode && !cmpMode && ownTeamId(model) && <button className="sc-btn small ghost" onClick={onlyMine}>Solo mi equipo</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}>Elegir</button><button className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setEdit({})}>+ Nuevo</button></div>
+      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}><BtnIc n={cmpMode ? 'x' : 'cmp'} />{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}><BtnIc n={selMode ? 'x' : 'sel'} />{selMode ? 'Listo' : 'Seleccionar'}</button>}{!selMode && !cmpMode && ownTeamId(model) && <button className="sc-btn small ghost" onClick={onlyMine}><BtnIc n="mine" />Mi equipo</button>}<button className="sc-btn small ghost" onClick={() => setPick(true)}><BtnIc n="pick" />Elegir</button><button className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setEdit({})}><BtnIc n="add" />Nuevo</button></div>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="sc-grid2" style={{ marginBottom: 8 }}>
           <Select label="Ordenar por" value={sortBy} onChange={setSortBy} options={[['inv', 'Goles + asist.'], ['goals', 'Goles'], ['assists', 'Asistencias'], ['rating', 'Nota'], ['matches', 'Partidos'], ['name', 'Nombre']]} />

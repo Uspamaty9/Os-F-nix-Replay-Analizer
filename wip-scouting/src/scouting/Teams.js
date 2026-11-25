@@ -4,13 +4,14 @@ import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, useLocal, t
 import { PlayerEditor } from './Players';
 import { toInputDate, standings, ownTeamId, teamName, fmtDate, fmtNum } from './model';
 
-const TYPES = [['liga', 'Liga'], ['torneo', 'Torneo'], ['amistoso', 'Amistosos']];
+const TYPES = [['liga', 'Liga'], ['torneo', 'Torneo']];
+const TYPE_LABEL = { liga: 'Liga', torneo: 'Torneo', amistoso: 'Amistoso' };
 
 export default function Teams({ model, nav }) {
   const [tab, setTab] = useState('teams');
   return (
     <div className="sc-view">
-      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['teams', 'Equipos'], ['seasons', 'Temporadas'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Amistosos']]} /></div>
+      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['teams', 'Equipos'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Amistosos']]} /></div>
       {tab === 'teams' && <TeamsTab model={model} nav={nav} />}
       {tab === 'seasons' && <SeasonsTab model={model} />}
       {tab === 'comps' && <CompsTab model={model} />}
@@ -91,7 +92,7 @@ function SeasonsTab({ model }) {
 function CompsTab({ model }) {
   const [edit, setEdit] = useState(null); const [open, setOpen] = useState(null);
   return <><Card title="Ligas y torneos" right={<button className="sc-btn small" onClick={() => setEdit({})}>+ Nueva</button>}>{!model.competitions.length ? <Empty>Crea una liga o torneo, añade equipos y programa jornadas.</Empty> : <ul className="sc-list">{model.competitions.map((c) => { const st = open === c.id ? standings(model, c.id) : null; return (
-    <li key={c.id} className="col"><div className="row" onClick={() => setOpen(open === c.id ? null : c.id)}><div className="mid"><b>{c.name}</b><small>{(TYPES.find((t) => t[0] === c.type) || [0, 'Competición'])[1]}{c.seasonId ? ' · ' + ((model.seasons.find((s) => s.id === c.seasonId) || {}).name || '') : ''} · {(c.teamIds || []).length} equipos</small></div><span className="chev">{open === c.id ? '⌄' : '›'}</span></div>
+    <li key={c.id} className="col"><div className="row" onClick={() => setOpen(open === c.id ? null : c.id)}><div className="mid"><b>{c.name}</b><small>{(TYPES.find((t) => t[0] === c.type) || [0, TYPE_LABEL[c.type] || 'Competición'])[1]}{c.seasonId ? ' · ' + ((model.seasons.find((s) => s.id === c.seasonId) || {}).name || '') : ''} · {(c.teamIds || []).length} equipos</small></div><span className="chev">{open === c.id ? '⌄' : '›'}</span></div>
       {open === c.id && <div className="sc-roster"><button className="sc-btn small" onClick={() => setEdit(c)}>Editar</button>
         <h4>Clasificación</h4>{st && st.length ? <div className="sc-scrollx"><table className="sc-table"><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr></thead><tbody>{st.map((r, i) => <tr key={r.teamId}><td>{i + 1}</td><td>{teamName(model, r.teamId)}</td><td>{r.pj}</td><td>{r.g}</td><td>{r.e}</td><td>{r.p}</td><td>{r.gf}</td><td>{r.gc}</td><td>{r.gf - r.gc}</td><td><b>{r.pts}</b></td></tr>)}</tbody></table></div> : <Empty small>Sin resultados todavía.</Empty>}</div>}
     </li>); })}</ul>}</Card>{edit && <CompEditor model={model} comp={edit.id ? edit : null} onClose={() => setEdit(null)} />}</>;
