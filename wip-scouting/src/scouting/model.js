@@ -138,11 +138,12 @@ export function getRating(model, matchId, playerId) {
 
 export function ratingAverage(model, playerId, matchIds) {
   const vals = [];
-  model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (g && g.final.values.overall != null) vals.push(g.final.values.overall); });
-  return vals.length ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
+  model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (g && g.final.values.overall != null) vals.push([g.final.values.overall, g.final.weight != null ? g.final.weight : 1]); });
+  const sw = vals.reduce((a, b) => a + b[1], 0); // se pondera por minutos jugados: 1 minuto pesa poco en la media
+  return vals.length ? { avg: vals.reduce((a, b) => a + b[0] * b[1], 0) / sw, n: vals.length } : null;
 }
 export function criteriaAverage(model, playerId, matchIds, list) {
-  const out = {}; (list || CRITERIA).forEach((c) => { const v = []; model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (g && g.final.values[c.id] != null) v.push(g.final.values[c.id]); }); out[c.id] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+  const out = {}; (list || CRITERIA).forEach((c) => { const v = []; model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (g && g.final.values[c.id] != null) v.push([g.final.values[c.id], g.final.weight != null ? g.final.weight : 1]); }); const sw = v.reduce((a, b) => a + b[1], 0); out[c.id] = v.length ? v.reduce((a, b) => a + b[0] * b[1], 0) / sw : null; });
   return out;
 }
 

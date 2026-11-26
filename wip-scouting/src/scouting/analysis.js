@@ -63,7 +63,15 @@ export function compactPart(m) {
     if (g.shot) { ki = rawKicks.indexOf(g.shot); if (ki < 0) { for (let j = kicks.length - 1; j >= 0; j--) if (kicks[j][0] === pi(sName) && kicks[j][1] === r1(g.shot.x) && kicks[j][2] === r1(g.shot.y)) { ki = j; break; } } }
     return { ki, s: pi(sName), a: aName != null ? pi(aName) : -1, f: g.for === 'Red' ? 'R' : 'B', own, sc: g.currentScore ? [g.currentScore[0] | 0, g.currentScore[1] | 0] : null };
   });
-  const players = names.map((n) => ({ nick: n, nation: nat[n] || '', team: red.includes(n) && blue.includes(n) ? 'RB' : red.includes(n) ? 'R' : blue.includes(n) ? 'B' : '' }));
+  // Minutos jugados: se deducen de los cambios de equipo con su hora ("m:ss"); sin cambios = todo el partido
+  const totalSec = (m.gameTicks | 0) / 60; const tsec = (t) => { const q = String(t || '').split(':'); return q.length === 2 ? (+q[0]) * 60 + (+q[1]) : null; };
+  const secOf = (n) => {
+    if (!(totalSec > 0)) return null; const ev = (m.changes || []).filter((c) => c && String(c[0]) === n && tsec(c[2]) != null); if (!ev.length) return null;
+    let on = ev[0][1] === 'Red' || ev[0][1] === 'Blue' ? false : true, last = 0, sum = 0;
+    ev.forEach((c) => { const t = Math.min(totalSec, tsec(c[2])); const nowOn = c[1] === 'Red' || c[1] === 'Blue'; if (on && !nowOn) sum += t - last; if (on !== nowOn) { on = nowOn; last = t; } });
+    if (on) sum += totalSec - last; return Math.max(0, Math.round(sum));
+  };
+  const players = names.map((n) => { const sc = secOf(n); return { nick: n, nation: nat[n] || '', ...(sc != null ? { sec: sc } : {}), team: red.includes(n) && blue.includes(n) ? 'RB' : red.includes(n) ? 'R' : blue.includes(n) ? 'B' : '' }; });
   const ep = {}; // pases según el motor, por jugador (solo para verificar)
   (m.passes || []).forEach((p) => { const n = p && p.player != null ? p.player : p; if (typeof n === 'string') { const k = pi(n); ep[k] = (ep[k] || 0) + 1; } });
   return {
@@ -87,6 +95,7 @@ export function mergeParts(parts, swaps) {
     const map = pt.players.map((pl) => {
       const i = pmap(pl.nick); const o = out.players[i]; const t = T(pl.team);
       if (!o.nation) o.nation = pl.nation || '';
+      o.sec = (o.sec || 0) + (pl.sec != null ? pl.sec : (pt.ticks | 0) / 60);
       o.team = !o.team ? t : (t && t !== o.team ? 'RB' : o.team); // si cambió de bando, queda en ambos
       return i;
     });
@@ -114,7 +123,7 @@ function blankPlayer(pi, p) {
 
 export function analyzePart(part) {
   if (!part) return null;
-  const P = part.players.map((p, i) => blankPlayer(i, p));
+  const P = part.players.map((p, i) => { const b = blankPlayer(i, p); const tot = (part.ticks | 0) / 60; b.playedSec = p.sec != null ? p.sec : null; b.played = p.sec != null && tot > 0 ? Math.max(0, Math.min(1, p.sec / tot)) : 1; return b; });
   const teamOf = (i) => { const t = part.players[i] && part.players[i].team; return t === 'R' || t === 'B' ? t : null; };
   const shotKi = new Set(part.shots.filter((s) => s[1] >= 0).map((s) => s[1]));
   const goalKi = new Set(part.goals.filter((g) => g.ki >= 0 && !g.own).map((g) => g.ki));
@@ -335,6 +344,9 @@ export const ROLE_WEIGHTS = {
   FWD: { finishing: 1.8, creation: 1.2, involvement: 1, positioning: 1, passing: 0.8, decisions: 1, vision: 0.8, recoveries: 0.5, defense: 0.4 },
 };
 export function autoRatings(row, population) {
+  const out = autoRatings0(row, population); out.played = row.played != null ? row.played : 1; out.playedSec = row.playedSec != null ? row.playedSec : null; return out;
+}
+function autoRatings0(row, population) {
   const ctx = row.ctx || {};
   const role = row.role || null;
   const pop = role ? population.filter((r) => r.role === role) : population;
@@ -446,12 +458,14 @@ export function finalRatings(manual, auto) {
   // La calificación es 100 % calculada (el parámetro manual se conserva solo por compatibilidad con copias antiguas y se ignora).
   const list = criteriaFor(auto && auto.criteria);
   const out = {}, src = {};
-  list.forEach((c) => { const a = auto && auto.values ? auto.values[c.id] : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
+  // Minutos jugados: quien entró tarde o jugó muy poco no puede brillar ni hundirse; su nota se acerca al 5 neutro (confianza = minutos / 60 % del partido)
+  const pf = auto && auto.played != null ? auto.played : 1, conf = pf >= 0.6 ? 1 : Math.max(0.15, pf / 0.6), shrink = (v) => (v == null || conf >= 1 ? v : r1(5 + (v - 5) * conf));
+  list.forEach((c) => { const a = auto && auto.values ? shrink(auto.values[c.id]) : null; out[c.id] = a != null ? a : null; src[c.id] = a != null ? 'calc' : null; });
   const vals = list.map((c) => out[c.id]).filter((x) => x != null);
   if (vals.length >= 3) {
     const w = (auto && auto.weights) || {}; let sw = 0, sv = 0; list.forEach((c) => { if (out[c.id] != null) { const k = w[c.id] != null ? w[c.id] : 1; sw += k; sv += k * out[c.id]; } });
-    const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? auto.result : null;
+    const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? shrink(auto.result) : null;
     out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
   } else { out.overall = null; src.overall = null; }
-  return { values: out, sources: src, criteria: (auto && auto.criteria) || 'STD' };
+  return { values: out, sources: src, criteria: (auto && auto.criteria) || 'STD', weight: conf, played: pf, playedSec: auto && auto.playedSec != null ? auto.playedSec : null };
 }
