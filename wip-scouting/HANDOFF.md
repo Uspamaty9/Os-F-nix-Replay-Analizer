@@ -102,3 +102,6 @@ Jugadores › Nuevo abre una hoja con dos opciones: «Crear desde cero» (`Playe
 
 ## Ajustes 25/11 (5) (Claude B)
 Jugadores › Nuevo › «Meter un jugador analizado»: ya no usa el `<select>` nativo de Android; lista propia con buscador y avatar, y confirmación (`useConfirm`) antes de asignarlo al equipo.
+
+## Ajustes 25/11 (6) (Claude B)
+Jugadores › Nuevo abre directamente «Elegir jugadores a analizar» (`PickPlayers`, con nuevo prop `onCreate` → botón «+ Crear jugador desde cero»). Eliminados el enlace «Elegir jugadores» de la nota y la hoja de dos opciones.

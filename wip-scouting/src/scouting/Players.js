@@ -61,7 +61,7 @@ export function PlayerEditor({ model, player, onClose, onSaved }) {
 const METRICS = [['goals', 'Goles', 'auto'], ['assists', 'Asistencias', 'auto'], ['kicks', 'Toques', 'auto'], ['shotsOT', 'Tiros a puerta', 'auto'], ['passesCompleted', 'Pases completados', 'calc'], ['passesReceived', 'Pases recibidos', 'calc'], ['passesFailed', 'Pases fallidos', 'calc'], ['turnovers', 'Pérdidas', 'calc'], ['recoveries', 'Recuperaciones', 'calc'], ['interceptions', 'Intercepciones', 'calc'], ['blocks', 'Bloqueos', 'calc'], ['keyPasses', 'Pases clave', 'calc'], ['goalInvolvements', 'Participaciones en gol', 'calc'], ['ownGoals', 'Goles en propia', 'auto']];
 
 export default function Players({ model, view, filters, nav, params }) {
-  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [newMenu, setNewMenu] = useState(0); const [nq, setNq] = useState(''); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [sortBy, setSortBy] = useState('inv'); const [teamF, setTeamF] = useState(() => ownTeamId(model) || ''); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
+  const [q, setQ] = useState(''); const [edit, setEdit] = useState(null); const [pick, setPick] = useState(false); const [cmp, setCmp] = useState([]); const [cmpMode, setCmpMode] = useState(false); const [tab, setTab] = useState('sum'); const [sortBy, setSortBy] = useState('inv'); const [teamF, setTeamF] = useState(() => ownTeamId(model) || ''); const [selMode, setSelMode] = useState(false); const [chk, setChk] = useState(() => new Set()); const [confirm, confirmEl] = useConfirm();
   const sel = params && params.playerId; const setSel = (id) => nav('players', { playerId: id });
   const ids = useMemo(() => new Set(view.matches.map((m) => m.id)), [view]);
   const list = useMemo(() => {
@@ -82,14 +82,14 @@ export default function Players({ model, view, filters, nav, params }) {
 
   return (
     <div className="sc-view">
-      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button aria-label={cmpMode ? 'Cancelar comparar' : 'Comparar'} title={cmpMode ? 'Cancelar' : 'Comparar'} className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}><BtnIc n={cmpMode ? 'x' : 'cmp'} />{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button aria-label={selMode ? 'Listo' : 'Seleccionar'} title={selMode ? 'Listo' : 'Seleccionar'} className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}><BtnIc n={selMode ? 'x' : 'sel'} />{selMode ? 'Listo' : 'Seleccionar'}</button>}<button aria-label="Nuevo jugador" title="Nuevo jugador" className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setNewMenu(1)}><BtnIc n="add" />Nuevo</button></div>
+      <Card title="Jugadores"><div className="sc-selbar">{!selMode && <button aria-label={cmpMode ? 'Cancelar comparar' : 'Comparar'} title={cmpMode ? 'Cancelar' : 'Comparar'} className={'sc-btn small' + (cmpMode ? '' : ' ghost')} onClick={() => { setCmpMode(!cmpMode); setCmp([]); }}><BtnIc n={cmpMode ? 'x' : 'cmp'} />{cmpMode ? 'Cancelar' : 'Comparar'}</button>}{!cmpMode && <button aria-label={selMode ? 'Listo' : 'Seleccionar'} title={selMode ? 'Listo' : 'Seleccionar'} className={'sc-btn small' + (selMode ? '' : ' ghost')} onClick={() => { setSelMode(!selMode); setChk(new Set()); }}><BtnIc n={selMode ? 'x' : 'sel'} />{selMode ? 'Listo' : 'Seleccionar'}</button>}<button aria-label="Nuevo jugador" title="Nuevo jugador" className="sc-btn small" style={{ whiteSpace: 'nowrap' }} onClick={() => setPick(true)}><BtnIc n="add" />Nuevo</button></div>
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="sc-grid2" style={{ marginBottom: 8 }}>
           <Select label="Ordenar por" value={sortBy} onChange={setSortBy} options={[['inv', 'Goles + asist.'], ['goals', 'Goles'], ['assists', 'Asistencias'], ['rating', 'Nota'], ['matches', 'Partidos'], ['name', 'Nombre']]} />
           <Select label="Mostrar" value={teamF} onChange={setTeamF} placeholder="Todos" options={[['__fav', '★ Favoritos']].concat(model.teams.map((t) => [t.id, t.name]))} />
         </div>
         {ownTeamId(model) && (() => { const own = ownTeamId(model); const nOther = model.players.filter((p) => p.teamId !== own).length; return (teamF === own || nOther > 0) ? <p className="sc-note">{teamF === own ? 'Mostrando solo ' + teamName(model, own) + '. ' : ''}{nOther > 0 ? nOther + ' jugador(es) analizados no son de tu equipo. ' : ''}{teamF === own && <button className="sc-link" onClick={() => setTeamF('')}>Ver todos</button>}{teamF === own && nOther > 0 && ' · '}{nOther > 0 && <button className="sc-link" onClick={onlyMine}>Ocultarlos del análisis</button>}</p> : null; })()}
-        {model.allPlayers.length > model.players.length && <p className="sc-note">{model.allPlayers.length - model.players.length} jugador(es) sin elegir no se cuentan. <button className="sc-link" onClick={() => setPick(true)}>Elegir jugadores</button></p>}
+        {model.allPlayers.length > model.players.length && <p className="sc-note">{model.allPlayers.length - model.players.length} jugador(es) sin elegir no se cuentan.</p>}
         {selMode && <div className="sc-row wrap" style={{ marginBottom: 8 }}>
           <button className="sc-btn small ghost" onClick={() => setChk(new Set(list.map(({ p }) => p.id)))}>Todos</button>
           <button className="sc-btn small ghost" onClick={() => setChk(new Set())}>Ninguno</button>
@@ -107,21 +107,9 @@ export default function Players({ model, view, filters, nav, params }) {
               {!selMode && !cmpMode && <button className={'sc-star' + (p.fav ? ' on' : '')} aria-label="Favorito" onClick={(e) => { e.stopPropagation(); db.put('players', { ...p, fav: !p.fav, updatedAt: Date.now() }); }}>{p.fav ? '★' : '☆'}</button>}
             </li>); })}</ul>)}
       </Card>
-      {newMenu > 0 && (() => { const own = ownTeamId(model); const cand = model.allPlayers.filter((x) => !x.hidden && (!own || x.teamId !== own)); const close = () => setNewMenu(0); return (
-        <Sheet title="Nuevo jugador" onClose={close}>
-          {newMenu === 1 ? <div className="sc-menu">
-            <button onClick={() => { close(); setEdit({}); }}><BtnIc n="add" /><span>Crear desde cero<small>Un jugador nuevo con su apodo, posición y foto</small></span><span className="chev">›</span></button>
-            <button disabled={!own || !cand.length} onClick={() => { setNq(''); setNewMenu(2); }}><BtnIc n="mine" /><span>Meter un jugador analizado<small>{own ? 'Añade a ' + teamName(model, own) + ' a alguien que ya salió en una repetición' : 'Primero marca tu equipo como «Mi equipo»'}</small></span><span className="chev">›</span></button>
-          </div> : <div>
-            <input className="sc-search" placeholder="Buscar por nickname…" value={nq} onChange={(e) => setNq(e.target.value)} />
-            <ul className="sc-list" style={{ maxHeight: '52vh', overflowY: 'auto', marginTop: 8 }}>{cand.filter((x) => !nq.trim() || x.nick.toLowerCase().includes(nq.trim().toLowerCase())).map((x) => (
-              <li key={x.id} onClick={async () => { if (!(await confirm('¿Meter a «' + x.nick + '» en ' + teamName(model, own) + '?' + (x.teamId ? ' Dejará de estar en ' + teamName(model, x.teamId) + '.' : ''), 'Meter en el equipo'))) return; await db.put('players', { ...x, teamId: own, ignored: false, updatedAt: Date.now() }); toast(x.nick + ' ahora es de ' + teamName(model, own)); close(); }}><Avatar player={x} size={34} /><div className="mid"><b>{x.nick}</b><small>{x.teamId ? teamName(model, x.teamId) : 'Sin equipo'}</small></div><span className="chev">›</span></li>
-            ))}</ul>
-          </div>}
-        </Sheet>); })()}
       {edit && <PlayerEditor model={model} player={edit.id ? edit : null} onClose={() => setEdit(null)} onSaved={(r) => r && setSel(r.id)} />}
       {confirmEl}
-      {pick && <PickPlayers model={model} onClose={() => setPick(false)} />}
+      {pick && <PickPlayers model={model} onClose={() => setPick(false)} onCreate={() => { setPick(false); setEdit({}); }} />}
     </div>
   );
 }

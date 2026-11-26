@@ -21,7 +21,7 @@ export async function wipePlayers(model, list, confirm) {
 }
 
 // Elegir qué jugadores se analizan: los no marcados siguen reconocidos pero no cuentan ni aparecen en ninguna lista.
-export function PickPlayers({ model, onClose }) {
+export function PickPlayers({ model, onClose, onCreate }) {
   const [q, setQ] = useState(''); const [hideNew, setHideNew] = useState(true); const [teamId, setTeamId] = useState(''); const [showDel, setShowDel] = useState(false);
   const [confirm, confirmEl] = useConfirm();
   const nDel = model.allPlayers.filter((p) => p.hidden).length;
@@ -46,6 +46,7 @@ export function PickPlayers({ model, onClose }) {
     <Sheet title="Elegir jugadores a analizar" onClose={onClose} foot={<><button className="sc-btn ghost" onClick={onClose}>Cancelar</button><button className="sc-btn" onClick={save}>Guardar ({sel.size})</button></>}>
       <div className="sc-form">
         <p className="sc-note">Solo los jugadores marcados cuentan en goles, asistencias, rankings, red de pases e informes. Los demás no se pierden: puedes marcarlos cuando quieras.</p>
+        {onCreate && <button className="sc-btn small ghost" onClick={onCreate}>+ Crear jugador desde cero</button>}
         <input className="sc-search" placeholder="Buscar por nickname…" value={q} onChange={(e) => setQ(e.target.value)} />
         {(nDel > 0 || showDel) && <Seg value={showDel ? 'del' : 'act'} onChange={(v) => setShowDel(v === 'del')} options={[['act', 'Jugadores'], ['del', 'Borrados (' + nDel + ')']]} />}
         {!showDel ? <div className="sc-row wrap"><button className="sc-btn small ghost" onClick={() => setMany(rows, true)}>Marcar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small ghost" onClick={() => setMany(rows, false)}>Quitar todos{q ? ' los de la búsqueda' : ''}</button><button className="sc-btn small danger" disabled={!rows.some((p) => !sel.has(p.id))} onClick={() => wipe(rows.filter((p) => !sel.has(p.id)))}>Borrar los no marcados</button></div>
