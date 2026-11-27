@@ -2,16 +2,20 @@ import React, { useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Empty, Seg, Select, Input, Sheet, Avatar, useConfirm, useLocal, toast } from './ui';
 import { PlayerEditor } from './Players';
+import Matches from './Matches';
 import { toInputDate, standings, ownTeamId, teamName, fmtDate, fmtNum } from './model';
 
 const TYPES = [['liga', 'Liga'], ['torneo', 'Torneo']];
 const TYPE_LABEL = { liga: 'Liga', torneo: 'Torneo', amistoso: 'Amistoso' };
 
-export default function Teams({ model, nav }) {
-  const [tab, setTab] = useState('teams');
+export default function Teams({ model, nav, view, params, openReplay, initial = 'teams' }) {
+  // «Partidos» y «Equipos» comparten apartado: una sola pestaña con sub-secciones. Si se abre el detalle de un partido, se muestra solo.
+  const [tab, setTab] = useState(initial);
+  if (tab === 'matches' && params && params.matchId) return <Matches model={model} view={view} nav={nav} params={params} openReplay={openReplay} />;
   return (
     <div className="sc-view">
-      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['teams', 'Equipos'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Amistosos']]} /></div>
+      <div className="sc-scrollx"><Seg value={tab} onChange={setTab} options={[['matches', 'Partidos'], ['teams', 'Equipos'], ['comps', 'Ligas/Torneos'], ['fix', 'Jornadas'], ['h2h', 'Amistosos']]} /></div>
+      {tab === 'matches' && <Matches model={model} view={view} nav={nav} params={params} openReplay={openReplay} />}
       {tab === 'teams' && <TeamsTab model={model} nav={nav} />}
       {tab === 'seasons' && <SeasonsTab model={model} />}
       {tab === 'comps' && <CompsTab model={model} />}

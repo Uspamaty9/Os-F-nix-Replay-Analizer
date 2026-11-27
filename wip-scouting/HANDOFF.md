@@ -105,3 +105,6 @@ Jugadores › Nuevo › «Meter un jugador analizado»: ya no usa el `<select>` 
 
 ## Ajustes 25/11 (6) (Claude B)
 Jugadores › Nuevo abre directamente «Elegir jugadores a analizar» (`PickPlayers`, con nuevo prop `onCreate` → botón «+ Crear jugador desde cero»). Eliminados el enlace «Elegir jugadores» de la nota y la hoja de dos opciones.
+
+## Partidos + Equipos en un solo apartado (Claude B)
+La barra inferior pierde «Equipos»: «Partidos» contiene ahora el selector Partidos · Equipos · Ligas/Torneos · Jornadas · Amistosos (`Teams.js` recibe `initial`, `view`, `params`, `openReplay` y renderiza `Matches`). El detalle de un partido se abre solo (sin selector). La ruta `teams` sigue existiendo (Más › enlace de equipos) y resalta «Partidos».

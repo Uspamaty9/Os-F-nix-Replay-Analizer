@@ -19,7 +19,7 @@ class Boundary extends React.Component {
   render() { return this.state.err ? <div className="sc-card"><div className="sc-empty">Algo falló al mostrar esta sección. Tus datos están a salvo. <small>{String(this.state.err.message || this.state.err)}</small></div></div> : this.props.children; }
 }
 
-const TABS = [['dash', 'Panel', 'M4 20V10M10 20V4M16 20v-7M22 20H2'], ['players', 'Jugadores', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['scouting', 'Scouting', 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z'], ['matches', 'Partidos', 'M3 5h18v14H3zM12 5v14M3 12h18'], ['teams', 'Equipos', 'M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6'], ['more', 'Más', 'M5 12h.01M12 12h.01M19 12h.01']];
+const TABS = [['dash', 'Panel', 'M4 20V10M10 20V4M16 20v-7M22 20H2'], ['players', 'Jugadores', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0'], ['scouting', 'Scouting', 'M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z'], ['matches', 'Partidos', 'M3 5h18v14H3zM12 5v14M3 12h18'], ['more', 'Más', 'M5 12h.01M12 12h.01M19 12h.01']];
 const MORE = ['more', 'network', 'reports', 'trash', 'pending', 'backup']; // pantallas dentro de «Más»
 
 export default function ScoutingApp({ onClose, openReplay }) {
@@ -62,20 +62,20 @@ export default function ScoutingApp({ onClose, openReplay }) {
             {tab === 'dash' && <Dashboard model={model} view={view} nav={nav} openReplay={open} />}
             {tab === 'players' && <Players model={model} view={view} filters={f} nav={nav} params={params} />}
             {tab === 'scouting' && <Scouting model={model} view={view} nav={nav} params={params} />}
-            {tab === 'matches' && <Matches model={model} view={view} nav={nav} params={params} openReplay={open} />}
+            {tab === 'matches' && <Teams key="m" initial="matches" model={model} view={view} nav={nav} params={params} openReplay={open} />}
             {MORE.includes(tab) && tab !== 'more' && <button className="sc-link back" onClick={() => nav('more', {})}>‹ Más</button>}
             {tab === 'more' && <More model={model} nav={nav} />}
             {tab === 'trash' && <Trash model={model} />}
             {tab === 'pending' && <Pending model={model} openReplay={open} />}
             {tab === 'backup' && <Backup />}
             {tab === 'network' && <Network model={model} view={view} filters={f} nav={nav} params={params} />}
-            {tab === 'teams' && <Teams model={model} nav={nav} />}
+            {tab === 'teams' && <Teams key="t" initial="teams" model={model} view={view} nav={nav} params={params} openReplay={open} />}
             {tab === 'reports' && <Reports model={model} view={view} filters={f} />}
           </Boundary>
         )}
       </main>
       <nav className="sc-tabs" aria-label="Secciones">
-        {TABS.map(([id, label, d]) => <button key={id} className={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'on' : ''} onClick={() => nav(id, {})} aria-current={(tab === id || (id === 'more' && MORE.includes(tab))) ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg><span>{label}</span></button>)}
+        {TABS.map(([id, label, d]) => <button key={id} className={(tab === id || (id === 'matches' && tab === 'teams') || (id === 'more' && MORE.includes(tab))) ? 'on' : ''} onClick={() => nav(id, {})} aria-current={(tab === id || (id === 'matches' && tab === 'teams') || (id === 'more' && MORE.includes(tab))) ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg><span>{label}</span></button>)}
       </nav>
       {newIds && model && <NewPlayersSheet model={model} ids={newIds} onClose={() => setNewIds(null)} />}
       {search && model && <SearchSheet model={model} nav={nav} onClose={() => setSearch(false)} />}
