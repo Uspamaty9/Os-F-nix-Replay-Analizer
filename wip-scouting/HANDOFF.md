@@ -108,3 +108,6 @@ Jugadores › Nuevo abre directamente «Elegir jugadores a analizar» (`PickPlay
 
 ## Partidos + Equipos en un solo apartado (Claude B)
 La barra inferior pierde «Equipos»: «Partidos» contiene ahora el selector Partidos · Equipos · Ligas/Torneos · Jornadas · Amistosos (`Teams.js` recibe `initial`, `view`, `params`, `openReplay` y renderiza `Matches`). El detalle de un partido se abre solo (sin selector). La ruta `teams` sigue existiendo (Más › enlace de equipos) y resalta «Partidos».
+
+## Inicio desplazable (Claude B)
+`scout-entry.scss`: en pantallas ≤ 900 px el inicio (`.fh-scroll`) se desplaza completo (escudo + herramientas + lista); antes era «inicio fijo» (theme.scss ~l.182: solo scrolleaba la lista). Escritorio sin cambios. Sin probar con el SCSS real salvo en CI.

@@ -40,3 +40,17 @@ html body .fenix-wait .fw-bar i { display: block; height: 100%; border-radius: 6
 /* Botón de restablecer vista (zoom): abajo a la derecha, en el espacio libre junto a los botones de la repetición; el de grabar sube a su lugar */
 html body .fenix-fit { top: auto !important; bottom: var(--edge, 12px) !important; right: calc(var(--edge, 12px) + var(--inr, 0px)) !important; height: 46px; min-height: 46px; }
 html body .fenix-rec { top: calc(var(--edge, 12px) + var(--int, 0px)) !important; }
+
+/* ===== Inicio: toda la pantalla se desplaza (escudo, herramientas y lista) en móvil y tablet =====
+   Antes el inicio era de altura fija y solo la lista se movía por dentro; ahora sube y baja todo junto. */
+@media (max-width: 900px) {
+  html body .fenix-home .fh-scroll { display: block !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; height: 100%; padding-bottom: calc(28px + env(safe-area-inset-bottom)) !important; scrollbar-width: none; }
+  html body .fenix-home .fh-hero { max-height: none !important; overflow: visible !important; }
+  html body .fenix-home .fh-history { display: block !important; flex: none !important; height: auto !important; min-height: 240px; }
+  html body .fenix-home .fh-history > ul, html body .fenix-home .fh-history > .fh-empty { overflow: visible !important; max-height: none !important; flex: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
+  html body .fenix-home .fh-history > ul { padding-bottom: 12px !important; scroll-snap-type: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  html body .fenix-home .fh-scroll { display: grid !important; align-items: start; overflow-y: auto !important; height: 100%; }
+  html body .fenix-home .fh-history { height: auto !important; }
+}
