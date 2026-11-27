@@ -1,0 +1,112 @@
+TITULO: Replay Analyzer Os Fênix
+TEXTO VISIBLE: OS FÊNIX TACTICAL ANALYZER Importar repetición Centro de análisis Estadísticas, jugadores y scouting Pizarra táctica Dibuja jugadas y esquemas HISTORIAL Todavía no hay repeticiones. Importa un archivo .hbr2 y quedará guardado aquí para verlo sin internet. Cargando repetición… Leyendo el archivo guardado. Analizando… 0%
+--- Respuestas locales (no 200 / offline) ---
+200 /offline/tiles/grasstile.png
+200 /offline/tiles/hockeytile.png
+200 /offline/res.dat
+REPLAYS DE PRUEBA: partida1.hbr2
+Replay cargado: partida1.hbr2 | texto: OS FÊNIX TACTICAL ANALYZER Importar repetición Centro de análisis Estadísticas, jugadores y scouting Pizarra táctica Dibuja jugadas y esquemas HISTORIAL ▶ partida1 🏟 Win Sports Big ⏱ 3:05 ·27/11/26 1 – 3 1 repetición Cargando repetición… Leyendo el archivo guardado. Analizando… 100% 0 - 0 0 0 
+Canvas: {"x":0,"y":0,"w":390,"h":744}
+Estado inicial: {"zoom":1.8,"cx":0,"cy":0,"k":0.723,"kFit":0.401,"W":780,"H":1488}
+PRUEBA APROBADA · 1 Cancha completa al abrir (zoom 1, escala de ajuste)
+CHAT-TEAM {"d2":{"pre":"👨🏻‍🌾 Aldeano I | idk","n":15,"names":[["Keegan.",16777215],["olise 1!",16777215],["axxeter",16777215],["𝑮̲ⲁⲃⲟⲟ¹̲⁰̲",16777215],["ʲᵒʳᵈʸ ᶜᵃᶦᶜᵉᵈᵒ",15035990],["𝒟𝒶𝒹𝒹𝒟𝒶𝒹.(hitler)",15035990]],"best":"idk"},"n":50,"teamed":40,"sample":["<p class=\"announcement\" style=\"color: rgb(245, 157, 214);\" data-team=\"blue\"><b class=\"cn\">🌸 ᴡᴀɪꜰᴜ | Uspamaty9</b><span class=\"cm\">THE NINEE","<p class=\"announcement\" style=\"color: rgb(139, 69, 19);\" data-team=\"blue\"><b class=\"cn\">👨🏻‍🌾 Aldeano III | ʀᴇᴛᴀɢ (Viti)</b><span class=\"c","<p class=\"announcement\" style=\"color: rgb(242, 203, 177);\" data-team=\"red\"><b class=\"cn\">👨🏻‍🌾 Aldeano I | idk</b><span class=\"cm\">buena d"]}
+CHAT-BG {"body":"fenix-chat-clear fenix-ready fenix-booted",".game-view":"rgba(0, 0, 0, 0)|none|0|844|absolute",".game-view > .top-section":"rgba(0, 0, 0, 0)|none|0|744|relative",".game-view > .bottom-section":"rgba(0, 0, 0, 0)|none|744|100|relative",".chatbox-view":"rgba(0, 0, 0, 0)|none|531|143|absolute",".chatbox-view .log":"rgba(0, 0, 0, 0)|none|531|143|relative",".chatbox-view .log p:last-child":"rgba(200, 154, 61, 0.1)|none|1298|30|relative",".replay-controls-view":"rgb(17, 17, 17)|none|760|84|absolute","canvas":"rgba(0, 0, 0, 0)|none|0|744|static","#root":"rgb(17, 17, 17)|none|0|0|static",".fenix-home":"rgb(18, 18, 18)|radial-gradient(120% 55% at 50% 0px, rgb|0|844|absolute"}
+CHAT-LAYOUT: {".game-view > .bottom-section":[744,844,100],".game-view > .bottom-section > .buttons":[684,744,60],".chatbox-view":[531,674,143],".chatbox-view .log":[531,674,143],".chatbox-view .log p:last-child":[1298,1328,30],".replay-controls-view":[760,844,84],"canvas":[0,744,744]}
+Marcador: {"x":89.46875,"y":12,"w":211.046875,"h":46} | Controles: {"x":0,"y":760,"w":390,"h":84}
+PRUEBA APROBADA · Marcador dentro de la pantalla
+PRUEBA APROBADA · Controles dentro de la pantalla
+PRUEBA APROBADA · R1 Grabar partido: opciones, cuenta regresiva, despejado, vista previa, guardar y archivo de video · {"hasRec":true,"sheet":true,"cnt":true,"recVis":true,"onRec":true,"prev":true,"prevGone":true,"file":"OsFenix-20261127-224735.mp4","bytes":467350}
+Tras separar dedos: {"zoom":7.56,"cx":0,"cy":-42.2,"k":3.035,"kFit":0.401,"W":780,"H":1488}
+PRUEBA APROBADA · 2 Separar dos dedos amplía · zoom=7.56
+Tras arrastrar: {"zoom":7.56,"cx":-79.1,"cy":-68.5,"k":3.035,"kFit":0.401,"W":780,"H":1488}
+PRUEBA APROBADA · 5 Arrastrar con un dedo desplaza la vista ampliada
+Tras juntar dedos: {"zoom":1.977,"cx":-79.1,"cy":-31.3,"k":0.794,"kFit":0.401,"W":780,"H":1488}
+PRUEBA APROBADA · 3 Juntar dos dedos aleja · zoom=1.977
+PRUEBA APROBADA · 4 El punto entre los dedos se mantiene como referencia · desvío=0.61 (zoom 3.667)
+PRUEBA APROBADA · 6 Botón restablecer vuelve a la cancha completa
+PRUEBA APROBADA · 7 Pausar/reanudar sin perder el zoom · zoom=3
+Tiempo antes/después de reproducir: 0:00 → 0:02
+PRUEBA APROBADA · 13 La repetición avanza (reloj cambia al reproducir)
+Seguimiento: jugadores en juego [5388,5361,5375,5393,5394,5379]
+opciones: ["0","ball","5388","5361","5375","5393","5394","5379","5328","5377","5373","5395","5390","5387","5372","5382","5391"]
+opciones: ["0","ball","5388","5361","5375","5393","5394","5379","5328","5377","5373","5395","5390","5387","5372","5382","5391"]
+PRUEBA APROBADA · S1 Seguir a un jugador y luego a otro: se sigue siempre al último elegido · {"ids":[5388,5361],"results":[true,true]}
+PRUEBA APROBADA · S3 Ajustes reabierto sin tocar "Video": cada jugador elegido se sigue · [true,true,true]
+PRUEBA APROBADA · S4 Panel "Seguir jugador": cada jugador elegido se sigue · [true,true,true]
+PRUEBA APROBADA · S5 Seguir a la pelota y modo libre · {"ballOk":true,"freeOk":true}
+PRUEBA APROBADA · S6 Camara automatica estilo TV · {"autoOk":true}
+PRUEBA APROBADA · S6b Camara Cine · {"cineOk":true}
+PRUEBA APROBADA · C2 Sin chat no queda hueco entre botones y barra de reproduccion · hueco=14px
+PRUEBA APROBADA · C3 Chat en tarjeta con contorno dorado y sin flecha · {"radius":22,"border":0,"arrow":false}
+PRUEBA APROBADA · C4 Chat transparente flota sobre la cancha (vertical) · {"chatBottom":674,"secTop":744,"canvasH":744,"pe":"none"}
+PRUEBA APROBADA · S2 Tocar jugadores en la cancha: se sigue al último tocado · [true,true,true]
+PRUEBA APROBADA · C1 Pantalla despejada: oculta marcador y botones, barra solo en pausa, 2 toques salen · {"hidden":true,"ctrlPaused":true,"ctrlPlaying":false,"back":true,"sb":true}
+PRUEBA APROBADA · G1 El chat no se superpone con los botones · {"choques":0,"alto":143}
+PRUEBA APROBADA · B1 Márgenes cómodos en los bordes (vertical) · {"ojoL":12,"ojoT":12,"starR":390,"fitR":12,"leaveB":12,"leaveR":12,"menuL":12}
+PRUEBA APROBADA · Z1 El botón de zoom siempre vuelve a 1.0× · [1,1,1]
+PRUEBA APROBADA · 8 Barra de tiempo cambia el instante sin desplazar la cancha · reloj 0:02 → 2:57
+PRUEBA APROBADA · 9 Cambiar velocidad no altera la vista · 1x → 2x
+PRUEBA APROBADA · 10 Girar a horizontal: la cancha se reajusta · canvas 844x324 kFit=0.501
+PRUEBA APROBADA · L1 Horizontal: línea dorada pegada a la cancha y ojo sin chocar · {"hueco":0,"ojoChoca":false,"ojoAbajo":true}
+PRUEBA APROBADA · N1 Recorte de cámara respetado y botones laterales parejos · {"canvas":0,"ctrl":12,"menu":12,"ojo":12,"h":[44,44],"w":[52,52],"gaps":[10],"borde":"0px","btnH":36}
+PRUEBA APROBADA · E2 Estadísticas ordenadas (horizontal) · {"panelL":10,"panelT":10,"panelR":10,"panelB":10,"cierraChoca":false,"cols":"grid"}
+PRUEBA APROBADA · E2 Estadísticas ordenadas (vertical) · {"panelL":10,"panelT":10,"panelR":10,"panelB":278,"cierraChoca":false,"cols":"flex"}
+PRUEBA APROBADA · E3 Horizontal: con Ajustes abierto los botones laterales no se superponen · true
+PRUEBA APROBADA · E3b Al cerrar Ajustes vuelven los botones · true {"stats":false,"sv":"hidden","cls":"fenix-chat-clear fenix-ready fenix-booted fenix-playing","rv":false}
+PRUEBA APROBADA · K1 Botón atrás cierra Estadísticas, Ajustes y Menú; el Menú tiene botón Cerrar · {"stats":true,"ajustes":true,"cerrarVisible":true,"cerrarBoton":true,"menuAtras":true}
+DIAG-ROJO {"listAttrs":null,"btn":null,"color":null,"before":null,"n":null}
+STATS-DIAG {"#game-stats":"95|723|flex|0px|0px|14px|0px","#game-stats .fs-scroll":"149|669|block|0px|0px|14px|0px","#game-stats .fs-scroll > h1.title":"149|48|block|0px 0px 6px|0px|0px|0px","#game-stats .fs-scroll > #leftHalf":"197|346|block|0px|0px|14px|0px","#game-stats .fs-scroll > #rightHalf":"0|0|none|0px|10px 0px 0px|14px|0px","#game-stats .fs-map-title":"0|0|block|0px|14px 0px 8px|11.5px|0px"}
+DIAG-STATS {".game-view":"0|0|390|844|flex|visible|1|rgba(0, 0, 0, 0)|auto","canvas":"0|0|0|0|block|visible|1|rgba(0, 0, 0, 0)|auto",".replay-controls-view":"0|760|390|84|flex|hidden|0|rgb(17, 17, 17)|3","#greyer":"0|0|0|0|none|visible|0.5|rgba(0, 0, 0, 0.55)|1","#game-stats":"26|95|338|723|flex|visible|1|rgba(0, 0, 0, 0)|2",".fenix-home":"-585|0|390|844|flex|visible|1|rgb(18, 18, 18)|5","#room-view":"0|0|390|844|flex|visible|1|rgba(0, 0, 0, 0.62)|auto","body":"fenix-chat-clear fenix-ready fenix-booted fenix-playing fenix-panel-open fenix-paired bg=rgb(17, 17, 17)"}
+MAP-ANIM {"n":1,"map":"pos","k":["block|0.423206|matrix(1, 0, 0, 1, 259.942, 0)|1","none|1|none|0"],"all":13}
+BLACK {"body":"fenix-chat-clear fenix-ready fenix-booted fenix-playing","vw":"390x844","pts":[["CANVAS.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/744 z=auto","DIV.game-state-view#game-state-view bg=rgb(17, 17, 17) img=none op=1 pos=absolute 0/744 z=auto","DIV.top-section# bg=rgba(0, 0, 0, 0) img=none op=1 pos=relative 0/744 z=auto","DIV.game-view replayer# bg=rgba(0, 0, 0, 0) img=none op=1 pos=absolute 0/844 z=auto","DIV.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/0 z=auto","BODY.fenix-chat-clear fenix-ready f# bg=rgb(17, 17, 17) img=none op=1 pos=static 0/0 z=auto"],["CANVAS.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/744 z=auto","DIV.game-state-view#game-state-view bg=rgb(17, 17, 17) img=none op=1 pos=absolute 0/744 z=auto","DIV.top-section# bg=rgba(0, 0, 0, 0) img=none op=1 pos=relative 0/744 z=auto","DIV.game-view replayer# bg=rgba(0, 0, 0, 0) img=none op=1 pos=absolute 0/844 z=auto","DIV.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/0 z=auto","BODY.fenix-chat-clear fenix-ready f# bg=rgb(17, 17, 17) img=none op=1 pos=static 0/0 z=auto"],["CANVAS.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/744 z=auto","DIV.game-state-view#game-state-view bg=rgb(17, 17, 17) img=none op=1 pos=absolute 0/744 z=auto","DIV.top-section# bg=rgba(0, 0, 0, 0) img=none op=1 pos=relative 0/744 z=auto","DIV.game-view replayer# bg=rgba(0, 0, 0, 0) img=none op=1 pos=absolute 0/844 z=auto","DIV.# bg=rgba(0, 0, 0, 0) img=none op=1 pos=static 0/0 z=auto","BODY.fenix-chat-clear fenix-ready f# bg=rgb(17, 17, 17) img=none op=1 pos=static 0/0 z=auto"]]}
+PRUEBA APROBADA · K3 Salir de la repetición pide confirmación (Leave y botón atrás) · {"askLeave":true,"stillIn":true,"askBack":true}
+PRUEBA APROBADA · X1 Botón de salir del inicio no choca con el engranaje · {"choca":false,"exitLeft":12}
+PRUEBA APROBADA · H1 Ajustes se cierra rapido y no deja nada pegado al abrir/cerrar seguido · {"gone1":true,"gone2":true}
+PRUEBA OMITIDA · H3 Temas (esta versión no tiene temas)
+PRUEBA APROBADA · H2 Abrir/cerrar ajustes muy rapido nunca deja dos paneles superpuestos · {"maxOv":1}
+PRUEBA APROBADA · K2 En el inicio, atrás pregunta si salir y otro atrás lo cierra · {"dlg1":true,"dlg2":true}
+PRUEBA APROBADA · H1 La repetición importada aparece en el historial · 1 elemento(s)
+PRUEBA APROBADA · H4 Al escribir el nombre sale en orden (hola) y la ventana queda arriba · hola / borde inferior 294
+PRUEBA APROBADA · H2 Cambiar el nombre de la repetición · nombre: Final vs Rivales
+PRUEBA APROBADA · H3 Abrir una repetición desde el historial
+Botones (texto,x,y,ancho,alto): [["Menú",12,684,48,48],["Ajustes",72,684,48,48]]
+Layout inferior: [[".bottom-section",744,100,"100px","0px","0 0 auto"],[".bottom-section .buttons",684,60,"12px","0px","0 1 auto"],[".chatbox-view",531,143,"0px","0px","0 0 auto"],[".chatbox-view .log",531,143,"0px","0px","1 1 auto"],[".replay-controls-view",760,84,"12px","0px","0 1 auto"]]
+PRUEBA APROBADA · B1 Menú/Ajustes/Estadísticas dentro de la pantalla y táctiles (≥44px)
+Marcador: {"x":89.46875,"y":12,"w":211.046875,"h":46}
+PRUEBA APROBADA · M1 Marcador compacto y centrado arriba · ancho 211
+PRUEBA APROBADA · B3 Velocidad directa y recordada · {"t":"3x","s":"4"}
+PRUEBA APROBADA · B4 Chat se oculta y se muestra · ok
+PRUEBA APROBADA · B2 Marcadores de gol en la barra · 4
+Texto en estadísticas: OS FÊNIX TACTICAL ANALYZER Importar repetición Centro de análisis Estadísticas, jugadores y scouting Pizarra táctica Dibuja jugadas y esquemas HISTORIAL ▶ Final vs Rivales 🏟 Win Sports Big ⏱ 3:05 ·2
+PRUEBA OMITIDA · G1 Guía (esta versión no tiene guía de bienvenida)
+PRUEBA APROBADA · W2 Entra directo a la repetición y el botón de la cancha aparece con todo, abajo a la derecha · {"overlay":false,"fitAt":1513,"fitPos":{"top":686,"right":12,"h":844}}
+PRUEBA APROBADA · G5 Pantalla chico (360x640) sin desbordes · {"over":0,"out":0}
+PRUEBA APROBADA · G5 Pantalla tablet-v (768x1024) sin desbordes · {"over":0,"out":0}
+PRUEBA APROBADA · G5 Pantalla tablet-h (1024x768) sin desbordes · {"over":0,"out":0}
+PRUEBA APROBADA · A1 Escritorio pc1366: inicio en dos columnas sin desbordes · {"hero":{"l":55,"r":475,"t":231,"b":569},"hist":{"l":543,"r":1311,"t":76,"b":724},"over":0}
+PRUEBA APROBADA · A2 Escritorio pc1366: ajustes como ventana centrada · {"l":232,"r":1134,"t":187,"b":581,"w":902}
+PRUEBA APROBADA · A3 Escritorio pc1366: Esc cierra ajustes · {"closed":true}
+PRUEBA APROBADA · A1 Escritorio pc1920: inicio en dos columnas sin desbordes · {"hero":{"l":197,"r":657,"t":387,"b":725},"hist":{"l":753,"r":1723,"t":76,"b":1036},"over":0}
+PRUEBA APROBADA · A2 Escritorio pc1920: ajustes como ventana centrada · {"l":509,"r":1411,"t":343,"b":737,"w":902}
+PRUEBA APROBADA · A3 Escritorio pc1920: Esc cierra ajustes · {"closed":true}
+PRUEBA APROBADA · B1 Escritorio pc1366: campo al maximo · {"l":0,"t":0,"r":1366,"b":700,"w":1366,"h":700}
+PRUEBA APROBADA · B2 Escritorio pc1366: barra abajo sin choques · {"cv":{"l":0,"t":0,"r":1366,"b":700,"w":1366,"h":700},"bar":{"l":0,"t":700,"r":1366,"b":768,"w":1366,"h":68},"btns":{"l":1003,"t":712,"r":1238,"b":756,"w":235,"h":44},"leave":{"l":1279,"t":712,"r":1342,"b":756,"w":63,"h":44},"tb":{"l":358,"t":720,"r":993,"b":748,"w":635,"h":28},"chat":{"l":20,"t":454,"r":457,"b":684,"w":437,"h":230}}
+PRUEBA APROBADA · B4 Escritorio pc1366: chat no tapa la barra · {"chat":{"l":20,"t":454,"r":457,"b":684,"w":437,"h":230},"bar":{"l":0,"t":700,"r":1366,"b":768,"w":1366,"h":68}}
+PRUEBA APROBADA · B5 Escritorio pc1366: Espacio, flechas y +/- · {"pl0":false,"pl1":true,"pl2":false,"t0":"0:00","t1":"0:05","sp0":"1x","sp1":"2x"}
+PRUEBA APROBADA · B1b Escritorio pc1366: C abre el panel de camaras a un lado y Esc lo cierra · {"camOpen":true,"camGone":true,"camR":{"l":986,"t":0,"r":1366,"b":700,"w":380,"h":700}}
+PRUEBA APROBADA · B2b Escritorio pc1366: Sala y Estadisticas lado a lado, sin pestañas · {"L":{"l":43,"t":24,"r":443,"b":744,"w":400,"h":720},"Rt":{"l":459,"t":24,"r":1323,"b":744,"w":864,"h":720},"tabs":0}
+PRUEBA APROBADA · B3 Escritorio pc1366: mapas de calor y posesion visibles · [[482,572,395,198],[901,572,395,198]]
+PRUEBA APROBADA · B6 Escritorio pc1366: Esc cierra el panel · {"closed":true}
+PRUEBA APROBADA · B1 Escritorio pc1920: campo al maximo · {"l":0,"t":0,"r":1920,"b":1012,"w":1920,"h":1012}
+PRUEBA APROBADA · B2 Escritorio pc1920: barra abajo sin choques · {"cv":{"l":0,"t":0,"r":1920,"b":1012,"w":1920,"h":1012},"bar":{"l":0,"t":1012,"r":1920,"b":1080,"w":1920,"h":68},"btns":{"l":1557,"t":1024,"r":1792,"b":1068,"w":235,"h":44},"leave":{"l":1833,"t":1024,"r":1896,"b":1068,"w":63,"h":44},"tb":{"l":358,"t":1032,"r":1547,"b":1060,"w":1189,"h":28},"chat":{"l":20,"t":672,"r":480,"b":996,"w":460,"h":324}}
+PRUEBA APROBADA · B4 Escritorio pc1920: chat no tapa la barra · {"chat":{"l":20,"t":672,"r":480,"b":996,"w":460,"h":324},"bar":{"l":0,"t":1012,"r":1920,"b":1080,"w":1920,"h":68}}
+PRUEBA APROBADA · B5 Escritorio pc1920: Espacio, flechas y +/- · {"pl0":false,"pl1":true,"pl2":false,"t0":"0:00","t1":"0:05","sp0":"1x","sp1":"2x"}
+PRUEBA APROBADA · B1b Escritorio pc1920: C abre el panel de camaras a un lado y Esc lo cierra · {"camOpen":true,"camGone":true,"camR":{"l":1540,"t":0,"r":1920,"b":1012,"w":380,"h":1012}}
+PRUEBA APROBADA · B2b Escritorio pc1920: Sala y Estadisticas lado a lado, sin pestañas · {"L":{"l":320,"t":140,"r":720,"b":940,"w":400,"h":800},"Rt":{"l":736,"t":140,"r":1600,"b":940,"w":864,"h":800},"tabs":0}
+PRUEBA APROBADA · B3 Escritorio pc1920: mapas de calor y posesion visibles · [[759,688,395,198],[1178,688,395,198]]
+PRUEBA APROBADA · B6 Escritorio pc1920: Esc cierra el panel · {"closed":true}
+--- PETICIONES EXTERNAS (0) ---
+--- PETICIONES FALLIDAS (0) ---
+--- ERRORES (2) ---
+console: Failed to load resource: the server responded with a status of 404 (File not found)
+console: Failed to load resource: the server responded with a status of 404 (File not found)
