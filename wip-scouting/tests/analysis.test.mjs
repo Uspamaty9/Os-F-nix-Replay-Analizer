@@ -53,3 +53,16 @@ const ovGK = finalRatings(null, gkR).values.overall; assert.ok(ovGK != null && o
 console.log('autoRatings B', ar.values, 'final', fr.values.overall);
 const agg = aggregateRows([by('A'), by('B')]); assert.strictEqual(agg.goals, 1); assert.strictEqual(agg.matches, 2);
 console.log('OK analysis');
+// capa 1 y 2 de puestos: equipo adelantado y rotaciones
+{ const mkPart = (kicks, names) => ({ v: 1, ticks: 36000, spaceMode: false, stadium: '', scoreRed: 1, scoreBlue: 0, possRed: 60, possBlue: 40, thirds: [1, 1, 1], kicksRed: kicks.length, kicksBlue: 0, passesRed: 0, passesBlue: 0, players: names.map((n) => ({ nick: n, nation: '', team: n === 'X' ? 'B' : 'R' })), kicks, shots: [[3, kicks.length - 1]], goals: [], ep: {} });
+  // todo el equipo arriba: el portero (-80) sigue siendo portero y el defensa más atrasado no es delantero
+  const K1 = []; [[0, -80], [1, 150], [2, 200], [3, 250]].forEach(([i, x]) => { for (let n = 0; n < 5; n++) K1.push([i, x, 0]); }); K1.push([4, 0, 0], [4, 0, 0]); K1.push([3, 250, 0]);
+  const r1 = analyzePart(mkPart(K1, ['G', 'D', 'M', 'F', 'X'])); const R1 = (n) => r1.players.find((p) => p.nick === n);
+  assert.strictEqual(R1('G').role, 'GK', 'portero con el equipo arriba'); assert.notStrictEqual(R1('D').role, 'FWD', 'el más atrasado del equipo no es delantero');
+  // rotación: A empieza de defensa y acaba de delantero
+  const K2 = []; for (let b = 0; b < 3; b++) for (let n = 0; n < 8; n++) { K2.push([0, -250, 0]); K2.push([1, b === 0 ? -150 : b === 1 ? 0 : 250, 0]); K2.push([2, 0, 0]); K2.push([3, 200, 0]); } K2.push([4, 0, 0], [4, 0, 0]); K2.push([3, 250, 0]);
+  const r2 = analyzePart(mkPart(K2, ['G', 'A', 'B', 'C', 'X'])); const A = r2.players.find((p) => p.nick === 'A');
+  assert.ok(A.roleMix && A.roleMix.length >= 2, 'rotación detectada: ' + JSON.stringify(A.role) + JSON.stringify(A.roleMix));
+  const ra = autoRatings({ ...A, ctx: { gf: 1, ga: 0, poss: .5, size: 4, shotsOTAgainst: 0 } }, []); assert.ok(ra.mix && ra.mix.length >= 2 && Math.abs(ra.mix.reduce((s, m) => s + m.share, 0) - 1) < 1e-9, 'mezcla de puestos'); assert.ok(finalRatings(null, ra).values.overall != null);
+}
+console.log('OK puestos relativos y rotaciones');

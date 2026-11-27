@@ -141,3 +141,4 @@ El balón es un foco de luz y cada jugador un objeto opaco: lo que queda en somb
 - Sin cambios de lógica ni de funciones; solo CSS + sombras de canvas.
 - FYI (scouting): criterios propios por puesto también para DEF/MID/FWD (analysis.js DEF_CRITERIA/MID_CRITERIA/FWD_CRITERIA, ROLE_SETS, criteriaFor(role)); Ranking con filtro por puesto; perfil por puesto en jugador y PDF.
 - FYI (scouting): minutos jugados (sec por jugador desde m.changes) encogen la nota hacia 5 (conf=min(1,frac/0.6), mín .15) y ponderan las medias; aviso en Evaluar.
+- FYI (scouting): detección de puestos relativa al equipo (quita 70 % del desplazamiento si todo el equipo está arriba; portero también por hueco ≥0.45) y por tramos de toques (3/2 bloques): roleMix en filas, nota general = media por puesto según su peso.

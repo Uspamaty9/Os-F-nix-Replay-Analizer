@@ -240,17 +240,48 @@ export function detectRoles(part, P) {
   });
   const xsAll = part.kicks.map((k) => Math.abs(k[1])); const half = xsAll.length >= 6 ? Math.max(200, Math.max.apply(null, xsAll)) : 0;
   const form = {};
+  const cl = (v) => Math.max(-1, Math.min(1, v));
+  // Reparte puestos entre los jugadores de un bando a partir de su profundidad (-1 su portería … +1 la rival).
+  // CAPA 1 (relativa al equipo): si todo el equipo está adelantado (contraataque, orden de subir), se le quita buena parte de ese desplazamiento
+  // para que el puesto dependa de quién está más atrás/adelante DENTRO de su equipo y no de la posición absoluta en el campo.
+  const classify = (arr) => { // arr: [{k, depth}] -> mapa k -> {role, depth}
+    const out = new Map(); if (!arr.length) return out;
+    const L = arr.slice().sort((x, y) => x.depth - y.depth);
+    const second = L[1] ? L[1].depth : null, gap0 = second != null ? second - L[0].depth : 1;
+    const isGK = L.length >= 2 && ((L[0].depth <= -0.45 && (gap0 >= 0.12 || L[0].depth <= -0.7)) || (L[0].depth < 0 && gap0 >= 0.45));
+    const field = isGK ? L.slice(1) : L; const c = field.length ? field.reduce((a, x) => a + x.depth, 0) / field.length : 0; const shift = 0.7 * c;
+    if (isGK) out.set(L[0].k, { role: 'GK', depth: L[0].depth });
+    field.forEach((x) => { const d = cl(x.depth - shift); out.set(x.k, { role: d < -0.12 ? 'DEF' : d > 0.22 ? 'FWD' : 'MID', depth: d }); });
+    return out;
+  };
+  // CAPA 2 (por tramos): el partido se parte en bloques de toques consecutivos y se detecta el puesto en cada bloque, así quien se rota
+  // (defensa que acaba de delantero, etc.) deja de quedar promediado como "medio".
+  const nb = part.kicks.length >= 60 ? 3 : part.kicks.length >= 30 ? 2 : 1;
   ['R', 'B'].forEach((code) => {
-    const mem = P.filter((p) => p.team === code); mem.forEach((p) => { p.depth = null; p.role = null; });
+    const mem = P.filter((p) => p.team === code); mem.forEach((p) => { p.depth = null; p.role = null; p.roleMix = null; p.roleDepth = null; });
     if (!dir[code] || !half) { form[code] = null; return; }
     const rated = mem.filter((p) => p.kicks >= 2);
-    rated.forEach((p) => { p.depth = Math.max(-1, Math.min(1, dir[code] * (p.sx / p.kicks) / half)); });
-    rated.sort((a, b) => a.depth - b.depth);
-    rated.forEach((p, i) => {
-      const gap = rated[i + 1] ? rated[i + 1].depth - p.depth : 1;
-      if (i === 0 && rated.length >= 2 && p.depth <= -0.45 && (gap >= 0.12 || p.depth <= -0.7)) p.role = 'GK';
-      else p.role = p.depth < -0.12 ? 'DEF' : p.depth > 0.22 ? 'FWD' : 'MID';
-    });
+    const full = classify(rated.map((p) => ({ k: p, depth: cl(dir[code] * (p.sx / p.kicks) / half) })));
+    rated.forEach((p) => { const r = full.get(p); p.depth = r.depth; p.role = r.role; });
+    if (nb > 1 && rated.length >= 2) {
+      const acc = new Map(); rated.forEach((p) => acc.set(p, {}));
+      for (let bi = 0; bi < nb; bi++) {
+        const lo = Math.floor(part.kicks.length * bi / nb), hi = Math.floor(part.kicks.length * (bi + 1) / nb);
+        const st = new Map(); for (let i = lo; i < hi; i++) { const k = part.kicks[i], p = P[k[0]]; if (!p || !acc.has(p)) continue; const q = st.get(p) || { n: 0, sx: 0 }; q.n++; q.sx += k[1]; st.set(p, q); }
+        const arr = []; st.forEach((q, p) => { if (q.n >= 2) arr.push({ k: p, depth: cl(dir[code] * (q.sx / q.n) / half), n: q.n }); });
+        if (arr.length < 2) continue;
+        const res = classify(arr); arr.forEach((x) => { const r = res.get(x.k); const a = acc.get(x.k); const e = a[r.role] || (a[r.role] = { n: 0, d: 0 }); e.n += x.n; e.d += r.depth * x.n; });
+      }
+      rated.forEach((p) => {
+        const a = acc.get(p), tot = Object.keys(a).reduce((s, k) => s + a[k].n, 0); if (!tot) return;
+        const mix = Object.keys(a).map((k) => ({ role: k, share: a[k].n / tot, depth: a[k].d / a[k].n })).filter((m) => m.share >= 0.25).sort((x, y) => y.share - x.share);
+        if (!mix.length) return; const sum = mix.reduce((s, m) => s + m.share, 0);
+        // el portero no se mezcla con puestos de campo: si es portero en el partido, lo es
+        if (p.role === 'GK') return;
+        p.role = mix[0].role; p.depth = mix[0].depth;
+        if (mix.length > 1) { p.roleMix = mix.map((m) => ({ role: m.role, share: m.share / sum, depth: m.depth })); }
+      });
+    }
     const c = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; rated.forEach((p) => { c[p.role]++; });
     form[code] = { GK: c.GK, DEF: c.DEF, MID: c.MID, FWD: c.FWD, text: (c.GK ? 'Portero + ' : '') + [c.DEF, c.MID, c.FWD].join('-'), dir: dir[code] };
   });
@@ -344,7 +375,10 @@ export const ROLE_WEIGHTS = {
   FWD: { finishing: 1.8, creation: 1.2, involvement: 1, positioning: 1, passing: 0.8, decisions: 1, vision: 0.8, recoveries: 0.5, defense: 0.4 },
 };
 export function autoRatings(row, population) {
-  const out = autoRatings0(row, population); out.played = row.played != null ? row.played : 1; out.playedSec = row.playedSec != null ? row.playedSec : null; return out;
+  const out = autoRatings0(row, population);
+  if (row.roleMix && row.roleMix.length > 1) { // jugó varios puestos: la nota general es la media de la nota en cada puesto, según el peso de cada uno
+    out.mix = row.roleMix.map((m) => { const o = m.role === row.role ? out : autoRatings0({ ...row, role: m.role, depth: m.depth }, population); o.played = row.played != null ? row.played : 1; return { role: m.role, share: m.share, overall: finalRatings(null, o).values.overall }; });
+  } out.played = row.played != null ? row.played : 1; out.playedSec = row.playedSec != null ? row.playedSec : null; return out;
 }
 function autoRatings0(row, population) {
   const ctx = row.ctx || {};
@@ -466,6 +500,7 @@ export function finalRatings(manual, auto) {
     const w = (auto && auto.weights) || {}; let sw = 0, sv = 0; list.forEach((c) => { if (out[c.id] != null) { const k = w[c.id] != null ? w[c.id] : 1; sw += k; sv += k * out[c.id]; } });
     const base = sw > 0 ? sv / sw : mean(vals), res = auto && auto.result != null ? shrink(auto.result) : null;
     out.overall = r1(clamp10(res != null ? 0.75 * base + 0.25 * res : base)); src.overall = 'calc';
+    if (auto && auto.mix && auto.mix.every((m) => m.overall != null)) out.overall = r1(auto.mix.reduce((s, m) => s + m.share * m.overall, 0));
   } else { out.overall = null; src.overall = null; }
-  return { values: out, sources: src, criteria: (auto && auto.criteria) || 'STD', weight: conf, played: pf, playedSec: auto && auto.playedSec != null ? auto.playedSec : null };
+  return { values: out, sources: src, criteria: (auto && auto.criteria) || 'STD', mix: auto && auto.mix ? auto.mix.map((m) => ({ role: m.role, share: m.share })) : null, weight: conf, played: pf, playedSec: auto && auto.playedSec != null ? auto.playedSec : null };
 }
