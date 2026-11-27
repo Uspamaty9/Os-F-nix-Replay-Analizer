@@ -460,7 +460,7 @@ function autoRatings0(row, population) {
     const concede = ga != null && !(ga === 0 && saved === 0) ? clamp10(10 - 2.2 * ga - 1.5 * row.ownGoals + 0.6 * Math.min(saved, 3)) : null;
     const zone = row.depth != null ? clamp10(10 - 7 * Math.abs(row.depth + 0.8)) : null;
     const gkPosition = zone != null ? zone : 5;
-    const act = row.blocks + row.interceptions + row.recoveries;
+    const act = row.interceptions + row.recoveries; // los bloqueos de tiros ya cuentan como paradas: no se cuentan dos veces
     const clearances = clamp10(5 + 1.2 * act - 0.4 * (row.turnovers > 2 ? row.turnovers - 2 : 0));
     const distribution = acc != null ? blend(clamp10((acc - 0.4) / 0.55 * 10), pctRank(acc, col(accOf).filter((x) => x != null))) : null;
     const sec = row.kicks > 0 ? 1 - row.turnovers / row.kicks : null;
