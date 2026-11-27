@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as db from './db';
 import { Card, Kpi, Empty, Avatar, Seg, Select, Prov, Hint, toast } from './ui';
 import { Radar } from './charts';
-import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, teamName, fmtNum, fmtDate, fmtPct } from './model';
+import { getRating, rowFor, ratingKey, ratingAverage, criteriaAverage, rowHasRole, teamName, fmtNum, fmtDate, fmtPct } from './model';
 import { CRITERIA, GK_CRITERIA, ROLE_SETS, criteriaFor, finalRatings, ROLE_LABEL } from './analysis';
 
 const AUTO_HINT = {
   positioning: 'Reparto de su juego entre ataque y defensa, dominio del balón de su equipo y su peso en los toques.', vision: 'Pases clave y asistencias, con la calidad de sus pases completados.',
-  passing: 'Precisión de pases (completados / intentos), comparada con el resto cuando hay datos.', finishing: 'Goles y tiros a puerta (los autogoles restan).', defense: 'Bloqueos e intercepciones, y los goles que encajó su equipo.',
+  passing: 'Precisión de pases (completados / intentos).', finishing: 'Goles y tiros a puerta (los autogoles restan).', defense: 'Bloqueos e intercepciones, y los goles que encajó su equipo.',
   recoveries: 'Balones recuperados.', saves: 'Paradas según los tiros a puerta que recibió su equipo (más paradas, mejor nota).', concede: 'Goles encajados por su equipo: cuantos menos, mejor.', gkPosition: 'Cómo se coloca respecto a su portería y al balón.', clearances: 'Despejes y salidas para cortar el peligro.', distribution: 'Calidad de sus pases al sacar el balón.', security: 'Cuidar el balón: pocas pérdidas por toque.', involvement: 'Su cuota de los toques del equipo.', creation: 'Asistencias y pases que acaban en tiro.', decisions: 'Cuidar el balón (pérdidas por toque) y elegir bien los tiros.',
   cuts: 'Bloqueos e intercepciones; los autogoles restan.', solidity: 'Goles que encajó su equipo (menos = mejor) y su trabajo defensivo.', defPosition: 'Qué tanto jugó en la zona defensiva (zona ideal: atrás).',
   buildUp: 'Precisión de sus pases al sacar el balón.',
@@ -79,6 +79,7 @@ function Evaluate({ model, view, params, nav }) {
           <label className="sc-field"><span>Notas del partido <Prov k="manual" /></span><textarea rows={4} placeholder="Observaciones, puntos fuertes, a mejorar…" value={draft.notes} onChange={(e) => { setDraft((d) => ({ ...d, notes: e.target.value })); setDirty(true); }} /></label>
           <div className="sc-row end"><button className="sc-btn ghost" onClick={() => nav('players', { playerId: cur.playerId })}>Ver perfil</button>{rt && rt.record && rt.record.notes && <button className="sc-btn ghost danger" onClick={clearAll}>Borrar notas</button>}<button className="sc-btn" disabled={!dirty} onClick={save}>{dirty ? 'Guardar notas' : 'Notas guardadas'}</button></div>
         </Card>
+        {preview && preview.mix && preview.mix.filter((m) => m.role !== preview.criteria && ROLE_SETS[m.role]).map((m) => <Card key={m.role} title={'Perfil del partido (' + ROLE_LABEL[m.role].toLowerCase() + ' · ' + Math.round(m.share * 100) + ' %)'}><div className="sc-center"><Radar axes={ROLE_SETS[m.role].map((c) => ({ id: c.id, label: c.label }))} series={[{ name: cur.nick, values: m.values }]} /></div></Card>)}
         {preview && criteriaFor(preview.criteria).some((c) => preview.values[c.id] != null) && <Card title={preview.criteria && ROLE_SETS[preview.criteria] ? 'Perfil del partido (' + ROLE_LABEL[preview.criteria].toLowerCase() + ')' : 'Perfil del partido'}><div className="sc-center"><Radar axes={criteriaFor(preview.criteria).map((c) => ({ id: c.id, label: c.label }))} series={[{ name: cur.nick, values: preview.values }]} /></div></Card>}
       </>}
     </>
@@ -93,9 +94,9 @@ function Ranking({ model, view, nav }) {
   const list = role === 'ALL' ? null : ROLE_SETS[role];
   const rows = useMemo(() => model.players.map((p) => {
     let mids = ids;
-    if (role !== 'ALL') { mids = new Set(model.rows.filter((r) => r.playerId === p.id && r.role === role && ids.has(r.matchId)).map((r) => r.matchId)); if (!mids.size) return null; }
+    if (role !== 'ALL') { mids = new Set(model.rows.filter((r) => r.playerId === p.id && rowHasRole(r, role) && ids.has(r.matchId)).map((r) => r.matchId)); if (!mids.size) return null; }
     const ra = ratingAverage(model, p.id, mids); if (!ra) return null;
-    const ca = list ? criteriaAverage(model, p.id, mids, list) : {};
+    const ca = list ? criteriaAverage(model, p.id, mids, list, role) : {};
     return { p, ra, ca };
   }).filter(Boolean).sort((a, b) => (sort === 'overall' || !list ? b.ra.avg - a.ra.avg : (b.ca[sort] == null ? -1 : b.ca[sort]) - (a.ca[sort] == null ? -1 : a.ca[sort]))), [model, ids, sort, role, list]);
   const seg = <Seg value={role} onChange={(v) => { setRole(v); setSort('overall'); }} options={[['ALL', 'Todos'], ['GK', 'Portero'], ['DEF', 'Defensa'], ['MID', 'Medio'], ['FWD', 'Delantero']]} />;

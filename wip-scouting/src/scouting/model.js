@@ -142,8 +142,14 @@ export function ratingAverage(model, playerId, matchIds) {
   const sw = vals.reduce((a, b) => a + b[1], 0); // se pondera por minutos jugados: 1 minuto pesa poco en la media
   return vals.length ? { avg: vals.reduce((a, b) => a + b[0] * b[1], 0) / sw, n: vals.length } : null;
 }
-export function criteriaAverage(model, playerId, matchIds, list) {
-  const out = {}; (list || CRITERIA).forEach((c) => { const v = []; model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (g && g.final.values[c.id] != null) v.push([g.final.values[c.id], g.final.weight != null ? g.final.weight : 1]); }); const sw = v.reduce((a, b) => a + b[1], 0); out[c.id] = v.length ? v.reduce((a, b) => a + b[0] * b[1], 0) / sw : null; });
+// ¿jugó este puesto en el partido (principal o dentro de su mezcla de puestos)?
+export function rowHasRole(r, role) { return r.role === role || !!(r.roleMix && r.roleMix.some((x) => x.role === role)); }
+// Media de criterios; con `role`, usa los valores de ESE puesto (también si fue su puesto secundario en el partido). Pondera por minutos jugados.
+export function criteriaAverage(model, playerId, matchIds, list, role) {
+  const out = {}; (list || CRITERIA).forEach((c) => { let sw = 0, sv = 0; model.rows.forEach((r) => { if (r.playerId !== playerId || (matchIds && !matchIds.has(r.matchId))) return; const g = getRating(model, r.matchId, playerId); if (!g) return;
+    let vals = g.final.values, w = g.final.weight != null ? g.final.weight : 1;
+    if (role) { const mx = g.final.mix && g.final.mix.find((x) => x.role === role); if (mx) { vals = mx.values; w *= mx.share; } else if (g.final.criteria !== role) return; }
+    if (vals && vals[c.id] != null) { sw += w; sv += w * vals[c.id]; } }); out[c.id] = sw > 0 ? sv / sw : null; });
   return out;
 }
 
